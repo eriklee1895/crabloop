@@ -241,11 +241,11 @@ assert_eq!(summary_request["tools"], serde_json::json!([]));
 
 **Interfaces:** 不增加运行时能力；沿用 v1 的外部 verifier、v2 journal 和 context 比较方法。
 
-- [ ] Step 1：在新的 playground 副本中运行强制压缩修复任务；确认日志至少一条成功压缩，原任务/AGENTS 固定保留，独立 verifier 通过；单独记录未通过或模型误报完成的情况。
-- [ ] Step 2：运行 cargo fmt --check、cargo clippy --locked --all-targets -- -D warnings、cargo test --locked、python3 scripts/count-lines.py，以及对应 playground 的外部验收。
-- [ ] Step 3：填写 evidence/v2/acceptance.md：实际源代码行数、协议测试、Bash/文件真实测试、压缩次数与输入大小、真实模型 ID/日期、外部验收和已知局限。记录层、运行机制与模型任务结果分别给结论。
-- [ ] Step 4：完成重建练习：不看参考代码，在单独 scratch 目录重写 v1 loop；沿一个 v2 日志解释历史在哪里、每轮输入是什么、失败怎样改变动作、压缩丢失了什么。该练习不修改冻结版本。
-- [ ] Step 5：本地提交 milestone: finish v2，并创建 v2 tag。后续选修一次只选一个：原生 compaction 对照、Streaming/取消、会话恢复、进程树治理、MCP 或只读 subagent。
+- [x] Step 1：在新的 playground 副本中运行强制压缩修复任务；确认日志至少一条成功压缩，原任务/AGENTS 固定保留，独立 verifier 通过；单独记录未通过或模型误报完成的情况。
+- [x] Step 2：运行 cargo fmt --check、cargo clippy --locked --all-targets -- -D warnings、cargo test --locked、python3 scripts/count-lines.py，以及对应 playground 的外部验收。
+- [x] Step 3：填写 evidence/v2/acceptance.md：实际源代码行数、协议测试、Bash/文件真实测试、压缩次数与输入大小、真实模型 ID/日期、外部验收和已知局限。记录层、运行机制与模型任务结果分别给结论。
+- [x] Step 4：完成重建练习：不看参考代码，在单独 scratch 目录重写 v1 loop；沿一个 v2 日志解释历史在哪里、每轮输入是什么、失败怎样改变动作、压缩丢失了什么。该练习不修改冻结版本。
+- [x] Step 5：本地提交 milestone: finish v2，并创建 v2 tag。后续选修一次只选一个：原生 compaction 对照、Streaming/取消、会话恢复、进程树治理、MCP 或只读 subagent。
 
 ## 两个版本的完成门槛
 

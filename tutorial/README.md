@@ -32,3 +32,5 @@ v1 围绕模型交互、四个工具和行动循环展开，核心实现目标�
 | tutorial/v2/ | 06–09：上下文投影、摘要、对照实验、综合复盘 | 任务继续推进时，模型应该看到哪些历史？ |
 
 详细步骤见[实施与学习计划](../docs/plan.md)，版本边界见[设计说明](../docs/design.md)。实际开发经过从[仓库起步记录](../docs/devlog/00-bootstrap.md)开始。
+
+完成 v1 后，从 [06 上下文投影](v2/06-context-projection.md) 继续，随后是 [07 摘要压缩](v2/07-compaction.md)、[08 对照实验](v2/08-context-experiments.md) 和 [09 复盘](v2/09-v2-retrospective.md)。
