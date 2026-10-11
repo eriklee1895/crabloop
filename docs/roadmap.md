@@ -167,6 +167,12 @@ v2 的 `.crabloop/run-*.jsonl` 只用于观察一次运行，已经可以教“�
 
 当前官方资料提供这些基础能力：[dialoguer](https://docs.rs/dialoguer/latest/dialoguer/)、[Ratatui](https://ratatui.rs/)、[Crossterm](https://docs.rs/crossterm/latest/crossterm/)。文本输入组件的维护状态与依赖版本在实施时复核；这里不固定尚未构建验证的组合。
 
+Codex CLI 的 Rust TUI 作为具体源码参考。本次只读检查本机 openai/codex 仓库的 `279ba894152b2c01c5294cc0723b463b209bdca4` 快照，manifest 与 Cargo.lock 对应 Ratatui 0.30.2、Crossterm 0.29.0、ratatui-macros 0.7.2。Crossterm 实际通过 patch 锁定 OpenAI fork 的 `45fecb9508105988f42fe6ff0441783ed3717f92`；这些是该源码快照的依赖，不当作 CrabLoop 将来必须照抄的版本。
+
+阅读顺序：[依赖声明](https://github.com/openai/codex/blob/279ba894152b2c01c5294cc0723b463b209bdca4/codex-rs/tui/Cargo.toml#L82) → [终端与输入事件](https://github.com/openai/codex/blob/279ba894152b2c01c5294cc0723b463b209bdca4/codex-rs/tui/src/tui.rs) → [自有 TextArea](https://github.com/openai/codex/blob/279ba894152b2c01c5294cc0723b463b209bdca4/codex-rs/tui/src/bottom_pane/textarea.rs) / [ChatComposer](https://github.com/openai/codex/blob/279ba894152b2c01c5294cc0723b463b209bdca4/codex-rs/tui/src/bottom_pane/chat_composer.rs) → [流式显示控制器](https://github.com/openai/codex/blob/279ba894152b2c01c5294cc0723b463b209bdca4/codex-rs/tui/src/streaming/controller.rs)。源码显示 Codex 在基础库之上持有编辑与渲染状态；依赖中另有 pulldown-cmark、textwrap、Unicode 处理及 insta 快照测试。
+
+CrabLoop 优先借鉴终端退出恢复、输入/粘贴与提交的区分、流式内容的稳定部分和可更新尾部，以及小组件快照测试。先用 Ratatui/Crossterm 发布版完成最小界面，输入框先选兼容组件；需要自有交互行为时再读 Codex 对应实现。只有遇到具体问题时才评估 fork 或复杂组件，保持核心与界面职责清楚。
+
 核心通过 channel 发出 TextDelta、ToolStarted、ToolFinished、Compaction、Stopped 等事件，CLI/TUI 消费事件并展示。界面刷新不执行工具，模型网络等待不阻塞按键。当前单次 CLI 入口仍可用于脚本和验收；TUI 复用同一个运行核心。可以在具体需要出现时拆出 src/ui/，所有生产 Rust 仍计入总行数，另列核心/界面分项帮助阅读。
 
 最小界面只有对话区、输入区和状态栏，工具详情可展开。先验证中文粘贴、多行输入、窗口缩放、流式输出与取消，以及退出后的终端恢复。Markdown 美化、主题与复杂快捷键随后按需要添加，不把一个版本变成终端编辑器项目。

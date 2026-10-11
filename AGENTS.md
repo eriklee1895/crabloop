@@ -8,7 +8,7 @@ CrabLoop is a small coding-agent harness built from scratch in Rust for hands-on
 - v2: approximately 500 lines total, adding context management and summary compaction.
 - v3: approximately 1,000 lines total, adding ~/.crabloop, TOML configuration, provider presets/Custom, credentials, and model catalog discovery/cache. Minimal Skills is optional if comfortably within scope.
 - Planned v4: Skills, Tavily Search/Firecrawl Scrape, a config menu sharing TOML files with manual edits, selective .env import and visible config sources. Planned v5: recoverable JSONL sessions and interruption handling under ~/.crabloop. See docs/roadmap.md.
-- Proposed advanced stages: v6 streaming REPL and Ratatui/Crossterm TUI; v7 scoped cross-session memory with provenance/update/forget; optional v8 pinned-version Rig backend comparison while retaining the hand-written loop. v4 config prompts can use dialoguer.
+- Proposed advanced stages: v6 streaming REPL and Ratatui/Crossterm TUI (study Codex CLI source); v7 scoped cross-session memory with provenance/update/forget; optional v8 pinned-version Rig backend comparison while retaining the hand-written loop. v4 config prompts can use dialoguer.
 - Acceptance includes both coding repairs and general local agentic tasks such as reading source documents and producing a verifiable structured report.
 - Use the OpenAI native Responses API and a hand-written agent loop.
 - Grow the same implementation through small, explainable steps. Preserve runnable milestones with v1 and v2 Git tags.
