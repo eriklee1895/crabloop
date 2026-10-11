@@ -1,6 +1,6 @@
 # CrabLoop：从一轮行动，长到自己的工作台
 
-更新：2026-10-11。v1/v2 沿[实施计划](plan.md)继续完成；v3–v5 是后续规划，本文中的配置和命令尚未实现。
+更新：2026-10-11。v1/v2 已按[实施计划](plan.md)完成；v3–v5 是后续规划，本文中的配置和命令尚未实现。
 
 最值得保留的是逐步生长的节奏。先看见模型调用一次工具，再看见历史变长，最后才遇到“每次都要设置环境”“换模型不方便”“明天怎样接着做”。每版解决一个能亲手观察的问题。
 
@@ -11,7 +11,7 @@
 | v1 | 约 300 行；350–360 也可接受 | 模型怎样行动并依据反馈调整？ | Responses + read_file/write_file/edit_file/bash；修复函数，再做一次多文件资料整理 |
 | v2 | 约 500 行，允许合理浮动 | 历史变长后，下一轮看到什么？ | 根 AGENTS.md、完整交互组、输入预算、摘要、JSONL 运行记录；小预算下完成任务 |
 | v3 | 约 1000 行，优先保持可读 | 怎样成为不用反复配置的个人 CLI？ | `~/.crabloop`、TOML、凭证、provider 预置/Custom、模型目录与缓存；换 provider 执行同一任务 |
-| v4 | 先按功能估算，不预设硬上限 | 怎样复用工作方法，并查阅外部资料？ | Skills 最小支持、web_fetch、web_search；查官方资料，保存带来源的比较报告 |
+| v4 | 先按功能估算，不预设硬上限 | 怎样复用工作方法，并查阅外部资料？ | Skills 最小支持、web_fetch、web_search、CLI 配置菜单；查官方资料，保存带来源的比较报告 |
 | v5 | 先按功能估算，不预设硬上限 | 进程退出后，怎样知道做到哪里并继续？ | JSONL sessions、list/show/resume、压缩状态重建、取消与未完成操作；中断后核对并继续 |
 
 行数用于提醒我们收住范围，统计全部 src/**/*.rs，测试、教程与开发脚本单独记录。不会为了从 360 降到 300 而压缩难读的代码，也不会因为模型多输出一个正确的统计字段就判失败。验收看任务事实、工具结果和程序的关键边界。
@@ -64,7 +64,7 @@ models = ["gpt-6-luna"]  # 手动补充；发现接口不可用时仍可选用
 
 credentials.toml 按 provider/profile 保存 API Key；目录在 Unix 下使用 0700，凭证文件使用 0600。配置示例、目录缓存和会话不写密钥。最初允许手工编辑；随后加 `crabloop auth set deepseek`，从隐藏输入读取，避免把密钥放进 CLI 参数。这是本机文件存储，后续才考虑系统钥匙串。
 
-建议拆成三个可运行增量：先加载 TOML 并沿用已有 Config；再加三个预置与 Custom；最后实现 `crabloop models --provider deepseek` 和 `--refresh`。不要同时引入菜单、自动选模型和自动切换 provider。
+建议拆成三个可运行增量：先加载 TOML 并沿用已有 Config；再加三个预置与 Custom；最后实现 `crabloop models --provider deepseek` 和 `--refresh`。v3 先完成文件配置与命令入口；v4 再补一个读写同一套文件的配置菜单，保持每一步清楚。自动选模型和自动切换 provider 另行评估。
 
 ## 模型目录：发现、补充、选择
 
@@ -94,9 +94,41 @@ credentials.toml 按 provider/profile 保存 API Key；目录在 Unix 下使用 
 
 web_fetch 与 web_search 值得做，它们让通用任务不再只围绕本地文件。但可以等行动循环、上下文和配置都清楚以后再引入。
 
-先做 `web_fetch(url)`：拿到已知 URL，返回正文、最终 URL、内容类型和截断信息；限定 HTTP(S)、超时、下载量、重定向次数。首次实现支持文本与 HTML 正文，不做浏览器、登录或 PDF。这样能复用现有的 reqwest，并亲手看到网页怎样占用上下文。
+先以简单 HTTP 抓取讲清 `web_fetch(url)` 的参数、超时、输出限额与错误回传，再接入 Firecrawl 作为正文抓取后端；默认只请求网页正文/Markdown，返回来源 URL 和截断信息。这个教学版本不开放浏览器交互、登录或 PDF 功能。
 
-再做 `web_search(query)`：只接一个独立搜索服务，返回标题、URL、摘要和来源时间（有才返回）。搜索 Key 与模型 Key 分开配置。不把 OpenAI 服务端内置 web_search 当成跨 provider 的共同能力；它可以成为后续对照实验。
+`web_search(query)` 首先接 Tavily，返回标题、URL、摘要和来源时间（有才返回）。初始组合为 Tavily Search + Firecrawl Scrape；模型看到的工具名始终是 web_search/web_fetch，后端由配置决定。Rust 沿用 reqwest 调用服务 HTTP API，先实现这两个具体适配，不引入通用插件框架，也不承诺两家服务的全部功能可以互换。
+
+接口依据：[Tavily Search](https://docs.tavily.com/documentation/api-reference/endpoint/search)、[Firecrawl Scrape](https://docs.firecrawl.dev/features/scrape)。已核对公开文档，尚未验证本项目账号；用户提供的本地 .env 将在接入时用于对应服务。搜索/抓取 Key 与模型 Key 分开配置，服务端内置 web_search 留作之后的对照。
+
+### 菜单与手工配置使用同一套文件
+
+v4 增加计划中的 `crabloop config` 交互菜单，先做简单终端问答，选择配置项、输入/更换服务 Key、保存，并显示当前生效值的来源。该菜单读写的就是 ~/.crabloop 下的 TOML 文件，手动编辑后下一次启动同样生效；不另存一份菜单专用设置。
+
+普通设置放在 `~/.crabloop/config.toml`，例如：
+
+```toml
+[web.search]
+provider = "tavily"
+max_results = 5
+
+[web.fetch]
+provider = "firecrawl"
+max_output_bytes = 12000
+```
+
+Key 放在 `~/.crabloop/credentials.toml`，也可手工编辑：
+
+```toml
+[tavily]
+api_key = "<your-tavily-key>"
+
+[firecrawl]
+api_key = "<your-firecrawl-key>"
+```
+
+菜单输入 Key 时隐藏输入，查看配置时只显示已配置状态。已有 `.env` 可通过菜单的“从指定 .env 导入”入口迁移所选的 TAVILY_API_KEY/FIRECRAWL_API_KEY；按数据解析，不执行文件，也不导入无关凭证。导入以后日常使用无需依赖该 .env。进程环境中的服务专用 Key 可以覆盖 credentials.toml，普通设置继续遵循 CLI > 显式环境覆盖 > config.toml > 默认值。
+
+如果环境变量正在覆盖文件，菜单要明确显示来源，避免用户修改文件后误以为程序忽略配置。实现时验证菜单写入与手改文件得到同样的运行配置，再用现有账号验证一次搜索和一次抓取；目前这里只记录设计，配置功能尚未实现。
 
 Skills 是另一层：例如“技术方案调研”说明先搜索官方资料、逐页读取、比较差异、记录不确定项，再用 write_file 输出报告。它复用 web_search/web_fetch/bash/read_file，不凭一段 SKILL.md 自动获得联网能力。
 

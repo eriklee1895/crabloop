@@ -7,7 +7,7 @@ CrabLoop is a small coding-agent harness built from scratch in Rust for hands-on
 - v1: approximately 300 lines of core Rust, with read_file, write_file, edit_file, and bash.
 - v2: approximately 500 lines total, adding context management and summary compaction.
 - v3: approximately 1,000 lines total, adding ~/.crabloop, TOML configuration, provider presets/Custom, credentials, and model catalog discovery/cache. Minimal Skills is optional if comfortably within scope.
-- v4: Skills and provider-independent web_fetch/web_search. v5: recoverable JSONL sessions and interruption handling under ~/.crabloop. See docs/roadmap.md; these stages are planned, not implemented.
+- v4: Skills and provider-independent web_fetch/web_search, initially Tavily Search + Firecrawl Scrape. A simple CLI config menu and manual edits share config.toml/credentials.toml; support selective .env key import and show effective configuration sources. v5: recoverable JSONL sessions and interruption handling under ~/.crabloop. See docs/roadmap.md; these stages are planned, not implemented.
 - Acceptance includes both coding repairs and general local agentic tasks such as reading source documents and producing a verifiable structured report.
 - Use the OpenAI native Responses API and a hand-written agent loop.
 - Grow the same implementation through small, explainable steps. Preserve runnable milestones with v1 and v2 Git tags.
@@ -16,7 +16,7 @@ Line counts are flexible scope guides: the user explicitly accepts v1 at 350–3
 
 ## Current state and layout
 
-Implementation is active under the approved v1 → v2 plan. Build the reference implementation and the Chinese tutorial together, in small verified increments. The Cargo package lives at the repository root, with src/ and tests/ beside Cargo.toml.
+The approved v1 → v2 plan is complete. Continue future milestones with reference code and Chinese tutorials in small verified increments. The Cargo package lives at the repository root, with src/ and tests/ beside Cargo.toml.
 
 The Responses client, CLI configuration, and all four bounded tools, and the serial action loop are implemented. The v1 real coding task passed with DeepSeek and gpt-6-luna; a local-document report also passed after correcting an overly strict verifier. v1 is complete at 314 core code lines (319 physical), with 29 Rust and 3 Python regression tests. v2 context projection, local JSONL journals and bounded summary compaction are implemented. The full suite now contains 46 Rust tests. DeepSeek completed a real 10,240-byte run with five compactions and independent task verification. Tutorials 00–09 and both milestone acceptance records are complete. Final whole-branch review is complete; its budget-provenance finding is fixed with offline regression coverage. All 46 Rust and 6 Python tests pass. A minor mixed-phase final-text presentation issue is documented in evidence/v2/review.md. Current v2 core is 504 code lines / 511 physical lines. Preferred live model: DeepSeek V4.1 Flash, API id deepseek-flash at https://api.deepseek.com/responses. Test fallback: gpt-6-luna through the user's TeamoRouter endpoint. Marker probes and tool-loop evidence are recorded separately; v2 summary calls use reasoning.effort=none and at least 4,096 output tokens; selected models must support that effort. Main requests retain provider-default reasoning. v2 defaults to a 49,152-byte request limit; CRABLOOP_CONTEXT_BYTES overrides it (minimum 4,096). Root AGENTS.md is pinned in instructions.
 
