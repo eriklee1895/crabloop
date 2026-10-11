@@ -107,7 +107,7 @@ assert!(incomplete_result.is_err());
 
 **Interfaces:** Consumes ToolCall、Limits；Produces schemas() -> Vec<Value>、async execute(call: &ToolCall, workspace: &Path, limits: &Limits) -> ToolResult、ToolResult::as_input(&self) -> Value、clip_utf8(text: &str, max_bytes: usize) -> (String, bool)。前三个工具先实现；bash schema 在 Task 3 补齐。
 
-- [ ] Step 1：写测试 read_write_roundtrip、edit_unique_match、edit_zero_or_multiple_matches、edit_rejects_empty_old_text、edit_rejects_oversized_result、invalid_args_return_tool_error、relative_paths_only、oversized_file、unicode_truncation。失败编辑必须同时检查结果和磁盘：
+- [x] Step 1：写测试 read_write_roundtrip、edit_unique_match、edit_zero_or_multiple_matches、edit_rejects_empty_old_text、edit_rejects_oversized_result、invalid_args_return_tool_error、relative_paths_only、oversized_file、unicode_truncation。失败编辑必须同时检查结果和磁盘：
 
 ```rust
 assert_eq!(result.output["ok"], false);
@@ -116,10 +116,10 @@ assert_eq!(result.as_input()["call_id"], "call_edit");
 assert_eq!(result.as_input()["type"], "function_call_output");
 ```
 
-- [ ] Step 2：运行 cargo test --test tools，确认预期失败。
-- [ ] Step 3：实现三个 schemas 与执行分派，限制内容读取/写入，唯一精确替换，参数与 I/O 错误转成关联结果。输出字段使用 ok、content/error、truncated；as_input 的 output 为 JSON 序列化字符串。
-- [ ] Step 4：运行 cargo test --locked --test tools；亲手把 old_text 写错并观察文件不变，记录模型下一轮需要得到什么反馈。
-- [ ] Step 5：本地提交 feat: add three file tools。
+- [x] Step 2：运行 cargo test --test tools，确认预期失败。
+- [x] Step 3：实现三个 schemas 与执行分派，限制内容读取/写入，唯一精确替换，参数与 I/O 错误转成关联结果。输出字段使用 ok、content/error、truncated；as_input 的 output 为 JSON 序列化字符串。
+- [x] Step 4：运行 cargo test --locked --test tools；亲手把 old_text 写错并观察文件不变，记录模型下一轮需要得到什么反馈。
+- [x] Step 5：本地提交 feat: add three file tools。
 
 ## Task 3: Bash 执行与有限输出，站点 03
 

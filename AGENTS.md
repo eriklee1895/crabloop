@@ -15,7 +15,7 @@ Line counts cover all production Rust under src/. Tests, documentation, fixtures
 
 Implementation is active under the approved v1 → v2 plan. Build the reference implementation and the Chinese tutorial together, in small verified increments. The Cargo package lives at the repository root, with src/ and tests/ beside Cargo.toml.
 
-The Responses client and CLI configuration are implemented. Preferred live model: DeepSeek V4.1 Flash, API id deepseek-flash at https://api.deepseek.com/responses. Test fallback: gpt-6-luna through the user's TeamoRouter endpoint. Both passed a one-response marker probe; tool-loop and compaction evidence are separate later gates.
+The Responses client, CLI configuration, and three bounded UTF-8 file tools are implemented. Bash execution and the loop are next. Preferred live model: DeepSeek V4.1 Flash, API id deepseek-flash at https://api.deepseek.com/responses. Test fallback: gpt-6-luna through the user's TeamoRouter endpoint. Both passed a one-response marker probe; tool-loop and compaction evidence are separate later gates.
 
 Runtime configuration reads environment variables. OPENAI_API_KEY is the key for the selected endpoint; CRABLOOP_MODEL chooses the model. CRABLOOP_API_URL is a full endpoint; otherwise OPENAI_BASE_URL is a prefix to which /responses is appended. Local .env is not executed or loaded by the Rust runtime.
 
@@ -55,7 +55,7 @@ Read [the writing guide](docs/writing-guide.md) before writing or revising a cha
 ## Core contracts
 
 - Name the command tool bash and execute Bash explicitly with a defined working directory.
-- edit_file requires a non-empty old_text with exactly one match; failed edits leave the file unchanged.
+- edit_file requires a non-empty old_text with exactly one match; failed match/size validation leaves the file unchanged. File writes currently use ordinary filesystem writes, without atomic rollback.
 - Return recoverable tool errors to the model with the original call_id.
 - Preserve replayable Responses output items and their call/result associations.
 - Treat model completion and independently verified task success as separate observations.
