@@ -61,4 +61,4 @@ for call in reply.calls {
 
 运行 cargo test --locked --test loop，再运行完整的 cargo test --locked。此时你应该能从 input 的第一次创建，一直追到某个明确的结束原因，解释每次模型究竟看到了什么。
 
-对应代码书签：step-04-loop。源码见 [lib.rs](../../src/lib.rs)，验证见[开发记录](../../docs/devlog/04-agent-loop.md)。
+对应代码书签：step-04-loop。源码见 [lib.rs（本章固定版本）](https://github.com/eriklee1895/crabloop/blob/step-04-loop/src/lib.rs)，验证见[开发记录](../../docs/devlog/04-agent-loop.md)。

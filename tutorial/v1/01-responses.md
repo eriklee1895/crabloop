@@ -134,4 +134,4 @@ ToolCall 用一个小 struct 保存这三个需要执行的字段：call_id、na
 
 本地协议测试证明程序能处理这些约定；真实 provider 的成功请求则是另一层证据。开发记录会分别记录两者。等你能解释请求里的 input、响应里的 output，以及 call_id 的用途，我们就可以给 read_file 接上一段真正读取磁盘的 Rust 代码了。
 
-对应代码书签：step-01-responses。源码见 [model.rs](../../src/model.rs)，本步验证见[开发记录](../../docs/devlog/01-responses.md)。
+对应代码书签：step-01-responses。源码见 [model.rs（本章固定版本）](https://github.com/eriklee1895/crabloop/blob/step-01-responses/src/model.rs)，本步验证见[开发记录](../../docs/devlog/01-responses.md)。

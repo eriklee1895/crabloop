@@ -47,4 +47,4 @@ stdin 关闭，避免一个等待输入的命令一直等着终端。stdout 与 
 
 运行 cargo test --locked --test tools bash_。通过这些实验之后，四个工具都能被独立调用。下一章只剩一个关键连接：把执行结果放进模型的下一轮输入，让它根据反馈继续提出动作。
 
-对应代码书签：step-03-bash。实现见 [tools.rs](../../src/tools.rs)，实验记录见[开发记录](../../docs/devlog/03-bash.md)。
+对应代码书签：step-03-bash。实现见 [tools.rs（本章固定版本）](https://github.com/eriklee1895/crabloop/blob/step-03-bash/src/tools.rs)，实验记录见[开发记录](../../docs/devlog/03-bash.md)。

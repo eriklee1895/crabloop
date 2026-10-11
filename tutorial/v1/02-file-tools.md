@@ -68,4 +68,4 @@ text.replace_range(start..start + old.len(), arg("new_text")?);
 
 运行 cargo test --locked --test tools。正常读写、唯一替换、错误参数、路径约定和文本边界通过后，文件工具已经能独立工作。下一步我们要接触一种不同的资源：启动后会持续运行、产生输出、也可能迟迟不退出的子进程。
 
-对应代码书签：step-02-file-tools。实现见 [tools.rs](../../src/tools.rs)，实验经过见[开发记录](../../docs/devlog/02-file-tools.md)。
+对应代码书签：step-02-file-tools。实现见 [tools.rs（本章固定版本）](https://github.com/eriklee1895/crabloop/blob/step-02-file-tools/src/tools.rs)，实验经过见[开发记录](../../docs/devlog/02-file-tools.md)。
