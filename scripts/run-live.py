@@ -52,7 +52,7 @@ if baseline.returncode == 0:
 env = os.environ.copy()
 env.update(OPENAI_API_KEY=key, OPENAI_BASE_URL=base, CRABLOOP_MODEL=model)
 env.pop('CRABLOOP_API_URL', None)
-if args.context_bytes:
+if args.context_bytes is not None:
     env['CRABLOOP_CONTEXT_BYTES'] = str(args.context_bytes)
 task = 'Read README.md and inspect the source. Fix last_index in lib.rs. Run the existing tests before editing and after the fix. Preserve the public signature and tests.rs. Write a short NOTES.md (about five lines) describing the change and actual verification. Then finish; no extra baseline reconstruction or unrelated checks. Report only observed results.'
 subprocess.run(['cargo', 'build', '--locked'], cwd=ROOT, check=True, capture_output=True)
@@ -101,7 +101,7 @@ record['required_compaction'] = args.require_compaction
 if args.stage == 'v2':
     journals = sorted((workspace / '.crabloop').glob('run-*.jsonl'))
     journal_events = [json.loads(line) for path in journals for line in path.read_text().splitlines()]
-    record['context_bytes'] = args.context_bytes or 49152
+    record['context_bytes'] = int(env.get('CRABLOOP_CONTEXT_BYTES', '49152'))
     record['compactions'] = [e['data'] for e in journal_events if e['kind'] == 'compaction']
     record['requests'] = [{'kind': e['kind'], 'bytes': len(json.dumps(e['data'], ensure_ascii=False, separators=(',', ':')).encode())} for e in journal_events if e['kind'] in ('request', 'summary_request')]
     record['usage'] = [{'kind': e['kind'], 'usage': e['data'].get('usage')} for e in journal_events if e['kind'] in ('response', 'summary_response')]

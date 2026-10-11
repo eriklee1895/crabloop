@@ -5,7 +5,7 @@
 | 层次 | 本次结果 |
 |---|---|
 | Rust 确定性测试 | 46 项：9 协议、13 工具、7 loop、8 context、9 compaction |
-| Python verifier | 3 项回归通过 |
+| Python 验收脚本 | 6 项回归通过：3 项事实 verifier、3 项实际预算记录 |
 | 检查 | cargo fmt --check、clippy --all-targets -D warnings、cargo test --locked 通过 |
 | 强制压缩真实任务 | deepseek-flash，10240-byte hard / 7680-byte soft；11 主轮，5 次成功压缩，Final，agent exit=0 |
 | 任务产物 | 原测试先失败后通过，独立 verifier 4/4，tests.rs 未改，NOTES.md 已生成 |
@@ -23,3 +23,5 @@
 摘要请求使用 reasoning.effort=none、至少 4096 输出 tokens，最终摘要仍受 min(4096, hard/8) 字节限制。DeepSeek 此路径已实测；gpt-6-luna 在 v1 通过真实工具任务，v2 effort 支持仅核对官方文档，没有把它算作 v2 真实验收。
 
 限制：摘要栏目检查不验证语义；byte 预算不是 tokenizer；默认推理主调用仍可能 incomplete；JSONL 仅记录单次运行，不提供恢复；Bash 仅回收直接子进程；路径约定与输出限额不等于 sandbox。v3–v5 的 home/config/catalog、Skills/web、sessions 仍是规划。
+
+最终独立审查及修正见[审查记录](review.md)。报告预算现从实际传给子进程的环境读取；已有真实运行显式传了预算，不受该修正影响。
