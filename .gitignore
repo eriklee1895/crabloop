@@ -1,0 +1,17 @@
+# Rust build output
+/target/
+
+# Local credentials and environment
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# Generated workspaces and runtime data
+/playground/
+/.crabloop/
+*.log
+
+# Local editor and OS files
+.DS_Store
+.idea/
