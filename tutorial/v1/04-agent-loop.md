@@ -4,6 +4,8 @@
 
 从 step-03-bash 开始，在 src/lib.rs 增加 run 函数，让它持有这一次任务的历史。src/main.rs 随之变成一个很薄的入口：读取配置，调用 run，打印最后的报告。
 
+本章的[完整增量](patches/04-agent-loop.patch)以 step-03-bash 为起点，包含所有导入、类型、函数和测试变化。建议先读正文与 diff，再修改自己的练习目录；直接应用补丁的命令见[增量入口](patches/README.md)。
+
 ## 历史由谁持有
 
 先创建 HTTP 客户端和工具 schemas，再用原始用户任务建立 input：

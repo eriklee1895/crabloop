@@ -7,7 +7,7 @@ CrabLoop is a small coding-agent harness built from scratch in Rust for hands-on
 - v1: approximately 300 lines of core Rust, with read_file, write_file, edit_file, and bash.
 - v2: approximately 500 lines total, adding context management and summary compaction.
 - v3: approximately 1,000 lines total, adding ~/.crabloop, TOML configuration, provider presets/Custom, credentials, and model catalog discovery/cache. Minimal Skills is optional if comfortably within scope.
-- v4: Skills and provider-independent web_fetch/web_search, initially Tavily Search + Firecrawl Scrape. A simple CLI config menu and manual edits share config.toml/credentials.toml; support selective .env key import and show effective configuration sources. v5: recoverable JSONL sessions and interruption handling under ~/.crabloop. See docs/roadmap.md; these stages are planned, not implemented.
+- Planned v4: Skills, Tavily Search/Firecrawl Scrape, a config menu sharing TOML files with manual edits, selective .env import and visible config sources. Planned v5: recoverable JSONL sessions and interruption handling under ~/.crabloop. See docs/roadmap.md.
 - Proposed advanced stages: v6 streaming REPL and Ratatui/Crossterm TUI; v7 scoped cross-session memory with provenance/update/forget; optional v8 pinned-version Rig backend comparison while retaining the hand-written loop. v4 config prompts can use dialoguer.
 - Acceptance includes both coding repairs and general local agentic tasks such as reading source documents and producing a verifiable structured report.
 - Use the OpenAI native Responses API and a hand-written agent loop.
@@ -17,15 +17,15 @@ Line counts are flexible scope guides: the user explicitly accepts v1 at 350–3
 
 ## Current state and layout
 
-The approved v1 → v2 plan is complete. Continue future milestones with reference code and Chinese tutorials in small verified increments. The Cargo package lives at the repository root, with src/ and tests/ beside Cargo.toml.
+v1 → v2 is complete. Seven teaching patches rebuild v1 from an empty directory; see tutorial/v1/patches/README.md. Continue code and Chinese tutorials together. The Cargo package, src/ and tests/ live at the repository root.
 
-v1 and v2 are complete, with stable milestone/v1 and milestone/v2 branches and immutable v1/v2 tags. v1 has 314 core code lines (319 physical); v2 has 504 (511 physical). Tutorials 00–09 and acceptance evidence are in tutorial/ and evidence/v1|v2/. Current checks: 46 Rust and 6 Python tests, fmt and clippy passed. Final review fixed live-run budget provenance; a minor same-response commentary/final-text display issue remains documented in evidence/v2/review.md.
+v1 and v2 are complete, with stable milestone/v1 and milestone/v2 branches and immutable v1/v2 tags. Frozen v1 has 314 core code lines (319 physical); frozen v2 has 504 (511). Current main formatting is 556/563; the optional v1 teaching patch yields 352/357 with the same behavior. Tutorials 00–09 and acceptance evidence are in tutorial/ and evidence/v1|v2/. Current checks: 46 Rust and 6 Python tests, fmt and clippy passed. Final review fixed live-run budget provenance; a minor same-response commentary/final-text display issue remains documented in evidence/v2/review.md.
 
 Preferred live model: DeepSeek V4.1 Flash (deepseek-flash at https://api.deepseek.com/responses); fallback: gpt-6-luna through TeamoRouter. Both passed v1 real coding tasks. DeepSeek passed a v2 10,240-byte run with five compactions and independent verification; Luna v2 has not been live-tested. Summary calls use reasoning.effort=none and at least 4,096 output tokens; selected models must support that effort. Main requests use provider-default reasoning. Default request limit is 49,152 bytes; CRABLOOP_CONTEXT_BYTES overrides it (minimum 4,096). Root AGENTS.md is pinned in instructions. Keep source/protocol checks, local tools, live runs and semantic summary limitations distinct.
 
 Current v2 runtime configuration reads environment variables. OPENAI_API_KEY is the key for the selected endpoint; CRABLOOP_MODEL chooses the model. CRABLOOP_API_URL is a full endpoint; otherwise OPENAI_BASE_URL is a prefix to which /responses is appended. Local .env is not executed or loaded by the Rust runtime. v3 will introduce home-based TOML and credential files; keep v1/v2 configuration small until then.
 
-Tutorial chapters live under tutorial/v1/ and tutorial/v2/. Actual development records live under docs/devlog/. Keep one Rust implementation at the repository root; use commits and tags to identify the code corresponding to each chapter.
+Chapters: tutorial/v1/ and tutorial/v2/. Actual records: docs/devlog/. Keep one root Rust implementation; commits/tags identify chapter code.
 
 Read the relevant design and task before implementation:
 
@@ -73,8 +73,8 @@ Once the Cargo package exists, use cargo fmt --check, cargo clippy --locked --al
 
 Distinguish deterministic protocol tests, real local tool execution, and live-model runs. Report only what the actual evidence establishes.
 
-Commit Cargo.lock for the application. The user explicitly authorized committing and pushing every verified stage to GitHub. Push completed increments and their checkpoint tags on feat/crabloop-v1-v2; do not bundle unfinished changes into a stage commit.
+Commit Cargo.lock. The user authorizes merging and pushing every verified iteration to main, not only full milestones. main holds the latest validated tree and the full teaching commit history. Develop on a short-lived branch, then fast-forward or merge into main without squashing learning steps. Preserve milestone/vN and immutable vN/step tags. See docs/git-workflow.md.
 
-Formatting uses rustfmt with max_width = 100 and use_small_heuristics = Max. Count all src/**/*.rs under this same public style for every milestone; never hide runtime code in scripts or documentation.
+Use rustfmt (100 columns, small heuristics Max), but expand protocol JSON for teaching clarity. Count all src/**/*.rs; retain historical milestone counts and report current counts separately. Never hide runtime code in scripts or docs.
 
 Keep credentials, local environment files, generated workspaces, and raw session logs out of Git. Publish only deliberately selected and sanitized learning evidence.

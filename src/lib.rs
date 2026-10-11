@@ -101,9 +101,19 @@ pub async fn run(config: Config) -> anyhow::Result<RunReport> {
     let mut journal = journal::Journal::create(&path)?;
     eprintln!("journal {}", path.display());
     let outcome: anyhow::Result<RunReport> = async {
-        let mut report = RunReport { reason: StopReason::MaxTurns, final_text: String::new(), model_turns: 0 };
+        let mut report =
+            RunReport { reason: StopReason::MaxTurns, final_text: String::new(), model_turns: 0 };
         for _ in 0..config.limits.max_turns {
-            let Some(input) = state.prepare(&client, &config, &tools, &context::ContextPolicy::new(config.limits.request_bytes)?, &mut journal).await? else {
+            let Some(input) = state
+                .prepare(
+                    &client,
+                    &config,
+                    &tools,
+                    &context::ContextPolicy::new(config.limits.request_bytes)?,
+                    &mut journal,
+                )
+                .await?
+            else {
                 report.reason = StopReason::ContextLimit;
                 break;
             };
@@ -124,17 +134,25 @@ pub async fn run(config: Config) -> anyhow::Result<RunReport> {
                 break;
             }
             for call in reply.calls {
-                journal.record("tool_started", &json!({"call_id":call.call_id,"name":call.name,"arguments":call.arguments}))?;
+                journal.record(
+                    "tool_started",
+                    &json!({"call_id":call.call_id,"name":call.name,"arguments":call.arguments}),
+                )?;
                 let result = tools::execute(&call, &config.workspace, &config.limits).await;
                 let event = json!({"call_id":call.call_id,"name":call.name,"result":result});
                 journal.record("tool_finished", &event)?;
                 eprintln!("tool {event}");
-                round.push(json!({"type":"function_call_output","call_id":call.call_id,"output":result.to_string()}));
+                round.push(json!({
+                    "type": "function_call_output",
+                    "call_id": call.call_id,
+                    "output": result.to_string()
+                }));
             }
             state.append_round(round)?;
         }
         Ok(report)
-    }.await;
+    }
+    .await;
     match &outcome {
         Ok(report) => journal.record(
             "stop",

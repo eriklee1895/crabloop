@@ -21,9 +21,15 @@ pub struct ModelReply {
     pub usage: Option<Value>,
 }
 pub fn request(config: &Config, instructions: &str, input: &[Value], tools: &[Value]) -> Value {
-    json!({"model": config.model, "instructions": instructions, "input": input,
-        "tools": tools, "store": false, "include": ["reasoning.encrypted_content"],
-        "max_output_tokens": config.limits.max_output_tokens})
+    json!({
+        "model": config.model,
+        "instructions": instructions,
+        "input": input,
+        "tools": tools,
+        "store": false,
+        "include": ["reasoning.encrypted_content"],
+        "max_output_tokens": config.limits.max_output_tokens
+    })
 }
 pub async fn respond(client: &Client, config: &Config, body: Value) -> Result<ModelReply> {
     let raw: Value = client

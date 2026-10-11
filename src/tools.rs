@@ -9,15 +9,38 @@ use std::{
 };
 
 pub fn schemas() -> Vec<Value> {
-    [("read_file", "Read a UTF-8 file; output may be truncated.", &["path"][..]),
-     ("write_file", "Create or overwrite a UTF-8 file; parent must exist.", &["path", "content"]),
-     ("edit_file", "Replace one unique, non-empty exact match.", &["path", "old_text", "new_text"]),
-     ("bash", "Run Bash in the workspace with bounded output and a timeout.", &["command"])]
-        .into_iter().map(|(name, description, args)| {
-            let properties: Map<String, Value> = args.iter().map(|arg| ((*arg).into(), json!({"type":"string"}))).collect();
-            json!({"type":"function", "name":name, "description":description, "strict":true,
-                "parameters":{"type":"object", "properties":properties, "required":args, "additionalProperties":false}})
-        }).collect()
+    [
+        ("read_file", "Read a UTF-8 file; output may be truncated.", &["path"][..]),
+        (
+            "write_file",
+            "Create or overwrite a UTF-8 file; parent must exist.",
+            &["path", "content"],
+        ),
+        (
+            "edit_file",
+            "Replace one unique, non-empty exact match.",
+            &["path", "old_text", "new_text"],
+        ),
+        ("bash", "Run Bash in the workspace with bounded output and a timeout.", &["command"]),
+    ]
+    .into_iter()
+    .map(|(name, description, args)| {
+        let properties: Map<String, Value> =
+            args.iter().map(|arg| ((*arg).into(), json!({"type": "string"}))).collect();
+        json!({
+            "type": "function",
+            "name": name,
+            "description": description,
+            "strict": true,
+            "parameters": {
+                "type": "object",
+                "properties": properties,
+                "required": args,
+                "additionalProperties": false
+            }
+        })
+    })
+    .collect()
 }
 pub fn clip_utf8(text: &str, max_bytes: usize) -> (String, bool) {
     let mut end = text.len().min(max_bytes);
@@ -124,7 +147,12 @@ async fn bash(command: &str, workspace: &Path, limits: &Limits) -> Result<Value>
             (observed_status, true, true)
         }
     };
-    Ok(json!({"ok":!timed_out && status.is_some_and(|s|s.success()),
-        "exit_code":status.and_then(|s|s.code()), "stdout":String::from_utf8_lossy(&stdout),
-        "stderr":String::from_utf8_lossy(&stderr), "timed_out":timed_out, "truncated":truncated}))
+    Ok(json!({
+        "ok": !timed_out && status.is_some_and(|s| s.success()),
+        "exit_code": status.and_then(|s| s.code()),
+        "stdout": String::from_utf8_lossy(&stdout),
+        "stderr": String::from_utf8_lossy(&stderr),
+        "timed_out": timed_out,
+        "truncated": truncated
+    }))
 }

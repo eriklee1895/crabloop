@@ -4,6 +4,8 @@
 
 从 step-02-file-tools 开始，在 schemas 中加入 bash，参数只有 command。然后在 execute_inner 解析参数后增加一个分支，把命令交给单独的异步函数。文件工具和 Bash 仍通过同一个 execute 入口返回结果。
 
+本章的[完整增量](patches/03-bash.patch)以 step-02-file-tools 为起点，包含所有导入、类型、函数和测试变化。建议先读正文与 diff，再修改自己的练习目录；直接应用补丁的命令见[增量入口](patches/README.md)。
+
 ## 启动只是开始
 
 我们明确启动 bash -c，并把工作目录交给 current_dir：

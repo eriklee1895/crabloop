@@ -1,0 +1,68 @@
+{
+  "kind": "offline_learning_patch_replay",
+  "date": "2026-10-11",
+  "stages": [
+    {
+      "stage": "00-probe",
+      "passed": true,
+      "tests": 0
+    },
+    {
+      "stage": "01-responses",
+      "passed": true,
+      "tests": 9
+    },
+    {
+      "stage": "02-file-tools",
+      "passed": true,
+      "tests": 17
+    },
+    {
+      "stage": "03-bash",
+      "passed": true,
+      "tests": 22
+    },
+    {
+      "stage": "04-agent-loop",
+      "passed": true,
+      "tests": 28
+    },
+    {
+      "stage": "05-v1",
+      "passed": true,
+      "tests": 29
+    },
+    {
+      "stage": "06-readable",
+      "passed": true,
+      "tests": 29
+    }
+  ],
+  "sources": [
+    {
+      "source": "src/lib.rs",
+      "physical": 117,
+      "code": 115
+    },
+    {
+      "source": "src/main.rs",
+      "physical": 11,
+      "code": 11
+    },
+    {
+      "source": "src/model.rs",
+      "physical": 71,
+      "code": 70
+    },
+    {
+      "source": "src/tools.rs",
+      "physical": 158,
+      "code": 156
+    }
+  ],
+  "v1_source_exact_at_stage_05": true,
+  "readable_v1": {
+    "code": 352,
+    "physical": 357
+  }
+}

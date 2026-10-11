@@ -4,6 +4,8 @@
 
 从 step-01-responses 的代码开始，在 src/lib.rs 加入 pub mod tools，并创建 src/tools.rs。我们将在这个文件里逐个增加三个文件工具。对应的练习与验收放在 tests/tools.rs，使用临时目录，避免实验改到真实项目。
 
+本章的[完整增量](patches/02-file-tools.patch)以 step-01-responses 为起点，包含所有导入、类型、函数和测试变化。建议先读正文与 diff，再修改自己的练习目录；直接应用补丁的命令见[增量入口](patches/README.md)。
+
 ## 先把两层 JSON 分开
 
 ToolCall.arguments 是字符串。执行入口先把它解析为 serde_json::Value，然后提取 path：

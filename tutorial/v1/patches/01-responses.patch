@@ -1,0 +1,806 @@
+diff --git a/src/lib.rs b/src/lib.rs
+new file mode 100644
+--- /dev/null
++++ b/src/lib.rs
+@@ -0,0 +1,70 @@
++pub mod model;
++use std::{path::PathBuf, time::Duration};
++#[derive(Clone)]
++pub struct Limits {
++    pub max_turns: usize,
++    pub http_timeout: Duration,
++    pub bash_timeout: Duration,
++    pub request_bytes: usize,
++    pub file_bytes: usize,
++    pub read_output_bytes: usize,
++    pub stream_bytes: usize,
++    pub max_output_tokens: u32,
++}
++impl Default for Limits {
++    fn default() -> Self {
++        Self {
++            max_turns: 16,
++            http_timeout: Duration::from_secs(60),
++            bash_timeout: Duration::from_secs(30),
++            request_bytes: 131072,
++            file_bytes: 65536,
++            read_output_bytes: 8192,
++            stream_bytes: 4096,
++            max_output_tokens: 2048,
++        }
++    }
++}
++pub struct Config {
++    pub workspace: PathBuf,
++    pub task: String,
++    pub endpoint: String,
++    pub model: String,
++    pub api_key: String,
++    pub limits: Limits,
++}
++
++impl Config {
++    pub fn from_args_env(args: &[String]) -> anyhow::Result<Self> {
++        use anyhow::{Context, ensure};
++        let [_, flag, workspace, task] = args else {
++            anyhow::bail!("usage: crabloop --workspace DIR TASK");
++        };
++        ensure!(
++            flag == "--workspace" && !task.trim().is_empty(),
++            "usage: crabloop --workspace DIR TASK"
++        );
++        let workspace = std::fs::canonicalize(workspace).context("invalid workspace")?;
++        ensure!(workspace.is_dir(), "workspace must be a directory");
++        let required = |name| -> anyhow::Result<String> {
++            let value = std::env::var(name).with_context(|| format!("{name} is required"))?;
++            ensure!(!value.trim().is_empty(), "{name} must not be empty");
++            Ok(value)
++        };
++        Ok(Self {
++            workspace,
++            task: task.clone(),
++            api_key: required("OPENAI_API_KEY")?,
++            model: required("CRABLOOP_MODEL")?,
++            endpoint: std::env::var("CRABLOOP_API_URL").unwrap_or_else(|_| {
++                format!(
++                    "{}/responses",
++                    std::env::var("OPENAI_BASE_URL")
++                        .unwrap_or_else(|_| "https://api.openai.com/v1".into())
++                        .trim_end_matches('/')
++                )
++            }),
++            limits: Limits::default(),
++        })
++    }
++}
+diff --git a/src/main.rs b/src/main.rs
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -1,23 +1,23 @@
+-use serde_json::{Value, json};
+-
++use crabloop::{Config, model::ModelClient};
+ #[tokio::main]
+ async fn main() -> anyhow::Result<()> {
+-    let key = std::env::var("OPENAI_API_KEY")?;
+-    let model = std::env::var("CRABLOOP_MODEL")?;
+-    let base = std::env::var("OPENAI_BASE_URL")?;
+-    let client = reqwest::Client::builder()
+-        .timeout(std::time::Duration::from_secs(60))
+-        .build()?;
+-    let response: Value = client
+-        .post(format!("{}/responses", base.trim_end_matches('/')))
+-        .bearer_auth(key)
+-        .json(&json!({
+-            "model": model, "input": "只回复 CRABLOOP_PROTOCOL_OK",
+-            "store": false, "max_output_tokens": 2048
+-        }))
+-        .send().await?
+-        .error_for_status()?
+-        .json().await?;
+-    println!("{}", serde_json::to_string_pretty(&response)?);
++    let config = Config::from_args_env(&std::env::args().collect::<Vec<_>>())?;
++    let client = ModelClient::new(
++        &config.endpoint,
++        &config.model,
++        &config.api_key,
++        &config.limits,
++    )?;
++    let reply = client
++        .respond(client.request(
++            "Inspect the requested coding task.",
++            &[serde_json::json!({"role":"user","content":config.task})],
++            &[],
++        ))
++        .await?;
++    println!("{}", reply.text);
++    for call in reply.calls {
++        eprintln!("tool request: {} ({})", call.name, call.call_id);
++    }
+     Ok(())
+ }
+diff --git a/src/model.rs b/src/model.rs
+new file mode 100644
+--- /dev/null
++++ b/src/model.rs
+@@ -0,0 +1,103 @@
++use crate::Limits;
++use anyhow::{Context, Result, ensure};
++use reqwest::Client;
++use serde::Deserialize;
++use serde_json::{Value, json};
++use std::collections::HashSet;
++
++#[derive(Debug, Deserialize)]
++pub struct ToolCall {
++    pub call_id: String,
++    pub name: String,
++    pub arguments: String,
++}
++#[derive(Debug)]
++pub struct ModelReply {
++    pub output: Vec<Value>,
++    pub calls: Vec<ToolCall>,
++    pub text: String,
++    pub is_final: bool,
++    pub usage: Option<Value>,
++}
++pub struct ModelClient {
++    client: Client,
++    endpoint: String,
++    model: String,
++    api_key: String,
++    max_output_tokens: u32,
++}
++impl ModelClient {
++    pub fn new(endpoint: &str, model: &str, api_key: &str, limits: &Limits) -> Result<Self> {
++        Ok(Self {
++            client: Client::builder().timeout(limits.http_timeout).build()?,
++            endpoint: endpoint.into(),
++            model: model.into(),
++            api_key: api_key.into(),
++            max_output_tokens: limits.max_output_tokens,
++        })
++    }
++    pub fn request(&self, instructions: &str, input: &[Value], tools: &[Value]) -> Value {
++        json!({"model": self.model, "instructions": instructions, "input": input,
++            "tools": tools, "store": false, "include": ["reasoning.encrypted_content"],
++            "max_output_tokens": self.max_output_tokens})
++    }
++    pub async fn respond(&self, body: Value) -> Result<ModelReply> {
++        let raw: Value = self
++            .client
++            .post(&self.endpoint)
++            .bearer_auth(&self.api_key)
++            .json(&body)
++            .send()
++            .await?
++            .error_for_status()?
++            .json()
++            .await?;
++        ensure!(
++            raw["status"] == "completed",
++            "response is not completed: {}",
++            raw["incomplete_details"]
++        );
++        let output = raw["output"]
++            .as_array()
++            .context("missing response output")?
++            .clone();
++        let mut ids = HashSet::new();
++        let mut calls = Vec::new();
++        let mut text = String::new();
++        let mut is_final = false;
++        for item in &output {
++            if item["type"] == "function_call" {
++                let call: ToolCall = serde_json::from_value(item.clone())?;
++                ensure!(
++                    !call.call_id.is_empty() && ids.insert(call.call_id.clone()),
++                    "invalid or duplicate call_id"
++                );
++                calls.push(call);
++            }
++            if item["type"] == "message" && item["role"] == "assistant" {
++                for content in item["content"]
++                    .as_array()
++                    .context("missing message content")?
++                {
++                    if content["type"] == "output_text" {
++                        let part = content["text"].as_str().context("invalid output text")?;
++                        text.push_str(part);
++                        is_final |= !part.trim().is_empty()
++                            && (item["phase"].is_null() || item["phase"] == "final_answer");
++                    }
++                }
++            }
++        }
++        ensure!(
++            !calls.is_empty() || !text.trim().is_empty(),
++            "empty response output"
++        );
++        Ok(ModelReply {
++            output,
++            calls,
++            text,
++            is_final,
++            usage: raw.get("usage").cloned(),
++        })
++    }
++}
+diff --git a/tests/common/mod.rs b/tests/common/mod.rs
+new file mode 100644
+--- /dev/null
++++ b/tests/common/mod.rs
+@@ -0,0 +1,152 @@
++#![allow(dead_code)]
++use crabloop::{Config, Limits, model::ToolCall};
++use serde_json::Value;
++use std::{
++    fs,
++    io::{Read, Write},
++    net::{TcpListener, TcpStream},
++    path::{Path, PathBuf},
++    sync::{
++        Arc, Mutex,
++        atomic::{AtomicBool, AtomicU64, Ordering},
++    },
++    thread,
++    time::Duration,
++};
++
++pub fn fixture(name: &str) -> Value {
++    serde_json::from_str(
++        &fs::read_to_string(format!(
++            "{}/tests/fixtures/responses/{name}.json",
++            env!("CARGO_MANIFEST_DIR")
++        ))
++        .unwrap(),
++    )
++    .unwrap()
++}
++pub fn make_call(call_id: &str, name: &str, arguments: Value) -> ToolCall {
++    ToolCall {
++        call_id: call_id.into(),
++        name: name.into(),
++        arguments: arguments.to_string(),
++    }
++}
++pub fn test_config(workspace: &Path, endpoint: &str) -> Config {
++    Config {
++        workspace: workspace.to_path_buf(),
++        task: "Repair the bug".into(),
++        endpoint: endpoint.into(),
++        model: "test-model".into(),
++        api_key: "test-key".into(),
++        limits: Limits::default(),
++    }
++}
++pub struct TempDir(PathBuf);
++impl TempDir {
++    pub fn new() -> Self {
++        static NEXT: AtomicU64 = AtomicU64::new(0);
++        let p = std::env::temp_dir().join(format!(
++            "crabloop-test-{}-{}",
++            std::process::id(),
++            NEXT.fetch_add(1, Ordering::Relaxed)
++        ));
++        fs::create_dir(&p).unwrap();
++        Self(p)
++    }
++    pub fn path(&self) -> &Path {
++        &self.0
++    }
++}
++impl Drop for TempDir {
++    fn drop(&mut self) {
++        let _ = fs::remove_dir_all(&self.0);
++    }
++}
++
++pub struct StubResponses {
++    endpoint: String,
++    requests: Arc<Mutex<Vec<Value>>>,
++    stopped: Arc<AtomicBool>,
++    worker: Option<thread::JoinHandle<()>>,
++}
++impl StubResponses {
++    pub fn start(replies: Vec<Value>) -> Self {
++        Self::with_status(200, replies)
++    }
++    pub fn with_status(status: u16, replies: Vec<Value>) -> Self {
++        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
++        let endpoint = format!("http://{}/v1/responses", listener.local_addr().unwrap());
++        let requests = Arc::new(Mutex::new(Vec::new()));
++        let stopped = Arc::new(AtomicBool::new(false));
++        let recorded = Arc::clone(&requests);
++        let stop = Arc::clone(&stopped);
++        let worker = thread::spawn(move || {
++            let mut replies = replies.into_iter();
++            for incoming in listener.incoming() {
++                let mut socket = incoming.unwrap();
++                if stop.load(Ordering::SeqCst) {
++                    break;
++                }
++                socket
++                    .set_read_timeout(Some(Duration::from_secs(3)))
++                    .unwrap();
++                let mut wire = Vec::new();
++                let mut byte = [0];
++                while !wire.ends_with(b"\r\n\r\n") {
++                    if socket.read_exact(&mut byte).is_err() {
++                        return;
++                    }
++                    wire.push(byte[0]);
++                }
++                let headers = String::from_utf8(wire).unwrap();
++                assert!(headers.starts_with("POST /v1/responses HTTP/1.1"));
++                let len = headers
++                    .lines()
++                    .find_map(|line| {
++                        line.to_ascii_lowercase()
++                            .strip_prefix("content-length:")
++                            .map(|v| v.trim().parse::<usize>().unwrap())
++                    })
++                    .unwrap();
++                let mut bytes = vec![0; len];
++                socket.read_exact(&mut bytes).unwrap();
++                recorded
++                    .lock()
++                    .unwrap()
++                    .push(serde_json::from_slice(&bytes).unwrap());
++                let body = replies
++                    .next()
++                    .unwrap_or(serde_json::json!({"error":"unexpected extra request"}))
++                    .to_string();
++                let response = format!(
++                    "HTTP/1.1 {status} Test\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
++                    body.len()
++                );
++                let _ = socket.write_all(response.as_bytes());
++            }
++        });
++        Self {
++            endpoint,
++            requests,
++            stopped,
++            worker: Some(worker),
++        }
++    }
++    pub fn endpoint(&self) -> &str {
++        &self.endpoint
++    }
++    pub fn requests(&self) -> Vec<Value> {
++        self.requests.lock().unwrap().clone()
++    }
++}
++impl Drop for StubResponses {
++    fn drop(&mut self) {
++        self.stopped.store(true, Ordering::SeqCst);
++        let _ = TcpStream::connect(
++            self.endpoint
++                .trim_start_matches("http://")
++                .trim_end_matches("/v1/responses"),
++        );
++        self.worker.take().unwrap().join().unwrap();
++    }
++}
+diff --git a/tests/fixtures/responses/bad_call_id.json b/tests/fixtures/responses/bad_call_id.json
+new file mode 100644
+--- /dev/null
++++ b/tests/fixtures/responses/bad_call_id.json
+@@ -0,0 +1,23 @@
++{
++  "id": "resp_bad_call_id",
++  "object": "response",
++  "created_at": 0,
++  "model": "test-model",
++  "status": "completed",
++  "error": null,
++  "incomplete_details": null,
++  "output": [
++    {
++      "id": "fc_call_1",
++      "type": "function_call",
++      "status": "completed",
++      "name": "read_file",
++      "arguments": "{\"path\": \"lib.rs\"}"
++    }
++  ],
++  "usage": {
++    "input_tokens": 100,
++    "output_tokens": 20,
++    "total_tokens": 120
++  }
++}
+diff --git a/tests/fixtures/responses/commentary.json b/tests/fixtures/responses/commentary.json
+new file mode 100644
+--- /dev/null
++++ b/tests/fixtures/responses/commentary.json
+@@ -0,0 +1,30 @@
++{
++  "id": "resp_commentary",
++  "object": "response",
++  "created_at": 0,
++  "model": "test-model",
++  "status": "completed",
++  "error": null,
++  "incomplete_details": null,
++  "output": [
++    {
++      "id": "msg_1",
++      "type": "message",
++      "status": "completed",
++      "role": "assistant",
++      "phase": "commentary",
++      "content": [
++        {
++          "type": "output_text",
++          "text": "I will inspect the files.",
++          "annotations": []
++        }
++      ]
++    }
++  ],
++  "usage": {
++    "input_tokens": 100,
++    "output_tokens": 20,
++    "total_tokens": 120
++  }
++}
+diff --git a/tests/fixtures/responses/incomplete.json b/tests/fixtures/responses/incomplete.json
+new file mode 100644
+--- /dev/null
++++ b/tests/fixtures/responses/incomplete.json
+@@ -0,0 +1,26 @@
++{
++  "id": "resp_incomplete",
++  "object": "response",
++  "created_at": 0,
++  "model": "test-model",
++  "status": "incomplete",
++  "error": null,
++  "incomplete_details": {
++    "reason": "max_output_tokens"
++  },
++  "output": [
++    {
++      "id": "fc_call_1",
++      "type": "function_call",
++      "status": "completed",
++      "call_id": "call_1",
++      "name": "read_file",
++      "arguments": "{\"path\": \"lib.rs\"}"
++    }
++  ],
++  "usage": {
++    "input_tokens": 100,
++    "output_tokens": 20,
++    "total_tokens": 120
++  }
++}
+diff --git a/tests/fixtures/responses/reasoning.json b/tests/fixtures/responses/reasoning.json
+new file mode 100644
+--- /dev/null
++++ b/tests/fixtures/responses/reasoning.json
+@@ -0,0 +1,30 @@
++{
++  "id": "resp_reasoning",
++  "object": "response",
++  "created_at": 0,
++  "model": "test-model",
++  "status": "completed",
++  "error": null,
++  "incomplete_details": null,
++  "output": [
++    {
++      "id": "rs_1",
++      "type": "reasoning",
++      "summary": [],
++      "encrypted_content": "opaque"
++    },
++    {
++      "id": "fc_call_1",
++      "type": "function_call",
++      "status": "completed",
++      "call_id": "call_1",
++      "name": "read_file",
++      "arguments": "{\"path\": \"lib.rs\"}"
++    }
++  ],
++  "usage": {
++    "input_tokens": 100,
++    "output_tokens": 20,
++    "total_tokens": 120
++  }
++}
+diff --git a/tests/fixtures/responses/text.json b/tests/fixtures/responses/text.json
+new file mode 100644
+--- /dev/null
++++ b/tests/fixtures/responses/text.json
+@@ -0,0 +1,30 @@
++{
++  "id": "resp_text",
++  "object": "response",
++  "created_at": 0,
++  "model": "test-model",
++  "status": "completed",
++  "error": null,
++  "incomplete_details": null,
++  "output": [
++    {
++      "id": "msg_1",
++      "type": "message",
++      "status": "completed",
++      "role": "assistant",
++      "phase": "final_answer",
++      "content": [
++        {
++          "type": "output_text",
++          "text": "Done",
++          "annotations": []
++        }
++      ]
++    }
++  ],
++  "usage": {
++    "input_tokens": 100,
++    "output_tokens": 20,
++    "total_tokens": 120
++  }
++}
+diff --git a/tests/fixtures/responses/two_calls.json b/tests/fixtures/responses/two_calls.json
+new file mode 100644
+--- /dev/null
++++ b/tests/fixtures/responses/two_calls.json
+@@ -0,0 +1,32 @@
++{
++  "id": "resp_two_calls",
++  "object": "response",
++  "created_at": 0,
++  "model": "test-model",
++  "status": "completed",
++  "error": null,
++  "incomplete_details": null,
++  "output": [
++    {
++      "id": "fc_call_1",
++      "type": "function_call",
++      "status": "completed",
++      "call_id": "call_1",
++      "name": "read_file",
++      "arguments": "{\"path\": \"lib.rs\"}"
++    },
++    {
++      "id": "fc_call_2",
++      "type": "function_call",
++      "status": "completed",
++      "call_id": "call_2",
++      "name": "read_file",
++      "arguments": "{\"path\": \"tests.rs\"}"
++    }
++  ],
++  "usage": {
++    "input_tokens": 100,
++    "output_tokens": 20,
++    "total_tokens": 120
++  }
++}
+diff --git a/tests/protocol.rs b/tests/protocol.rs
+new file mode 100644
+--- /dev/null
++++ b/tests/protocol.rs
+@@ -0,0 +1,214 @@
++mod common;
++use common::{StubResponses, fixture};
++use crabloop::{Limits, model::ModelClient};
++use serde_json::json;
++
++#[tokio::test]
++async fn sends_stateless_responses_request() {
++    let server = StubResponses::start(vec![fixture("text")]);
++    let client = ModelClient::new(
++        server.endpoint(),
++        "test-model",
++        "test-key",
++        &Limits::default(),
++    )
++    .unwrap();
++    let body = client.request(
++        "Inspect carefully",
++        &[json!({"role":"user","content":"hello"})],
++        &[],
++    );
++    let reply = client.respond(body).await.unwrap();
++    assert_eq!(reply.text, "Done");
++    assert!(reply.is_final);
++    let sent = &server.requests()[0];
++    assert_eq!(sent["store"], false);
++    assert_eq!(sent["model"], "test-model");
++    assert_eq!(sent["instructions"], "Inspect carefully");
++    assert_eq!(sent["input"][0]["content"], "hello");
++    assert_eq!(sent["include"], json!(["reasoning.encrypted_content"]));
++    assert!(sent.get("previous_response_id").is_none());
++    assert!(sent.get("conversation").is_none());
++    assert!(!sent.to_string().contains("test-key"));
++}
++#[tokio::test]
++async fn distinguishes_call_id_from_item_id_and_preserves_reasoning() {
++    let server = StubResponses::start(vec![fixture("reasoning"), fixture("two_calls")]);
++    let client = ModelClient::new(
++        server.endpoint(),
++        "test-model",
++        "test-key",
++        &Limits::default(),
++    )
++    .unwrap();
++    let first = client.respond(client.request("", &[], &[])).await.unwrap();
++    assert_eq!(first.calls[0].call_id, "call_1");
++    assert_eq!(first.output[1]["id"], "fc_call_1");
++    assert_eq!(first.output[0]["encrypted_content"], "opaque");
++    assert!(!first.is_final);
++    let next = client
++        .respond(client.request("", &first.output, &[]))
++        .await
++        .unwrap();
++    assert_eq!(next.calls.len(), 2);
++    assert_eq!(next.calls[1].call_id, "call_2");
++    assert_eq!(
++        server.requests()[1]["input"][0]["encrypted_content"],
++        "opaque"
++    );
++}
++#[tokio::test]
++async fn commentary_is_preserved_and_not_final() {
++    let server = StubResponses::start(vec![fixture("commentary")]);
++    let client = ModelClient::new(
++        server.endpoint(),
++        "test-model",
++        "test-key",
++        &Limits::default(),
++    )
++    .unwrap();
++    let reply = client.respond(client.request("", &[], &[])).await.unwrap();
++    assert!(!reply.is_final);
++    assert_eq!(reply.output[0]["phase"], "commentary");
++}
++#[tokio::test]
++async fn incomplete_and_missing_or_duplicate_call_ids_are_rejected() {
++    let mut duplicate = fixture("two_calls");
++    duplicate["output"][1]["call_id"] = json!("call_1");
++    for (response, expected) in [
++        (fixture("incomplete"), "completed"),
++        (fixture("bad_call_id"), "call_id"),
++        (duplicate, "call_id"),
++    ] {
++        let server = StubResponses::start(vec![response]);
++        let client = ModelClient::new(
++            server.endpoint(),
++            "test-model",
++            "test-key",
++            &Limits::default(),
++        )
++        .unwrap();
++        let error = client
++            .respond(client.request("", &[], &[]))
++            .await
++            .unwrap_err();
++        assert!(format!("{error:#}").contains(expected), "{error:#}");
++    }
++}
++#[tokio::test]
++async fn empty_output_is_a_protocol_error_and_http_500_is_not_retried() {
++    let mut empty = fixture("text");
++    empty["output"] = json!([]);
++    for (status, response, expected) in [
++        (200, empty, "output"),
++        (
++            500,
++            json!({"error":{"message":"upstream unavailable"}}),
++            "500",
++        ),
++    ] {
++        let server = StubResponses::with_status(status, vec![response]);
++        let client = ModelClient::new(
++            server.endpoint(),
++            "test-model",
++            "test-key",
++            &Limits::default(),
++        )
++        .unwrap();
++        let error = client
++            .respond(client.request("", &[], &[]))
++            .await
++            .unwrap_err();
++        assert!(format!("{error:#}").contains(expected), "{error:#}");
++        assert_eq!(server.requests().len(), 1);
++    }
++}
++#[tokio::test]
++async fn final_text_without_phase_remains_supported() {
++    let mut reply = fixture("text");
++    reply["output"][0].as_object_mut().unwrap().remove("phase");
++    let server = StubResponses::start(vec![reply]);
++    let client = ModelClient::new(
++        server.endpoint(),
++        "test-model",
++        "test-key",
++        &Limits::default(),
++    )
++    .unwrap();
++    assert!(
++        client
++            .respond(client.request("", &[], &[]))
++            .await
++            .unwrap()
++            .is_final
++    );
++}
++
++#[test]
++fn cli_validates_configuration_before_network_access() {
++    use std::process::Command;
++    let exe = env!("CARGO_BIN_EXE_crabloop");
++    let invalid = Command::new(exe).arg("--bad").output().unwrap();
++    assert!(!invalid.status.success());
++    assert!(String::from_utf8_lossy(&invalid.stderr).contains("usage"));
++    let dir = common::TempDir::new();
++    let absent = Command::new(exe)
++        .arg("--workspace")
++        .arg(dir.path())
++        .arg("hello")
++        .env_remove("OPENAI_API_KEY")
++        .env("CRABLOOP_MODEL", "test-model")
++        .output()
++        .unwrap();
++    assert!(!absent.status.success());
++    assert!(String::from_utf8_lossy(&absent.stderr).contains("OPENAI_API_KEY"));
++}
++#[test]
++fn cli_uses_the_requested_workspace_task_and_model() {
++    let dir = common::TempDir::new();
++    let server = StubResponses::start(vec![fixture("text")]);
++    let output = std::process::Command::new(env!("CARGO_BIN_EXE_crabloop"))
++        .arg("--workspace")
++        .arg(dir.path())
++        .arg("inspect this project")
++        .env("OPENAI_API_KEY", "test-key")
++        .env("CRABLOOP_MODEL", "test-model")
++        .env("CRABLOOP_API_URL", server.endpoint())
++        .output()
++        .unwrap();
++    assert!(
++        output.status.success(),
++        "{}",
++        String::from_utf8_lossy(&output.stderr)
++    );
++    assert!(String::from_utf8_lossy(&output.stdout).contains("Done"));
++    assert_eq!(
++        server.requests()[0]["input"][0]["content"],
++        "inspect this project"
++    );
++}
++
++#[test]
++fn cli_honors_openai_base_url_without_full_endpoint_override() {
++    let dir = common::TempDir::new();
++    let server = StubResponses::start(vec![fixture("text")]);
++    let output = std::process::Command::new(env!("CARGO_BIN_EXE_crabloop"))
++        .arg("--workspace")
++        .arg(dir.path())
++        .arg("base prefix")
++        .env("OPENAI_API_KEY", "test-key")
++        .env("CRABLOOP_MODEL", "test-model")
++        .env_remove("CRABLOOP_API_URL")
++        .env(
++            "OPENAI_BASE_URL",
++            server.endpoint().trim_end_matches("/responses"),
++        )
++        .output()
++        .unwrap();
++    assert!(
++        output.status.success(),
++        "{}",
++        String::from_utf8_lossy(&output.stderr)
++    );
++    assert_eq!(server.requests()[0]["input"][0]["content"], "base prefix");
++}

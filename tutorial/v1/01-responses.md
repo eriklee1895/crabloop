@@ -6,12 +6,14 @@
 
 ## 从空目录发出第一次请求
 
-如果你要亲手从零写，先在参考仓库之外建一个练习目录：
+如果你要亲手输入探针，先在参考仓库之外建一个练习目录；包名固定为 crabloop，以便后面沿用同一套测试：
 
 ```bash
-cargo new crabloop-lab --edition 2024
+cargo new crabloop-lab --name crabloop --edition 2024
 cd crabloop-lab
 ```
+
+也可以按[增量入口](patches/README.md)从空目录应用 00-probe.patch，得到包含锁文件的同一探针工程。两条路径任选其一。
 
 将 Cargo.toml 的 dependencies 部分替换成下面这些基础库。后续章节会用到 serde 和 tokio 的进程能力，所以这里一并声明；暂时不需要理解所有 feature。
 
@@ -56,11 +58,22 @@ async fn main() -> anyhow::Result<()> {
 
 注意两个问号的含义：HTTP 请求可以失败，JSON 解码也可以失败。`Result` 把这些失败交回入口，`async` 则允许等待网络时让出执行权。先让这段代码工作，再添加类型与校验，比一开始就面对一个完整 agent 更容易看清控制流。
 
-下面回到参考仓库的 `step-01-responses`。可以用 `git show step-01-responses:src/model.rs` 对照这一章的完整文件；亲手练习时，把单次 HTTP 调用移入 model.rs，再逐项添加下面解释的返回类型与验证。后续章节通过同样的书签保留每一步可运行的参考状态。
+接下来把探针长成能识别工具调用的程序。[01 的完整增量](patches/01-responses.patch)从这个探针出发，逐文件给出全部变化：
+
+| 文件 | 本次加入什么 |
+|---|---|
+| src/lib.rs | Limits 默认值、Config、参数/环境解析，以及 model 模块导出 |
+| src/model.rs | ToolCall/ModelReply、ModelClient、请求构造、响应校验 |
+| src/main.rs | 用 Config 接收真实任务，调用 ModelClient 并展示返回内容 |
+| tests/common 与 tests/protocol.rs | 本地 HTTP stub、协议样本和错误实验 |
+
+先沿下面的解释看这些类型为何出现，再在练习目录应用 01 补丁并运行 `cargo test --locked --test protocol`。如果手写探针与补丁起点有排版差异，可以直接读 diff 按文件修改；每个新增文件都完整给出。这里使用 ModelClient 的阶段接口，最终在第 05 章会明确演示如何去掉它。
+
+对应固定代码为 step-01-responses；当前 main 的根 src 已继续发展到 v2，读这一章时以增量和该书签为准。
 
 ## 先准备能运行的入口
 
-以下在参考仓库根目录运行；教学探针则保留在自己的练习目录。Cargo.toml 固定了 HTTP、JSON 和异步运行需要的基础库；Cargo.lock 记录解析后的完整依赖版本。运行 cargo test --locked --test protocol，可以先在本地检查协议，不需要真实密钥。
+以下命令均在已经应用 01 增量的练习工程根目录运行（包含 Cargo.toml 的目录）。Cargo.toml 固定了 HTTP、JSON 和异步运行需要的基础库；Cargo.lock 记录解析后的完整依赖版本。运行 cargo test --locked --test protocol，可以先在本地检查协议，不需要真实密钥。
 
 我们把程序入口留在 src/main.rs，把模型交互放进 src/model.rs。入口拿到 Config 后，创建 ModelClient，发出一次请求：
 

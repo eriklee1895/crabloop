@@ -38,13 +38,13 @@ v2 增加上下文预算、历史整理和摘要压缩，通过实验检查任�
 
 每一步都包含必要的原理、亲手实现、故障实验、验证和复盘。通过 Git 提交记录演进，在里程碑完成后保留 v1、v2 tag，方便回到相应版本学习。
 
-从[教程入口](tutorial/README.md)了解这条路线。
+从[教程入口](tutorial/README.md)了解这条路线；[完整代码增量](tutorial/v1/patches/README.md)可从空目录逐步构建 v1，最后展开为 352 行的教学排版。
 
 行数计算覆盖全部 src/**/*.rs，测试、文档和练习仓库另算。代码规模是弹性的范围预算，v1 在 350–360 行也可以接受；保留正常格式化与必要错误处理。
 
 ## 当前进度与文档
 
-当前已实现四工具与 Responses 行动循环，教程 00–09 已完成。DeepSeek V4.1 Flash 与备选 gpt-6-luna 已通过真实修复任务；通用本地报告任务也有独立验收。v1 核心为 314 行，v2 为 504 行；[v1 验收](evidence/v1/acceptance.md) 和 [v2 压缩验收](evidence/v2/acceptance.md) 已保存。DeepSeek 在 10 KB 预算下五次压缩后完成修复，独立测试通过。v3–v5 为路线规划，v6–v8 为新增建议与选修。
+当前已实现四工具与 Responses 行动循环，教程 00–09 已完成。DeepSeek V4.1 Flash 与备选 gpt-6-luna 已通过真实修复任务；通用本地报告任务也有独立验收。固定 v1 为 314 行、v2 为 504 行；main 经可读性展开后为 556 行。[v1 验收](evidence/v1/acceptance.md) 和 [v2 压缩验收](evidence/v2/acceptance.md) 已保存。DeepSeek 在 10 KB 预算下五次压缩后完成修复，独立测试通过。v3–v5 为路线规划，v6–v8 为新增建议与选修。
 
 Cargo 工程放在仓库根目录；教程按阶段组织在 tutorial/v1/ 和 tutorial/v2/；实际开发记录放在 docs/devlog/。
 
@@ -64,4 +64,4 @@ cargo run --locked -- --workspace /path/to/your/workspace "你的任务"
 
 stderr 给出工具轨迹与工作区 .crabloop 内的 JSONL 路径。CRABLOOP_CONTEXT_BYTES 默认 49152，最小 4096。摘要请求要求模型支持 reasoning.effort=none；v2 主验收模型为 DeepSeek V4.1 Flash。
 
-每版保留稳定学习分支与固定标签：`milestone/v1` + `v1`，`milestone/v2` + `v2`。使用 `git switch milestone/v1` 回到第一版，或 `git switch --detach v1` 精确查看标签；想动手修改时从标签另开自己的分支，例如 `git switch -c my-v1-exercise v1`。每次阶段迭代已提交并推送，v3–v5 及以后的版本沿用相同规则。
+每版保留稳定学习分支与固定标签：`milestone/v1` + `v1`，`milestone/v2` + `v2`。使用 `git switch milestone/v1` 回到第一版，或 `git switch --detach v1` 精确查看标签；想动手修改时从标签另开自己的分支，例如 `git switch -c my-v1-exercise v1`。main 的文件保持最新可运行实现，并保留每轮提交历史；每个通过验证的小迭代都合入并推送 main。旧版本通过学习分支和标签查看，根目录保持一个 Cargo 工程。详细约定见 [Git 工作流](docs/git-workflow.md)。
