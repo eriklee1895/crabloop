@@ -6,18 +6,21 @@ CrabLoop is a small coding-agent harness built from scratch in Rust for hands-on
 
 - v1: approximately 300 lines of core Rust, with read_file, write_file, edit_file, and bash.
 - v2: approximately 500 lines total, adding context management and summary compaction.
+- v3: approximately 1,000 lines total, adding ~/.crabloop, TOML configuration, provider presets/Custom, credentials, and model catalog discovery/cache. Minimal Skills is optional if comfortably within scope.
+- v4: Skills and provider-independent web_fetch/web_search. v5: recoverable JSONL sessions and interruption handling under ~/.crabloop. See docs/roadmap.md; these stages are planned, not implemented.
+- Acceptance includes both coding repairs and general local agentic tasks such as reading source documents and producing a verifiable structured report.
 - Use the OpenAI native Responses API and a hand-written agent loop.
 - Grow the same implementation through small, explainable steps. Preserve runnable milestones with v1 and v2 Git tags.
 
-Line counts cover all production Rust under src/. Tests, documentation, fixtures, and development scripts are separate. Keep normal formatting and necessary error handling; do not move implementation elsewhere to reduce the count.
+Line counts are flexible scope guides: the user explicitly accepts v1 at 350–360 lines. Do not code-golf or reject correct extra output fields just to meet an arbitrary shape. Line counts cover all production Rust under src/. Tests, documentation, fixtures, and development scripts are separate. Keep normal formatting and necessary error handling; do not move implementation elsewhere to reduce the count.
 
 ## Current state and layout
 
 Implementation is active under the approved v1 → v2 plan. Build the reference implementation and the Chinese tutorial together, in small verified increments. The Cargo package lives at the repository root, with src/ and tests/ beside Cargo.toml.
 
-The Responses client, CLI configuration, and all four bounded tools, and the serial action loop are implemented. The v1 real coding task and independent verifier are next. Preferred live model: DeepSeek V4.1 Flash, API id deepseek-flash at https://api.deepseek.com/responses. Test fallback: gpt-6-luna through the user's TeamoRouter endpoint. Both passed a one-response marker probe; tool-loop and compaction evidence are separate later gates.
+The Responses client, CLI configuration, and all four bounded tools, and the serial action loop are implemented. The v1 real coding task passed with DeepSeek and gpt-6-luna; a local-document report also passed after correcting an overly strict verifier. Task 5 documentation and the v1 milestone commit are in progress. Preferred live model: DeepSeek V4.1 Flash, API id deepseek-flash at https://api.deepseek.com/responses. Test fallback: gpt-6-luna through the user's TeamoRouter endpoint. Marker probes and tool-loop evidence are recorded separately; v2 compaction remains to be implemented and verified.
 
-Runtime configuration reads environment variables. OPENAI_API_KEY is the key for the selected endpoint; CRABLOOP_MODEL chooses the model. CRABLOOP_API_URL is a full endpoint; otherwise OPENAI_BASE_URL is a prefix to which /responses is appended. Local .env is not executed or loaded by the Rust runtime.
+Runtime configuration reads environment variables. OPENAI_API_KEY is the key for the selected endpoint; CRABLOOP_MODEL chooses the model. CRABLOOP_API_URL is a full endpoint; otherwise OPENAI_BASE_URL is a prefix to which /responses is appended. Local .env is not executed or loaded by the Rust runtime. v3 will introduce home-based TOML and credential files; keep v1/v2 configuration small until then.
 
 Tutorial chapters live under tutorial/v1/ and tutorial/v2/. Actual development records live under docs/devlog/. Keep one Rust implementation at the repository root; use commits and tags to identify the code corresponding to each chapter.
 
@@ -67,6 +70,8 @@ Once the Cargo package exists, use cargo fmt --check, cargo clippy --locked --al
 
 Distinguish deterministic protocol tests, real local tool execution, and live-model runs. Report only what the actual evidence establishes.
 
-Commit Cargo.lock for the application. Keep local changes incremental. Push or publish according to the user's authorization.
+Commit Cargo.lock for the application. The user explicitly authorized committing and pushing every verified stage to GitHub. Push completed increments and their checkpoint tags on feat/crabloop-v1-v2; do not bundle unfinished changes into a stage commit.
+
+Formatting uses rustfmt with max_width = 100 and use_small_heuristics = Max. Count all src/**/*.rs under this same public style for every milestone; never hide runtime code in scripts or documentation.
 
 Keep credentials, local environment files, generated workspaces, and raw session logs out of Git. Publish only deliberately selected and sanitized learning evidence.

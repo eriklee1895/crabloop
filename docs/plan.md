@@ -10,7 +10,7 @@
 
 **Spec:** [CrabLoop 设计说明](design.md)。先阅读该说明；本文里的新增文件和命令均是待实施的安排。
 
-**Execution:** 用户于 2026-10-11 授权设置 goal 并开始实施。由助手在本会话顺序构建参考实现、教程与开发记录；每个可验收增量同步 AGENTS.md 和进度。真实 API 凭证缺失时继续独立工作，并明确保留待验收项。
+**Execution:** 用户于 2026-10-11 授权设置 goal 并开始实施。由助手在本会话顺序构建参考实现、教程与开发记录；每个可验收增量同步 AGENTS.md 和进度。主用 DeepSeek V4.1 Flash，备选 gpt-6-luna。用户已授权每个通过验证的阶段提交并推送 GitHub。后续 v3–v5、配置/模型目录、Skills/联网和 sessions 补充见[路线图](roadmap.md)。
 
 ## Global Constraints
 
@@ -21,7 +21,7 @@
 - 文件上限 65,536 字节，read_file 输出上限 8,192 字节，Bash stdout/stderr 各捕获最多 4,096 原始字节。
 - v1 请求上限 131,072 字节；v2 默认 49,152 字节、触发阈值 36,864 字节、保留最近 2 组，摘要上限 min(4,096，hard/8)。
 - v2 的 CRABLOOP_CONTEXT_BYTES 最小 4,096；根目录 AGENTS.md 上限 8,192 UTF-8 字节。
-- v1 目标约 300 行，v2 目标约 500 行；全部 src/**/*.rs 纳入计数，保持正常 cargo fmt，不牺牲必要错误处理。
+- v1 目标约 300 行，350–360 也可接受；v2 目标约 500 行，允许合理浮动；全部 src/**/*.rs 纳入计数，保持正常 cargo fmt，不牺牲必要错误处理。
 - 先完成 v1 并保留 tag，再扩展 v2；不在两版中添加设计说明列出的选修能力。
 
 ## Review Focus
@@ -175,11 +175,17 @@ assert_eq!(std::fs::read_to_string(&path)?, before); // incomplete 场景
 - [ ] Step 6：执行 cargo fmt --check、cargo clippy --locked --all-targets -- -D warnings、cargo test --locked、python3 scripts/count-lines.py；报告真实行数，若明显超目标先删除范围外功能，保留错误处理。
 - [ ] Step 7：本地提交 milestone: finish v1，再创建 v1 tag。此后仅在该版本上逐步增加 v2。
 
+## v1 收束后的接口调整
+
+Task 5 收束时取消了只包装配置的 ModelClient 和只包装回传的 ToolResult。HTTP 连接池由 run 持有，配置保持单一来源；工具只返回业务 JSON，Responses 的 call_id 关联与 function_call_output 构造属于 loop。
+
+当前接口为 model::request(config: &Config, instructions: &str, input: &[Value], tools: &[Value]) -> Value；async model::respond(client: &reqwest::Client, config: &Config, body: Value) -> Result<ModelReply>；async tools::execute(call: &ToolCall, workspace: &Path, limits: &Limits) -> Value。早期章节的接口保留在相应 step tag 中。
+
 ## Task 6: 固定上下文、记录与整组投影，站点 06
 
 **Files:** Create src/context.rs、src/journal.rs、tests/context.rs、tutorial/v2/06-context-projection.md、docs/devlog/06-context-projection.md；Modify src/lib.rs、src/main.rs、README.md。
 
-**Interfaces:** ContextPolicy { hard_bytes: usize, soft_bytes: usize, summary_bytes: usize, keep_rounds: usize }；ContextPolicy::new(hard_bytes: usize) -> Result<Self> 按全局规则派生值。ContextState { instructions: String, task: String, summary: Option<String>, rounds: Vec<Vec<Value>> }；new(instructions: String, task: String) -> Self、append_round(&mut self, round: Vec<Value>) -> Result<()>、input(&self) -> Vec<Value>、request_bytes(client: &ModelClient, instructions: &str, input: &[Value], tools: &[Value]) -> usize。Journal::create(path: &Path) -> io::Result<Self>、record(&mut self, kind: &str, data: &Value) -> io::Result<()>。
+**Interfaces:** ContextPolicy { hard_bytes: usize, soft_bytes: usize, summary_bytes: usize, keep_rounds: usize }；ContextPolicy::new(hard_bytes: usize) -> Result<Self> 按全局规则派生值。ContextState { instructions: String, task: String, summary: Option<String>, rounds: Vec<Vec<Value>> }；new(instructions: String, task: String) -> Self、append_round(&mut self, round: Vec<Value>) -> Result<()>、input(&self) -> Vec<Value>、request_bytes(config: &Config, instructions: &str, input: &[Value], tools: &[Value]) -> usize。Journal::create(path: &Path) -> io::Result<Self>、record(&mut self, kind: &str, data: &Value) -> io::Result<()>。
 
 - [ ] Step 1：写 complete_round_preserves_all_items、rejects_orphan_result、fixed_task_and_agents_survive_projection、request_bytes_includes_tools_and_ciphertext、journal_is_append_only、invalid_budget_rejected、invalid_agents_rejected。覆盖缺失 AGENTS 跳过、存在但非 UTF-8/超限失败、hard 小于 4,096 失败。
 - [ ] Step 2：运行 cargo test --test context，确认预期失败。
@@ -199,7 +205,7 @@ assert!(projected_request_bytes < full_request_bytes);
 
 **Files:** Modify src/context.rs、src/lib.rs；Create tests/compaction.rs、tutorial/v2/07-compaction.md、docs/devlog/07-compaction.md。
 
-**Interfaces:** async ContextState::prepare(&mut self, client: &ModelClient, tools: &[Value], policy: &ContextPolicy, journal: &mut Journal) -> Result<Vec<Value>>；返回可直接用于下一次主请求的 input。摘要调用继续使用 ModelClient::request/respond，但 tools 为空；Run 内记录主调用数与摘要调用数。
+**Interfaces:** async ContextState::prepare(&mut self, client: &reqwest::Client, config: &Config, tools: &[Value], policy: &ContextPolicy, journal: &mut Journal) -> Result<Vec<Value>>；返回可直接用于下一次主请求的 input。摘要调用继续使用 model::request/respond，但 tools 为空；Run 内记录主调用数与摘要调用数。
 
 - [ ] Step 1：写 below_threshold_skips_summary、compaction_preserves_recent_two_rounds、summary_request_has_own_budget、oversized_tail_stops、empty_or_incomplete_summary_is_rejected、failed_summary_does_not_commit、summary_does_not_execute_tools。stub 的有效摘要使用已完成、修改文件、验证结果、剩余工作、不确定事项五段。
 - [ ] Step 2：运行 cargo test --test compaction，确认预期失败。
