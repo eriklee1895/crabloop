@@ -13,7 +13,7 @@ Line counts cover all production Rust under src/. Tests, documentation, fixtures
 
 ## Current state and layout
 
-The repository currently contains planning documents, the tutorial introduction, and writing guidance. The Cargo package will live at the repository root, with src/ and tests/ beside Cargo.toml.
+Implementation is active under the approved v1 → v2 plan. Build the reference implementation and the Chinese tutorial together, in small verified increments. The Cargo package lives at the repository root, with src/ and tests/ beside Cargo.toml.
 
 Tutorial chapters live under tutorial/v1/ and tutorial/v2/. Actual development records live under docs/devlog/. Keep one Rust implementation at the repository root; use commits and tags to identify the code corresponding to each chapter.
 
@@ -25,6 +25,9 @@ Read the relevant design and task before implementation:
 The user's latest instructions take precedence over those documents.
 
 ## How to develop
+
+- Keep AGENTS.md current throughout implementation, as requested by the user. Update it when repository state, interfaces, commands, or durable decisions change. Put detailed history and evidence in docs/devlog/ rather than accumulating a session transcript here.
+- Continue the approved plan without asking again between tasks. Maintain its progress ledger and resume from completed commits after compaction.
 
 - Work in small increments, each with an observable behavior, an appropriate check, and a short explanation of what it teaches.
 - Keep the current milestone focused. Introduce abstractions when a concrete need appears.

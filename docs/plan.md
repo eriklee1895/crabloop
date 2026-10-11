@@ -10,6 +10,8 @@
 
 **Spec:** [CrabLoop 设计说明](design.md)。先阅读该说明；本文里的新增文件和命令均是待实施的安排。
 
+**Execution:** 用户于 2026-10-11 授权设置 goal 并开始实施。由助手在本会话顺序构建参考实现、教程与开发记录；每个可验收增量同步 AGENTS.md 和进度。真实 API 凭证缺失时继续独立工作，并明确保留待验收项。
+
 ## Global Constraints
 
 - 模型接入使用 OpenAI 原生 Responses API。公开工具名固定为 read_file、write_file、edit_file、bash。
@@ -75,7 +77,7 @@ Config { workspace: PathBuf, task: String, endpoint: String, model: String, api_
 
 tests/common 提供 StubResponses::start(replies: Vec<Value>) -> Self、endpoint(&self) -> &str、requests(&self) -> Vec<Value>、fixture(name: &str) -> Value、test_config(workspace: &Path, endpoint: &str) -> Config、make_call(call_id: &str, name: &str, arguments: Value) -> ToolCall。测试直接构造 Config；需测试环境变量时启动单独子进程，不在并发测试中修改全局 env。
 
-## Task 1：原生 Responses 接入与可重放协议，站点 00–01
+## Task 1: 原生 Responses 接入与可重放协议，站点 00–01
 
 **Files:** Create Cargo.toml、Cargo.lock、rust-toolchain.toml、src/main.rs、src/lib.rs、src/model.rs、tests/common/mod.rs、tests/protocol.rs、tests/fixtures/responses/{text,two_calls,reasoning,commentary,incomplete,bad_call_id}.json、tutorial/v1/00-state-map.md、tutorial/v1/01-responses.md、docs/devlog/01-responses.md；Modify README.md、.gitignore。
 
@@ -99,7 +101,7 @@ assert!(incomplete_result.is_err());
 - [ ] Step 6：运行 cargo test --locked --test protocol 和 cargo check --locked；完成 01 的请求/响应观察练习。
 - [ ] Step 7：本地提交 feat: add native Responses protocol。这里的通过只验证本地契约，真实模型接入留到 Task 5。
 
-## Task 2：三个文件工具，站点 02
+## Task 2: 三个文件工具，站点 02
 
 **Files:** Create src/tools.rs、tests/tools.rs、tutorial/v1/02-file-tools.md、docs/devlog/02-file-tools.md；Modify src/lib.rs（导出 tools）。
 
@@ -119,7 +121,7 @@ assert_eq!(result.as_input()["type"], "function_call_output");
 - [ ] Step 4：运行 cargo test --locked --test tools；亲手把 old_text 写错并观察文件不变，记录模型下一轮需要得到什么反馈。
 - [ ] Step 5：本地提交 feat: add three file tools。
 
-## Task 3：Bash 执行与有限输出，站点 03
+## Task 3: Bash 执行与有限输出，站点 03
 
 **Files:** Modify src/tools.rs、tests/tools.rs；Create tutorial/v1/03-bash.md、docs/devlog/03-bash.md。
 
@@ -139,7 +141,7 @@ assert!(stdout.len() <= 4096 && stderr.len() <= 4096); // 使用 ASCII 输出 fi
 - [ ] Step 4：运行 cargo test --locked --test tools；超时实验记录 PID/存活情况，说明直接子进程验证和后代进程限制。
 - [ ] Step 5：本地提交 feat: add bounded Bash execution。
 
-## Task 4：闭环、消息关联与停止，站点 04
+## Task 4: 闭环、消息关联与停止，站点 04
 
 **Files:** Modify src/lib.rs、src/main.rs；Create tests/loop.rs、tutorial/v1/04-agent-loop.md、docs/devlog/04-agent-loop.md。
 
@@ -159,7 +161,7 @@ assert_eq!(std::fs::read_to_string(&path)?, before); // incomplete 场景
 
 - [ ] Step 5：终端显示 turn、工具名、结果状态、退出码和结束原因；不显示 API Key。完成 04 的手绘闭环复盘并本地提交 feat: complete the coding loop。
 
-## Task 5：v1 真正修复任务与冻结，站点 05
+## Task 5: v1 真正修复任务与冻结，站点 05
 
 **Files:** Create fixtures/buggy-rust/{lib.rs,tests.rs,README.md}、fixtures/verifier/verify.rs、scripts/{verify-playground.sh,count-lines.py}、tutorial/v1/05-v1-coding-task.md、docs/devlog/05-v1-coding-task.md；Modify README.md、.gitignore、tests/loop.rs；Create evidence/v1/ 的真实运行材料。
 
@@ -173,7 +175,7 @@ assert_eq!(std::fs::read_to_string(&path)?, before); // incomplete 场景
 - [ ] Step 6：执行 cargo fmt --check、cargo clippy --locked --all-targets -- -D warnings、cargo test --locked、python3 scripts/count-lines.py；报告真实行数，若明显超目标先删除范围外功能，保留错误处理。
 - [ ] Step 7：本地提交 milestone: finish v1，再创建 v1 tag。此后仅在该版本上逐步增加 v2。
 
-## Task 6：固定上下文、记录与整组投影，站点 06
+## Task 6: 固定上下文、记录与整组投影，站点 06
 
 **Files:** Create src/context.rs、src/journal.rs、tests/context.rs、tutorial/v2/06-context-projection.md、docs/devlog/06-context-projection.md；Modify src/lib.rs、src/main.rs、README.md。
 
@@ -193,7 +195,7 @@ assert!(projected_request_bytes < full_request_bytes);
 
 - [ ] Step 6：做一次只保留最近完整组的离线投影实验，故意删掉早期测试信息，记录损失；本地提交 feat: separate history records from model context。
 
-## Task 7：预算触发的手写摘要，站点 07
+## Task 7: 预算触发的手写摘要，站点 07
 
 **Files:** Modify src/context.rs、src/lib.rs；Create tests/compaction.rs、tutorial/v2/07-compaction.md、docs/devlog/07-compaction.md。
 
@@ -214,7 +216,7 @@ assert_eq!(summary_request["tools"], serde_json::json!([]));
 - [ ] Step 5：主 loop 在每次主请求前调用 prepare；一轮最多摘要一次，累计最多 15 次，日志区分 main/summary usage、压缩前后 bytes 和失败原因。原请求预算保护继续保留。
 - [ ] Step 6：回归 cargo test --locked，完成强制小预算实验并本地提交 feat: add bounded context compaction。
 
-## Task 8：协议与事实保留对照，站点 08
+## Task 8: 协议与事实保留对照，站点 08
 
 **Files:** Modify tests/context.rs、tests/compaction.rs；Create tests/fixtures/context/{history,faithful_summary,misleading_summary}.json、tutorial/v2/08-context-experiments.md、docs/devlog/08-context-experiments.md、evidence/v2/ 对照材料。
 
@@ -227,7 +229,7 @@ assert_eq!(summary_request["tools"], serde_json::json!([]));
 - [ ] Step 5：复核五类信息：任务约束、修改文件、测试结果、剩余工作、不确定事项。对照至少一次无压缩运行；费用/时延只记录实测，不预设压缩更便宜。
 - [ ] Step 6：把一次损失案例与修正建议写入 08，保留原始证据；本地提交 test: verify context projection and compaction behavior。
 
-## Task 9：v2 综合验收与重建练习，站点 09
+## Task 9: v2 综合验收与重建练习，站点 09
 
 **Files:** Modify README.md、scripts/count-lines.py（仅确有遗漏时）；Create tutorial/v2/09-v2-retrospective.md、docs/devlog/09-v2-retrospective.md、evidence/v2/acceptance.md。
 
@@ -249,4 +251,4 @@ assert_eq!(summary_request["tools"], serde_json::json!([]));
 | 学习者解释 | 模型看到了什么，为什么继续 | 当前输入为何这样选择，哪些信息被整理或丢失 |
 | 版本保留 | v1 tag，差异与真实运行材料 | v2 tag，压缩对照与真实运行材料 |
 
-本计划完整交付后即可逐任务执行；实施前确认采用此设计和计划。默认教学方式是学习者亲手写核心代码，助手支持分步讲解与检查。若另行请求由助手实现，可选择本会话顺序执行或逐任务委派；该选择不改变上述版本边界。
+本计划已获执行授权。助手顺序完成各阶段的参考实现和教学材料；学习者随后可按对应提交逐章亲手重建。实施中持续更新 AGENTS.md，局部设计修正写入开发记录，并保持上述版本边界与证据标准。
