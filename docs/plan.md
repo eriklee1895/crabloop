@@ -147,10 +147,10 @@ assert!(stdout.len() <= 4096 && stderr.len() <= 4096); // 使用 ASCII 输出 fi
 
 **Interfaces:** Consumes ModelClient、schemas、execute、as_input；Produces async run(config: Config) -> Result<RunReport>，StopReason 与 RunReport 按共享类型定义。CLI 正常 Final 退出 0，上限退出 2，配置/协议/API 错误退出 1；退出 0 不宣称测试已通过。
 
-- [ ] Step 1：写 two_calls_then_final、tool_error_then_corrected_call、incomplete_never_mutates、commentary_then_final、max_turns_stops、request_budget_stops。使用 stub requests 验证第二次请求带上完整 output、对应结果和 reasoning/phase；主调用顺序固定。
-- [ ] Step 2：运行 cargo test --test loop，确认预期失败。
-- [ ] Step 3：实现“构造请求 → 检查序列化大小 → 请求 → 完整响应校验 → 串行执行 → 追加结果 → 继续”。只有 is_final 且无调用才结束；未知工具/坏参数形成反馈而不是 panic。
-- [ ] Step 4：运行 cargo test --locked --test loop；核对调用预算：
+- [x] Step 1：写 two_calls_then_final、tool_error_then_corrected_call、incomplete_never_mutates、commentary_then_final、max_turns_stops、request_budget_stops。使用 stub requests 验证第二次请求带上完整 output、对应结果和 reasoning/phase；主调用顺序固定。
+- [x] Step 2：运行 cargo test --test loop，确认预期失败。
+- [x] Step 3：实现“构造请求 → 检查序列化大小 → 请求 → 完整响应校验 → 串行执行 → 追加结果 → 继续”。只有 is_final 且无调用才结束；未知工具/坏参数形成反馈而不是 panic。
+- [x] Step 4：运行 cargo test --locked --test loop；核对调用预算：
 
 ```rust
 assert_eq!(report.reason, StopReason::Final);
@@ -159,7 +159,7 @@ assert_eq!(limited.requests().len(), 2); // 测试 max_turns 为 2
 assert_eq!(std::fs::read_to_string(&path)?, before); // incomplete 场景
 ```
 
-- [ ] Step 5：终端显示 turn、工具名、结果状态、退出码和结束原因；不显示 API Key。完成 04 的手绘闭环复盘并本地提交 feat: complete the coding loop。
+- [x] Step 5：终端显示 turn、工具名、结果状态、退出码和结束原因；不显示 API Key。完成 04 的手绘闭环复盘并本地提交 feat: complete the coding loop。
 
 ## Task 5: v1 真正修复任务与冻结，站点 05
 
