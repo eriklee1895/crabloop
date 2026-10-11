@@ -15,6 +15,9 @@ A small coding-agent harness that grows step by step in Rust.
 | v3 | 约 1000 行 Rust，home、TOML、provider 与模型目录 | 怎样配置一次，持续使用和切换模型？ |
 | v4 | Skills、web_fetch、web_search | 怎样复用方法，完成联网资料任务？ |
 | v5 | JSONL 会话保存与恢复 | 中断之后如何接着做？ |
+| v6（建议） | 流式 REPL 与 TUI | 怎样连续协作、观察执行与取消？ |
+| v7（建议） | 跨会话 memory | 哪些经验值得保存、召回、修正与遗忘？ |
+| v8（选修） | Rig 后端对照 | 哪些基础能力适合交给第三方 Rust 库？ |
 
 v3 优先完成配置和模型目录；有余量可提前体验最小 Skills，正式的 Skills 与联网实践安排在 v4。具体安排见[后续路线](docs/roadmap.md)。
 
@@ -41,7 +44,7 @@ v2 增加上下文预算、历史整理和摘要压缩，通过实验检查任�
 
 ## 当前进度与文档
 
-当前已实现四工具与 Responses 行动循环，教程 00–09 已完成。DeepSeek V4.1 Flash 与备选 gpt-6-luna 已通过真实修复任务；通用本地报告任务也有独立验收。v1 核心为 314 行，v2 为 504 行；[v1 验收](evidence/v1/acceptance.md) 和 [v2 压缩验收](evidence/v2/acceptance.md) 已保存。DeepSeek 在 10 KB 预算下五次压缩后完成修复，独立测试通过。v3–v5 为路线规划。
+当前已实现四工具与 Responses 行动循环，教程 00–09 已完成。DeepSeek V4.1 Flash 与备选 gpt-6-luna 已通过真实修复任务；通用本地报告任务也有独立验收。v1 核心为 314 行，v2 为 504 行；[v1 验收](evidence/v1/acceptance.md) 和 [v2 压缩验收](evidence/v2/acceptance.md) 已保存。DeepSeek 在 10 KB 预算下五次压缩后完成修复，独立测试通过。v3–v5 为路线规划，v6–v8 为新增建议与选修。
 
 Cargo 工程放在仓库根目录；教程按阶段组织在 tutorial/v1/ 和 tutorial/v2/；实际开发记录放在 docs/devlog/。
 
