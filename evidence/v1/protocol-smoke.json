@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-11",
+  "scope": "one text-only Responses request per model",
+  "results": [
+    {
+      "provider": "DeepSeek",
+      "model": "deepseek-flash",
+      "exit_code": 0,
+      "marker_received": true
+    },
+    {
+      "provider": "TeamoRouter",
+      "model": "gpt-6-luna",
+      "exit_code": 0,
+      "marker_received": true
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "id": "resp_incomplete",
+  "object": "response",
+  "created_at": 0,
+  "model": "test-model",
+  "status": "incomplete",
+  "error": null,
+  "incomplete_details": {
+    "reason": "max_output_tokens"
+  },
+  "output": [
+    {
+      "id": "fc_call_1",
+      "type": "function_call",
+      "status": "completed",
+      "call_id": "call_1",
+      "name": "read_file",
+      "arguments": "{\"path\": \"lib.rs\"}"
+    }
+  ],
+  "usage": {
+    "input_tokens": 100,
+    "output_tokens": 20,
+    "total_tokens": 120
+  }
+}

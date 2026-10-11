@@ -95,7 +95,7 @@ bash 捕获期间就限制内存：stdout/stderr 并发读取，各保留最多 
 | 依赖 | reqwest =0.13.5（json、rustls，关闭 default features）；tokio =1.53.2（macros、rt-multi-thread、process、io-util、time）；serde =1.0.229（derive）；serde_json =1.0.152；anyhow =1.0.104 |
 | API Key | OPENAI_API_KEY；不写入源码、示例或日志 |
 | 模型 | CRABLOOP_MODEL 必填；所选模型须支持 Responses function calling |
-| 端点 | CRABLOOP_API_URL；默认 https://api.openai.com/v1/responses，仅测试时替换为本地 stub |
+| 端点 | CRABLOOP_API_URL 为完整端点，优先于 OPENAI_BASE_URL + /responses；均缺省时为 https://api.openai.com/v1/responses |
 | 主模型轮数 | 16；测试可用 Limits 覆盖为更小值 |
 | HTTP 超时 | 60 秒 |
 | Bash 超时 | 30 秒；测试可用 Limits 覆盖 |
@@ -111,6 +111,8 @@ bash 捕获期间就限制内存：stdout/stderr 并发读取，各保留最多 
 | AGENTS.md 上限 | 8,192 UTF-8 字节；不存在则跳过，存在但无效/超限则明确失败 |
 
 依赖版本于 2026-10-11 从 crates.io 核对；实际兼容性仍需首个实施任务通过构建确认。提交 Cargo.lock 后以 locked 构建复现；依赖功能以 [reqwest 0.13.5 文档](https://docs.rs/reqwest/0.13.5/reqwest/) 为准。
+
+用户指定的主用模型为 DeepSeek V4.1 Flash，官方 API id 为 deepseek-flash，端点为 https://api.deepseek.com/responses；备选为 TeamoRouter 的 gpt-6-luna。两者均沿用 Responses 格式，不增加其他消息协议。[DeepSeek 官方模型说明](https://api-docs.deepseek.com/quick_start/pricing/)
 
 行数统计覆盖所有 src/**/*.rs，经 cargo fmt 格式化后，同时报告物理行和非空、非独立 // 注释行。测试、文档、fixture、Cargo 配置和计数脚本另算；不得把运行时实现藏到计数目录之外。v1 的暂定预算为入口/loop 95、模型协议 80、工具 125；v2 增量为上下文 135、JSONL 25、接线和诊断 40。预算需用实际实现复核。
 

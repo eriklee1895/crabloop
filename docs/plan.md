@@ -83,9 +83,9 @@ tests/common 提供 StubResponses::start(replies: Vec<Value>) -> Self、endpoint
 
 **Interfaces:** Produces Config::from_args_env(args: &[String]) -> Result<Config>；ModelClient::new(endpoint: &str, model: &str, api_key: &str, limits: &Limits) -> Result<Self>；request(&self, instructions: &str, input: &[Value], tools: &[Value]) -> Value；respond(&self, body: Value) -> Result<ModelReply>。ToolCall、ModelReply、Config、Limits 从本任务开始定义。
 
-- [ ] Step 1：手写一条三轮消息序列，标出 call_id；把状态地图和本机前置条件写入 00。前置条件为 Rust 1.94.0、Cargo、Bash，以及后续真实运行时所需 API Key/模型。
-- [ ] Step 2：在已初始化的 Git 仓库中创建根目录 Cargo 项目，固定五个依赖版本及 features；创建仅供测试的本地 HTTP stub 和六个原生响应 fixture。fake Key 固定为 test-key，模型固定为 test-model。
-- [ ] Step 3：写 protocol 测试，覆盖 stateless request、两个调用 id、完整 reasoning/phase、incomplete、响应内 id 缺失/重复、HTTP 500、commentary-only。核心断言为：
+- [x] Step 1：手写一条三轮消息序列，标出 call_id；把状态地图和本机前置条件写入 00。前置条件为 Rust 1.94.0、Cargo、Bash，以及后续真实运行时所需 API Key/模型。
+- [x] Step 2：在已初始化的 Git 仓库中创建根目录 Cargo 项目，固定五个依赖版本及 features；创建仅供测试的本地 HTTP stub 和六个原生响应 fixture。fake Key 固定为 test-key，模型固定为 test-model。
+- [x] Step 3：写 protocol 测试，覆盖 stateless request、两个调用 id、完整 reasoning/phase、incomplete、响应内 id 缺失/重复、HTTP 500、commentary-only。核心断言为：
 
 ```rust
 assert_eq!(body["store"], false);
@@ -96,10 +96,10 @@ assert!(!commentary.is_final);
 assert!(incomplete_result.is_err());
 ```
 
-- [ ] Step 4：运行 cargo test --test protocol，确认失败来自尚未实现的协议行为。
-- [ ] Step 5：实现上述接口和一个只打印模型文本/调用摘要的 CLI；非 completed 拒绝执行路径，保留原生 output 中的可重放字段；include 请求 reasoning.encrypted_content，不解析其内容。此时仍不执行工具。
-- [ ] Step 6：运行 cargo test --locked --test protocol 和 cargo check --locked；完成 01 的请求/响应观察练习。
-- [ ] Step 7：本地提交 feat: add native Responses protocol。这里的通过只验证本地契约，真实模型接入留到 Task 5。
+- [x] Step 4：运行 cargo test --test protocol，确认失败来自尚未实现的协议行为。
+- [x] Step 5：实现上述接口和一个只打印模型文本/调用摘要的 CLI；非 completed 拒绝执行路径，保留原生 output 中的可重放字段；include 请求 reasoning.encrypted_content，不解析其内容。此时仍不执行工具。
+- [x] Step 6：运行 cargo test --locked --test protocol 和 cargo check --locked；完成 01 的请求/响应观察练习。
+- [x] Step 7：本地提交 feat: add native Responses protocol。这里的通过只验证本地契约，真实模型接入留到 Task 5。
 
 ## Task 2: 三个文件工具，站点 02
 

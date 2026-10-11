@@ -1,0 +1,30 @@
+{
+  "id": "resp_commentary",
+  "object": "response",
+  "created_at": 0,
+  "model": "test-model",
+  "status": "completed",
+  "error": null,
+  "incomplete_details": null,
+  "output": [
+    {
+      "id": "msg_1",
+      "type": "message",
+      "status": "completed",
+      "role": "assistant",
+      "phase": "commentary",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "I will inspect the files.",
+          "annotations": []
+        }
+      ]
+    }
+  ],
+  "usage": {
+    "input_tokens": 100,
+    "output_tokens": 20,
+    "total_tokens": 120
+  }
+}
