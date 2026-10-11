@@ -8,7 +8,7 @@
 
 **Tech Stack:** Rust 1.94.0 / edition 2024；reqwest 0.13.5、tokio 1.53.2、serde 1.0.229、serde_json 1.0.152、anyhow 1.0.104；Bash；原生 Responses function calling。
 
-**Spec:** [CrabLoop 设计说明](../specs/2026-10-11-crabloop-design.md)。先阅读该说明；本文里的新增文件和命令均是待实施的安排。
+**Spec:** [CrabLoop 设计说明](design.md)。先阅读该说明；本文里的新增文件和命令均是待实施的安排。
 
 ## Global Constraints
 
@@ -45,7 +45,9 @@
 | 08 压缩对照 | 完整历史、整组裁剪、摘要三个方案 | 纯函数测试与实验记录 | 区分协议正确与事实保留 |
 | 09 v2 复盘 | 强制压缩后完成任务，再从空文件重建 loop | 迁移与解释能力 | 能沿记录解释每次继续和停止 |
 
-每站材料固定为“原理 → 状态/消息变化 → 亲手练习 → 故障实验 → 验收 → 复盘”。下表对应的是待创建的教学文档，不要求提前把整套教程写完。
+每站围绕当前已经能运行的程序，耐心讲清“为什么需要下一步”。用连贯的中文叙述串起问题、小段代码增量、运行观察、故障与复盘；原理和 Rust 细节在用到时解释。材料需要覆盖原理、状态变化、练习、故障实验、验收和复盘，不强制套用相同的标题模板。具体遵循[教程写作约定](writing-guide.md)，语气参考[教程入口](../tutorial/README.md)。
+
+每完成一个可验收的增量，在 docs/devlog/ 更新对应编号的开发记录，保留实际问题、取舍、验证结果与提交。下表对应的是待创建的教学文档，章节随实现逐步完成。
 
 ## 文件职责与共享接口
 
@@ -60,7 +62,9 @@
 | tests/common/mod.rs | 本地 fake Responses、临时目录和测试配置 |
 | tests/fixtures/responses/*.json | 文本、多个调用、reasoning、phase、incomplete 等协议样本 |
 | tests/protocol.rs、tools.rs、loop.rs、context.rs、compaction.rs | 分别验证这些边界 |
-| lessons/00-state-map.md 至 09-v2-retrospective.md | 每站逐步新增的学习材料 |
+| tutorial/v1/00-state-map.md 至 05-v1-coding-task.md | 第一版的逐步教程 |
+| tutorial/v2/06-context-projection.md 至 09-v2-retrospective.md | 在第一版上继续生长的教程 |
+| docs/devlog/00-bootstrap.md 至 09-v2-retrospective.md | 实际开发经过、取舍、验证与提交 |
 | fixtures/buggy-rust/、fixtures/verifier/ | 可修改的小项目和独立验收测试 |
 | scripts/count-lines.py、verify-playground.sh | 规模报告与独立验收 |
 | evidence/v1/、evidence/v2/ | 脱敏真实运行记录、差异、测试结果、复盘 |
@@ -73,12 +77,12 @@ tests/common 提供 StubResponses::start(replies: Vec<Value>) -> Self、endpoint
 
 ## Task 1：原生 Responses 接入与可重放协议，站点 00–01
 
-**Files:** Create Cargo.toml、Cargo.lock、rust-toolchain.toml、.gitignore、src/main.rs、src/lib.rs、src/model.rs、tests/common/mod.rs、tests/protocol.rs、tests/fixtures/responses/{text,two_calls,reasoning,commentary,incomplete,bad_call_id}.json、lessons/00-state-map.md、lessons/01-responses.md；Modify README.md。
+**Files:** Create Cargo.toml、Cargo.lock、rust-toolchain.toml、src/main.rs、src/lib.rs、src/model.rs、tests/common/mod.rs、tests/protocol.rs、tests/fixtures/responses/{text,two_calls,reasoning,commentary,incomplete,bad_call_id}.json、tutorial/v1/00-state-map.md、tutorial/v1/01-responses.md、docs/devlog/01-responses.md；Modify README.md、.gitignore。
 
 **Interfaces:** Produces Config::from_args_env(args: &[String]) -> Result<Config>；ModelClient::new(endpoint: &str, model: &str, api_key: &str, limits: &Limits) -> Result<Self>；request(&self, instructions: &str, input: &[Value], tools: &[Value]) -> Value；respond(&self, body: Value) -> Result<ModelReply>。ToolCall、ModelReply、Config、Limits 从本任务开始定义。
 
 - [ ] Step 1：手写一条三轮消息序列，标出 call_id；把状态地图和本机前置条件写入 00。前置条件为 Rust 1.94.0、Cargo、Bash，以及后续真实运行时所需 API Key/模型。
-- [ ] Step 2：初始化 Git 与最小 Cargo 项目，固定五个依赖版本及 features；创建仅供测试的本地 HTTP stub 和六个原生响应 fixture。fake Key 固定为 test-key，模型固定为 test-model。
+- [ ] Step 2：在已初始化的 Git 仓库中创建根目录 Cargo 项目，固定五个依赖版本及 features；创建仅供测试的本地 HTTP stub 和六个原生响应 fixture。fake Key 固定为 test-key，模型固定为 test-model。
 - [ ] Step 3：写 protocol 测试，覆盖 stateless request、两个调用 id、完整 reasoning/phase、incomplete、响应内 id 缺失/重复、HTTP 500、commentary-only。核心断言为：
 
 ```rust
@@ -97,7 +101,7 @@ assert!(incomplete_result.is_err());
 
 ## Task 2：三个文件工具，站点 02
 
-**Files:** Create src/tools.rs、tests/tools.rs、lessons/02-file-tools.md；Modify src/lib.rs（导出 tools）。
+**Files:** Create src/tools.rs、tests/tools.rs、tutorial/v1/02-file-tools.md、docs/devlog/02-file-tools.md；Modify src/lib.rs（导出 tools）。
 
 **Interfaces:** Consumes ToolCall、Limits；Produces schemas() -> Vec<Value>、async execute(call: &ToolCall, workspace: &Path, limits: &Limits) -> ToolResult、ToolResult::as_input(&self) -> Value、clip_utf8(text: &str, max_bytes: usize) -> (String, bool)。前三个工具先实现；bash schema 在 Task 3 补齐。
 
@@ -117,7 +121,7 @@ assert_eq!(result.as_input()["type"], "function_call_output");
 
 ## Task 3：Bash 执行与有限输出，站点 03
 
-**Files:** Modify src/tools.rs、tests/tools.rs；Create lessons/03-bash.md。
+**Files:** Modify src/tools.rs、tests/tools.rs；Create tutorial/v1/03-bash.md、docs/devlog/03-bash.md。
 
 **Interfaces:** 延续 execute；schemas() 返回全部四个工具。Bash 结果固定包含 ok、exit_code（整数或 null）、stdout、stderr、timed_out、truncated。
 
@@ -137,7 +141,7 @@ assert!(stdout.len() <= 4096 && stderr.len() <= 4096); // 使用 ASCII 输出 fi
 
 ## Task 4：闭环、消息关联与停止，站点 04
 
-**Files:** Modify src/lib.rs、src/main.rs；Create tests/loop.rs、lessons/04-agent-loop.md。
+**Files:** Modify src/lib.rs、src/main.rs；Create tests/loop.rs、tutorial/v1/04-agent-loop.md、docs/devlog/04-agent-loop.md。
 
 **Interfaces:** Consumes ModelClient、schemas、execute、as_input；Produces async run(config: Config) -> Result<RunReport>，StopReason 与 RunReport 按共享类型定义。CLI 正常 Final 退出 0，上限退出 2，配置/协议/API 错误退出 1；退出 0 不宣称测试已通过。
 
@@ -157,7 +161,7 @@ assert_eq!(std::fs::read_to_string(&path)?, before); // incomplete 场景
 
 ## Task 5：v1 真正修复任务与冻结，站点 05
 
-**Files:** Create fixtures/buggy-rust/{lib.rs,tests.rs,README.md}、fixtures/verifier/verify.rs、scripts/{verify-playground.sh,count-lines.py}、lessons/05-v1-coding-task.md；Modify README.md、.gitignore；Create evidence/v1/ 的真实运行材料。
+**Files:** Create fixtures/buggy-rust/{lib.rs,tests.rs,README.md}、fixtures/verifier/verify.rs、scripts/{verify-playground.sh,count-lines.py}、tutorial/v1/05-v1-coding-task.md、docs/devlog/05-v1-coding-task.md；Modify README.md、.gitignore、tests/loop.rs；Create evidence/v1/ 的真实运行材料。
 
 **Interfaces:** 练习代码公开函数为 pub fn last_index(len: usize) -> Option<usize>。初始实现故意把非空长度作为索引；空输入也错误。工作区测试覆盖 len 0、1、10；独立 verifier 位于 harness 内，使用 CRABLOOP_SOLUTION 传入待检 lib.rs 的绝对路径，断言 None、Some(0)、Some(9)。计数脚本扫描全部 src/**/*.rs。
 
@@ -171,7 +175,7 @@ assert_eq!(std::fs::read_to_string(&path)?, before); // incomplete 场景
 
 ## Task 6：固定上下文、记录与整组投影，站点 06
 
-**Files:** Create src/context.rs、src/journal.rs、tests/context.rs、lessons/06-context-projection.md；Modify src/lib.rs、src/main.rs、README.md。
+**Files:** Create src/context.rs、src/journal.rs、tests/context.rs、tutorial/v2/06-context-projection.md、docs/devlog/06-context-projection.md；Modify src/lib.rs、src/main.rs、README.md。
 
 **Interfaces:** ContextPolicy { hard_bytes: usize, soft_bytes: usize, summary_bytes: usize, keep_rounds: usize }；ContextPolicy::new(hard_bytes: usize) -> Result<Self> 按全局规则派生值。ContextState { instructions: String, task: String, summary: Option<String>, rounds: Vec<Vec<Value>> }；new(instructions: String, task: String) -> Self、append_round(&mut self, round: Vec<Value>) -> Result<()>、input(&self) -> Vec<Value>、request_bytes(client: &ModelClient, instructions: &str, input: &[Value], tools: &[Value]) -> usize。Journal::create(path: &Path) -> io::Result<Self>、record(&mut self, kind: &str, data: &Value) -> io::Result<()>。
 
@@ -191,7 +195,7 @@ assert!(projected_request_bytes < full_request_bytes);
 
 ## Task 7：预算触发的手写摘要，站点 07
 
-**Files:** Modify src/context.rs、src/lib.rs；Create tests/compaction.rs、lessons/07-compaction.md。
+**Files:** Modify src/context.rs、src/lib.rs；Create tests/compaction.rs、tutorial/v2/07-compaction.md、docs/devlog/07-compaction.md。
 
 **Interfaces:** async ContextState::prepare(&mut self, client: &ModelClient, tools: &[Value], policy: &ContextPolicy, journal: &mut Journal) -> Result<Vec<Value>>；返回可直接用于下一次主请求的 input。摘要调用继续使用 ModelClient::request/respond，但 tools 为空；Run 内记录主调用数与摘要调用数。
 
@@ -212,7 +216,7 @@ assert_eq!(summary_request["tools"], serde_json::json!([]));
 
 ## Task 8：协议与事实保留对照，站点 08
 
-**Files:** Modify tests/context.rs、tests/compaction.rs；Create tests/fixtures/context/{history,faithful_summary,misleading_summary}.json、lessons/08-context-experiments.md、evidence/v2/ 对照材料。
+**Files:** Modify tests/context.rs、tests/compaction.rs；Create tests/fixtures/context/{history,faithful_summary,misleading_summary}.json、tutorial/v2/08-context-experiments.md、docs/devlog/08-context-experiments.md、evidence/v2/ 对照材料。
 
 **Interfaces:** 对同一份 history 构造完整输入、最近两组输入、摘要+最近两组输入；利用已有 request_bytes、ContextState 和 fake Responses。五段摘要的结构检查由程序完成；语义核验由 fixture 断言和真实运行人工复核分别承担。
 
@@ -225,7 +229,7 @@ assert_eq!(summary_request["tools"], serde_json::json!([]));
 
 ## Task 9：v2 综合验收与重建练习，站点 09
 
-**Files:** Modify README.md、scripts/count-lines.py（仅确有遗漏时）、lessons/09-v2-retrospective.md；Create evidence/v2/acceptance.md。
+**Files:** Modify README.md、scripts/count-lines.py（仅确有遗漏时）；Create tutorial/v2/09-v2-retrospective.md、docs/devlog/09-v2-retrospective.md、evidence/v2/acceptance.md。
 
 **Interfaces:** 不增加运行时能力；沿用 v1 的外部 verifier、v2 journal 和 context 比较方法。
 

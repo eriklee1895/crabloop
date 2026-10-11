@@ -13,14 +13,14 @@ Line counts cover all production Rust under src/. Tests, documentation, fixtures
 
 ## Current state and layout
 
-The repository currently contains planning documents. The Cargo package will live at the repository root, with src/ and tests/ beside Cargo.toml.
+The repository currently contains planning documents, the tutorial introduction, and writing guidance. The Cargo package will live at the repository root, with src/ and tests/ beside Cargo.toml.
 
-The tutorial and development-log layout is still under discussion. Paths such as lessons/ and evidence/ in the existing plan are provisional. Keep documentation links consistent when the layout is settled.
+Tutorial chapters live under tutorial/v1/ and tutorial/v2/. Actual development records live under docs/devlog/. Keep one Rust implementation at the repository root; use commits and tags to identify the code corresponding to each chapter.
 
 Read the relevant design and task before implementation:
 
-- [Design](docs/superpowers/specs/2026-10-11-crabloop-design.md)
-- [Implementation and learning plan](docs/superpowers/plans/2026-10-11-crabloop-v1-v2.md)
+- [Design](docs/design.md)
+- [Implementation and learning plan](docs/plan.md)
 
 The user's latest instructions take precedence over those documents.
 
@@ -32,6 +32,18 @@ The user's latest instructions take precedence over those documents.
 - Maintain one implementation. Use Git commits and milestone tags to show its evolution.
 - Write tutorials and explanations in Chinese, with Rust identifiers and protocol names in their original form.
 - Tutorials explain a reproducible learning path. Development records capture actual decisions, changes, failures, verification results, and relevant commits.
+
+## Tutorial voice and progression
+
+Read [the writing guide](docs/writing-guide.md) before writing or revising a chapter.
+
+- Use patient, connected Chinese prose. Lead the reader from an empty project through small runnable changes.
+- Start with a concrete situation and explain why the next mechanism is needed.
+- Introduce Rust details and harness concepts when the reader encounters them in the code.
+- Explain each code increment, its file location, how to run it, and what the result means.
+- Let observations and failures motivate the next change. Preserve the distinction between expected output and output actually observed.
+- Use the chapter requirements as an editorial check, not a rigid sequence of repeated headings.
+- Calibrate the voice with a short representative passage before writing many chapters.
 
 ## Core contracts
 
