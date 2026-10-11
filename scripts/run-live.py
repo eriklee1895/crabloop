@@ -54,7 +54,7 @@ env.update(OPENAI_API_KEY=key, OPENAI_BASE_URL=base, CRABLOOP_MODEL=model)
 env.pop('CRABLOOP_API_URL', None)
 if args.context_bytes:
     env['CRABLOOP_CONTEXT_BYTES'] = str(args.context_bytes)
-task = 'Read README.md and inspect the source. Fix last_index in lib.rs. Run the existing tests before editing and after the fix. Preserve the public signature and tests.rs. Write NOTES.md describing the change and actual verification. Report only observed results.'
+task = 'Read README.md and inspect the source. Fix last_index in lib.rs. Run the existing tests before editing and after the fix. Preserve the public signature and tests.rs. Write a short NOTES.md (about five lines) describing the change and actual verification. Then finish; no extra baseline reconstruction or unrelated checks. Report only observed results.'
 subprocess.run(['cargo', 'build', '--locked'], cwd=ROOT, check=True, capture_output=True)
 if args.scenario == 'report':
     task = 'Follow README.md: inspect all inbox documents, produce report.json with exact facts, source paths and counts, and a Chinese SUMMARY.md citing every source. Preserve the original inbox files. Verify your output against the input documents before reporting completion.'
@@ -96,6 +96,8 @@ if args.scenario == 'report':
     record['passed'] = proc.returncode == 0 and final.returncode == 0
     for field in ('original_tests_unchanged','failed_test_seen','passed_test_seen','notes_created','source_diff'):
         record.pop(field, None)
+record['task_passed'] = record['passed']
+record['required_compaction'] = args.require_compaction
 if args.stage == 'v2':
     journals = sorted((workspace / '.crabloop').glob('run-*.jsonl'))
     journal_events = [json.loads(line) for path in journals for line in path.read_text().splitlines()]
@@ -105,6 +107,8 @@ if args.stage == 'v2':
     record['usage'] = [{'kind': e['kind'], 'usage': e['data'].get('usage')} for e in journal_events if e['kind'] in ('response', 'summary_response')]
     record['stop_events'] = [e for e in journal_events if e['kind'] in ('stop', 'error')]
     record['fixed_task_preserved'] = all(e['data']['input'][0].get('content') == task for e in journal_events if e['kind'] == 'request')
+    agents_text = (workspace / 'AGENTS.md').read_text().strip() if (workspace / 'AGENTS.md').exists() else None
+    record['agents_preserved'] = all(agents_text in e['data']['instructions'] for e in journal_events if e['kind'] == 'request') if agents_text else None
     if args.require_compaction:
         record['passed'] = record['passed'] and bool(record['compactions'])
 report = ROOT / 'evidence' / args.stage / f'{stamp}-{args.scenario}-{args.provider}.json'

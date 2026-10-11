@@ -1,0 +1,23 @@
+{
+  "kind": "deterministic_fixture_not_live_summary_quality",
+  "results": [
+    {
+      "bytes": 6989,
+      "planted_facts_preserved": true,
+      "protocol_valid": true,
+      "strategy": "full"
+    },
+    {
+      "bytes": 1577,
+      "planted_facts_preserved": false,
+      "protocol_valid": true,
+      "strategy": "tail"
+    },
+    {
+      "bytes": 1851,
+      "planted_facts_preserved": true,
+      "protocol_valid": true,
+      "strategy": "summary_tail"
+    }
+  ]
+}

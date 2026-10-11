@@ -114,3 +114,41 @@ async fn run_journals_protocol_tools_and_stop_without_credentials() {
             .all(|r| r["instructions"].as_str().unwrap().contains("Keep tests intact"))
     );
 }
+
+#[test]
+fn context_comparison_preserves_protocol_but_tail_loses_facts() {
+    let dir = TempDir::new();
+    let cfg = test_config(dir.path(), "unused");
+    let rounds: Vec<Vec<Value>> =
+        serde_json::from_str(include_str!("fixtures/context/history.json")).unwrap();
+    let mut full = ContextState::new("Preserve tests".into(), "Fix last_index".into());
+    for round in rounds {
+        full.append_round(round).unwrap();
+    }
+    let mut tail = full.clone();
+    tail.rounds = tail.rounds[2..].to_vec();
+    let mut summarized = tail.clone();
+    summarized.summary = Some(
+        serde_json::from_str::<Value>(include_str!("fixtures/context/faithful_summary.json"))
+            .unwrap()["text"]
+            .as_str()
+            .unwrap()
+            .into(),
+    );
+    let mut rows = Vec::new();
+    for (name, state) in [("full", &full), ("tail", &tail), ("summary_tail", &summarized)] {
+        let mut checked = ContextState::new("".into(), "".into());
+        for round in &state.rounds {
+            checked.append_round(round.clone()).unwrap();
+        }
+        let text = serde_json::to_string(&state.input()).unwrap();
+        let facts = ["INITIAL_TEST=failed", "POST_EDIT_TEST=not_run", "REPAIR=pending"]
+            .iter()
+            .all(|fact| text.contains(fact));
+        assert_eq!(facts, name != "tail");
+        assert_eq!(state.input()[0]["content"], "Fix last_index");
+        rows.push(json!({"strategy":name,"bytes":request_bytes(&cfg,&state.instructions,&state.input(),&tools::schemas()),"protocol_valid":true,"planted_facts_preserved":facts}));
+    }
+    assert!(rows[2]["bytes"].as_u64().unwrap() < rows[0]["bytes"].as_u64().unwrap());
+    println!("comparison {}", json!(rows));
+}

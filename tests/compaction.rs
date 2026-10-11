@@ -69,6 +69,8 @@ async fn compaction_preserves_recent_two_rounds_and_fixed_context() {
         request_bytes(&cfg, &state.instructions, &after, &tools::schemas()) < policy.soft_bytes
     );
     assert_eq!(stub.requests()[0]["tools"], json!([]));
+    assert_eq!(stub.requests()[0]["max_output_tokens"], 4096);
+    assert_eq!(stub.requests()[0]["reasoning"]["effort"], "none");
     let request = &stub.requests()[0];
     assert_eq!(request["input"].as_array().unwrap().len(), 1);
     let data: Value =
@@ -147,5 +149,62 @@ async fn http_failure_does_not_commit_compaction() {
             .await
             .is_err()
     );
+    assert_eq!(state.input(), before);
+}
+
+#[tokio::test]
+async fn misleading_summary_passes_shape_but_fails_independent_fact_check() {
+    let value: Value =
+        serde_json::from_str(include_str!("fixtures/context/misleading_summary.json")).unwrap();
+    let misleading = value["text"].as_str().unwrap();
+    let dir = TempDir::new();
+    let stub = StubResponses::start(vec![reply(misleading)]);
+    let (cfg, policy, mut state, mut journal) = setup(&dir, stub.endpoint());
+    state
+        .prepare(&reqwest::Client::new(), &cfg, &tools::schemas(), &policy, &mut journal)
+        .await
+        .unwrap()
+        .unwrap();
+    let summary = state.summary.unwrap();
+    let preserved = ["INITIAL_TEST=failed", "POST_EDIT_TEST=not_run", "REPAIR=pending"]
+        .iter()
+        .all(|fact| summary.contains(fact));
+    assert!(!preserved, "structural acceptance must not masquerade as verified truth");
+}
+#[tokio::test]
+async fn loop_compacts_and_continues_without_counting_summary_as_main_turn() {
+    let dir = TempDir::new();
+    let mut commentary = message(&"x".repeat(1700));
+    commentary["phase"] = json!("commentary");
+    let response = json!({"status":"completed","output":[commentary]});
+    let stub = StubResponses::start(vec![
+        response.clone(),
+        response.clone(),
+        response,
+        reply(SUMMARY),
+        reply("finished"),
+    ]);
+    let mut cfg = test_config(dir.path(), stub.endpoint());
+    cfg.limits.request_bytes = 8192;
+    let report = crabloop::run(cfg).await.unwrap();
+    assert_eq!(report.reason, crabloop::StopReason::Final);
+    assert_eq!(report.model_turns, 4);
+    assert_eq!(stub.requests().len(), 5);
+    assert_eq!(stub.requests()[3]["tools"], json!([]));
+    assert!(stub.requests()[4]["input"].to_string().contains("初始测试失败"));
+}
+
+#[tokio::test]
+async fn oversized_candidate_keeps_original_state() {
+    let dir = TempDir::new();
+    let stub = StubResponses::start(vec![reply(SUMMARY)]);
+    let (cfg, policy, mut state, mut journal) = setup(&dir, stub.endpoint());
+    *state.rounds.last_mut().unwrap() = vec![message(&"x".repeat(6000))];
+    let before = state.input();
+    let error = state
+        .prepare(&reqwest::Client::new(), &cfg, &tools::schemas(), &policy, &mut journal)
+        .await
+        .unwrap_err();
+    assert!(error.to_string().contains("compacted context"));
     assert_eq!(state.input(), before);
 }
