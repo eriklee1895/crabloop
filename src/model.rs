@@ -13,6 +13,7 @@ pub struct ToolCall {
 }
 #[derive(Debug)]
 pub struct ModelReply {
+    pub raw: Value,
     pub output: Vec<Value>,
     pub calls: Vec<ToolCall>,
     pub text: String,
@@ -61,5 +62,5 @@ pub async fn respond(client: &Client, config: &Config, body: Value) -> Result<Mo
         }
     }
     ensure!(!calls.is_empty() || !text.trim().is_empty(), "empty response output");
-    Ok(ModelReply { output, calls, text, is_final, usage: raw.get("usage").cloned() })
+    Ok(ModelReply { output, calls, text, is_final, usage: raw.get("usage").cloned(), raw })
 }

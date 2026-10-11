@@ -187,11 +187,11 @@ Task 5 收束时取消了只包装配置的 ModelClient 和只包装回传的 To
 
 **Interfaces:** ContextPolicy { hard_bytes: usize, soft_bytes: usize, summary_bytes: usize, keep_rounds: usize }；ContextPolicy::new(hard_bytes: usize) -> Result<Self> 按全局规则派生值。ContextState { instructions: String, task: String, summary: Option<String>, rounds: Vec<Vec<Value>> }；new(instructions: String, task: String) -> Self、append_round(&mut self, round: Vec<Value>) -> Result<()>、input(&self) -> Vec<Value>、request_bytes(config: &Config, instructions: &str, input: &[Value], tools: &[Value]) -> usize。Journal::create(path: &Path) -> io::Result<Self>、record(&mut self, kind: &str, data: &Value) -> io::Result<()>。
 
-- [ ] Step 1：写 complete_round_preserves_all_items、rejects_orphan_result、fixed_task_and_agents_survive_projection、request_bytes_includes_tools_and_ciphertext、journal_is_append_only、invalid_budget_rejected、invalid_agents_rejected。覆盖缺失 AGENTS 跳过、存在但非 UTF-8/超限失败、hard 小于 4,096 失败。
-- [ ] Step 2：运行 cargo test --test context，确认预期失败。
-- [ ] Step 3：实现纯投影与 byte 预算；根目录 AGENTS.md 加入每次 instructions，任务原文固定保留。先仅支持预算不足时停止，尚不实现摘要。
-- [ ] Step 4：实现 JSONL，每次请求、响应、工具意图/结果及停止都追加并 flush；日志新建于 .crabloop/run-TIMESTAMP-PID.jsonl，创建失败就结束。记录可包括 usage，但不得包含 Authorization。
-- [ ] Step 5：运行 cargo test --locked --test context 与原 v1 回归；检查 log 事件数量不因输入裁剪减少，原任务与指令未变化：
+- [x] Step 1：写 complete_round_preserves_all_items、rejects_orphan_result、fixed_task_and_agents_survive_projection、request_bytes_includes_tools_and_ciphertext、journal_is_append_only、invalid_budget_rejected、invalid_agents_rejected。覆盖缺失 AGENTS 跳过、存在但非 UTF-8/超限失败、hard 小于 4,096 失败。
+- [x] Step 2：运行 cargo test --test context，确认预期失败。
+- [x] Step 3：实现纯投影与 byte 预算；根目录 AGENTS.md 加入每次 instructions，任务原文固定保留。先仅支持预算不足时停止，尚不实现摘要。
+- [x] Step 4：实现 JSONL，每次请求、响应、工具意图/结果及停止都追加并 flush；日志新建于 .crabloop/run-TIMESTAMP-PID.jsonl，创建失败就结束。记录可包括 usage，但不得包含 Authorization。
+- [x] Step 5：运行 cargo test --locked --test context 与原 v1 回归；检查 log 事件数量不因输入裁剪减少，原任务与指令未变化：
 
 ```rust
 assert_eq!(state.input()[0]["content"], original_task);
@@ -199,7 +199,7 @@ assert_eq!(after_journal_events, before_journal_events);
 assert!(projected_request_bytes < full_request_bytes);
 ```
 
-- [ ] Step 6：做一次只保留最近完整组的离线投影实验，故意删掉早期测试信息，记录损失；本地提交 feat: separate history records from model context。
+- [x] Step 6：做一次只保留最近完整组的离线投影实验，故意删掉早期测试信息，记录损失；本地提交 feat: separate history records from model context。
 
 ## Task 7: 预算触发的手写摘要，站点 07
 

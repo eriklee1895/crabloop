@@ -1,3 +1,5 @@
+pub mod context;
+pub mod journal;
 pub mod model;
 pub mod tools;
 use std::{path::PathBuf, time::Duration};
@@ -18,7 +20,7 @@ impl Default for Limits {
             max_turns: 16,
             http_timeout: Duration::from_secs(60),
             bash_timeout: Duration::from_secs(30),
-            request_bytes: 131072,
+            request_bytes: 49152,
             file_bytes: 65536,
             read_output_bytes: 8192,
             stream_bytes: 4096,
@@ -60,7 +62,15 @@ impl Config {
             api_key: required("OPENAI_API_KEY")?,
             model: required("CRABLOOP_MODEL")?,
             endpoint,
-            limits: Limits::default(),
+            limits: Limits {
+                request_bytes: context::ContextPolicy::new(
+                    std::env::var("CRABLOOP_CONTEXT_BYTES")
+                        .unwrap_or_else(|_| "49152".into())
+                        .parse()?,
+                )?
+                .hard_bytes,
+                ..Limits::default()
+            },
         })
     }
 }
@@ -82,32 +92,52 @@ pub async fn run(config: Config) -> anyhow::Result<RunReport> {
     use serde_json::json;
     let client = reqwest::Client::builder().timeout(config.limits.http_timeout).build()?;
     let tools = tools::schemas();
-    let mut input = vec![json!({"role":"user", "content":config.task})];
-    let mut report =
-        RunReport { reason: StopReason::MaxTurns, final_text: String::new(), model_turns: 0 };
-    for _ in 0..config.limits.max_turns {
-        let request = model::request(&config, INSTRUCTIONS, &input, &tools);
-        if serde_json::to_vec(&request)?.len() > config.limits.request_bytes {
-            report.reason = StopReason::ContextLimit;
-            break;
+    let mut state =
+        context::ContextState::new(context::instructions(&config.workspace)?, config.task.clone());
+    let log_dir = config.workspace.join(".crabloop");
+    std::fs::create_dir_all(&log_dir)?;
+    let stamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_nanos();
+    let path = log_dir.join(format!("run-{stamp}-{}.jsonl", std::process::id()));
+    let mut journal = journal::Journal::create(&path)?;
+    eprintln!("journal {}", path.display());
+    let outcome: anyhow::Result<RunReport> = async {
+        let mut report = RunReport { reason: StopReason::MaxTurns, final_text: String::new(), model_turns: 0 };
+        for _ in 0..config.limits.max_turns {
+            let input = state.input();
+            let request = model::request(&config, &state.instructions, &input, &tools);
+            if request.to_string().len() > config.limits.request_bytes {
+                report.reason = StopReason::ContextLimit;
+                break;
+            }
+            journal.record("request", &request)?;
+            let reply = model::respond(&client, &config, request).await?;
+            journal.record("response", &reply.raw)?;
+            report.model_turns += 1;
+            eprintln!("turn {}: {} tool call(s)", report.model_turns, reply.calls.len());
+            let mut round = reply.output;
+            if reply.calls.is_empty() && reply.is_final {
+                report.reason = StopReason::Final;
+                report.final_text = reply.text;
+                break;
+            }
+            for call in reply.calls {
+                journal.record("tool_started", &json!({"call_id":call.call_id,"name":call.name,"arguments":call.arguments}))?;
+                let result = tools::execute(&call, &config.workspace, &config.limits).await;
+                let event = json!({"call_id":call.call_id,"name":call.name,"result":result});
+                journal.record("tool_finished", &event)?;
+                eprintln!("tool {event}");
+                round.push(json!({"type":"function_call_output","call_id":call.call_id,"output":result.to_string()}));
+            }
+            state.append_round(round)?;
         }
-        let reply = model::respond(&client, &config, request).await?;
-        report.model_turns += 1;
-        eprintln!("turn {}: {} tool call(s)", report.model_turns, reply.calls.len());
-        input.extend(reply.output);
-        if reply.calls.is_empty() && reply.is_final {
-            report.reason = StopReason::Final;
-            report.final_text = reply.text;
-            break;
-        }
-        for call in reply.calls {
-            let result = tools::execute(&call, &config.workspace, &config.limits).await;
-            eprintln!(
-                "tool {}",
-                json!({"call_id":call.call_id, "name":call.name, "result":result})
-            );
-            input.push(json!({"type":"function_call_output", "call_id":call.call_id, "output":result.to_string()}));
-        }
+        Ok(report)
+    }.await;
+    match &outcome {
+        Ok(report) => journal.record(
+            "stop",
+            &json!({"reason":format!("{:?}", report.reason),"model_turns":report.model_turns}),
+        )?,
+        Err(error) => journal.record("error", &json!({"message":error.to_string()}))?,
     }
-    Ok(report)
+    outcome
 }
