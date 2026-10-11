@@ -189,7 +189,7 @@ async fn read_truncation_is_utf8_safe_and_non_utf8_is_an_error() {
 #[test]
 fn tool_schemas_have_required_string_arguments_and_strict_objects() {
     let defs = schemas();
-    assert_eq!(defs.len(), 3);
+    assert_eq!(defs.len(), 4);
     let edit = defs.iter().find(|d| d["name"] == "edit_file").unwrap();
     assert_eq!(edit["type"], "function");
     assert_eq!(edit["strict"], true);
@@ -220,4 +220,106 @@ async fn oversized_utf8_reports_size_instead_of_encoding() {
         "{}",
         r.output
     );
+}
+
+#[tokio::test]
+async fn bash_reports_exit_and_stderr() {
+    let dir = TempDir::new();
+    let r = execute(
+        &make_call(
+            "b",
+            "bash",
+            json!({"command":"printf ok; printf problem >&2; exit 7"}),
+        ),
+        dir.path(),
+        &Limits::default(),
+    )
+    .await;
+    assert_eq!(r.output["ok"], false);
+    assert_eq!(r.output["exit_code"], 7);
+    assert_eq!(r.output["stdout"], "ok");
+    assert_eq!(r.output["stderr"], "problem");
+    assert_eq!(r.output["timed_out"], false);
+}
+#[tokio::test]
+async fn bash_respects_workspace_and_closes_stdin() {
+    let dir = TempDir::new();
+    let r = execute(
+        &make_call("b", "bash", json!({"command":"cat; pwd"})),
+        dir.path(),
+        &Limits::default(),
+    )
+    .await;
+    assert_eq!(r.output["ok"], true);
+    assert_eq!(
+        fs::canonicalize(r.output["stdout"].as_str().unwrap().trim()).unwrap(),
+        fs::canonicalize(dir.path()).unwrap()
+    );
+}
+#[tokio::test]
+async fn bash_bounds_both_pipes_without_blocking_the_process() {
+    let dir = TempDir::new();
+    let r = execute(
+        &make_call(
+            "b",
+            "bash",
+            json!({"command":"printf '%100000s' x; printf '%100000s' y >&2"}),
+        ),
+        dir.path(),
+        &Limits::default(),
+    )
+    .await;
+    assert_eq!(r.output["ok"], true);
+    assert_eq!(r.output["truncated"], true);
+    assert_eq!(r.output["stdout"].as_str().unwrap().len(), 4096);
+    assert_eq!(r.output["stderr"].as_str().unwrap().len(), 4096);
+}
+#[tokio::test]
+async fn bash_timeout_reaps_direct_child() {
+    let dir = TempDir::new();
+    let limits = Limits {
+        bash_timeout: std::time::Duration::from_millis(100),
+        ..Limits::default()
+    };
+    let r = execute(
+        &make_call(
+            "b",
+            "bash",
+            json!({"command":"echo $$ > timeout.pid; printf started; exec sleep 10"}),
+        ),
+        dir.path(),
+        &limits,
+    )
+    .await;
+    assert_eq!(r.output["ok"], false);
+    assert_eq!(r.output["timed_out"], true);
+    assert_eq!(r.output["stdout"], "started");
+    let pid = fs::read_to_string(dir.path().join("timeout.pid")).unwrap();
+    assert!(
+        !std::process::Command::new("kill")
+            .args(["-0", pid.trim()])
+            .stderr(std::process::Stdio::null())
+            .status()
+            .unwrap()
+            .success()
+    );
+}
+
+#[tokio::test]
+async fn bash_bounds_pipe_wait_after_parent_exit() {
+    let dir = TempDir::new();
+    let limits = Limits {
+        bash_timeout: std::time::Duration::from_millis(100),
+        ..Limits::default()
+    };
+    let start = std::time::Instant::now();
+    let result = execute(
+        &make_call("b", "bash", json!({"command":"sleep 0.5 & exit 0"})),
+        dir.path(),
+        &limits,
+    )
+    .await;
+    assert_eq!(result.output["timed_out"], true);
+    assert_eq!(result.output["exit_code"], 0);
+    assert!(start.elapsed() < std::time::Duration::from_secs(2));
 }

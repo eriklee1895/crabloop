@@ -127,7 +127,7 @@ assert_eq!(result.as_input()["type"], "function_call_output");
 
 **Interfaces:** 延续 execute；schemas() 返回全部四个工具。Bash 结果固定包含 ok、exit_code（整数或 null）、stdout、stderr、timed_out、truncated。
 
-- [ ] Step 1：写 bash_reports_exit_and_stderr（命令退出 7）、bash_respects_workspace、bash_bounds_both_pipes、bash_timeout_reaps_direct_child（测试 Limits 为 100ms，命令为 echo $$ > timeout.pid; exec sleep 10；返回后读取 PID，kill -0 应失败）。检查：
+- [x] Step 1：写 bash_reports_exit_and_stderr（命令退出 7）、bash_respects_workspace、bash_bounds_both_pipes、bash_timeout_reaps_direct_child（测试 Limits 为 100ms，命令为 echo $$ > timeout.pid; exec sleep 10；返回后读取 PID，kill -0 应失败）。检查：
 
 ```rust
 assert_eq!(nonzero.output["exit_code"], 7);
@@ -136,10 +136,10 @@ assert_eq!(large.output["truncated"], true);
 assert!(stdout.len() <= 4096 && stderr.len() <= 4096); // 使用 ASCII 输出 fixture
 ```
 
-- [ ] Step 2：运行 cargo test --test tools bash_，确认预期失败。
-- [ ] Step 3：以 bash -c 和 current_dir 实现命令执行；stdin 关闭，双管道并发有限采集；timeout 覆盖等待和采集，发生时显式 kill/reap 直接子进程，终止采集等待。不要以 wait_with_output 后截断代替采集上限。
-- [ ] Step 4：运行 cargo test --locked --test tools；超时实验记录 PID/存活情况，说明直接子进程验证和后代进程限制。
-- [ ] Step 5：本地提交 feat: add bounded Bash execution。
+- [x] Step 2：运行 cargo test --test tools bash_，确认预期失败。
+- [x] Step 3：以 bash -c 和 current_dir 实现命令执行；stdin 关闭，双管道并发有限采集；timeout 覆盖等待和采集，发生时显式 kill/reap 直接子进程，终止采集等待。不要以 wait_with_output 后截断代替采集上限。
+- [x] Step 4：运行 cargo test --locked --test tools；超时实验记录 PID/存活情况，说明直接子进程验证和后代进程限制。
+- [x] Step 5：本地提交 feat: add bounded Bash execution。
 
 ## Task 4: 闭环、消息关联与停止，站点 04
 
