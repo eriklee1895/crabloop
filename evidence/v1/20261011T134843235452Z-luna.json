@@ -1,0 +1,105 @@
+{
+  "date_utc": "2026-10-11T13:48:43.917533+00:00",
+  "source_commit": "3c9a909f5a696fbfff062bc8cf8a815421cf235f",
+  "source_sha256": {
+    "src/lib.rs": "e49346d66100198ca8aa0f749f52aaa01bf1a5b1958fa9a795115733da34af01",
+    "src/main.rs": "e36299b1562308f9b2451d62da2cd60cd3219b48e53c5b51726610df2005dbfd",
+    "src/model.rs": "71dae0dc41aef8713f901a3b19d6bd39902476493ca91a0345e85e592f2eb984",
+    "src/tools.rs": "91fda818f06c4560d0420a9aa583e5a8b1b0ebbff55fb48ce7cfd13240871589"
+  },
+  "stage": "v1",
+  "provider": "luna",
+  "model": "gpt-6-luna",
+  "elapsed_seconds": 149.43,
+  "agent_exit_code": 0,
+  "driver_timeout": false,
+  "baseline_verifier_exit_code": 101,
+  "final_verifier_exit_code": 0,
+  "original_tests_unchanged": true,
+  "failed_test_seen": true,
+  "passed_test_seen": true,
+  "notes_created": true,
+  "tool_events": [
+    {
+      "call_id": "call_1obxuHtLyng3pCFUbklBcNH0",
+      "name": "bash",
+      "ok": true,
+      "exit_code": 0
+    },
+    {
+      "call_id": "call_sZuiPtPCfq1EB1oVOWP6ae3Y",
+      "name": "read_file",
+      "ok": true,
+      "exit_code": null
+    },
+    {
+      "call_id": "call_CDDeFooFwSjZX7GA2niwTp6J",
+      "name": "read_file",
+      "ok": true,
+      "exit_code": null
+    },
+    {
+      "call_id": "call_DRKgUa4LmE6l6bK0D6VrOZ8e",
+      "name": "read_file",
+      "ok": true,
+      "exit_code": null
+    },
+    {
+      "call_id": "call_qArMw0TH49HyaDDGeyJT6d2d",
+      "name": "bash",
+      "ok": true,
+      "exit_code": 0
+    },
+    {
+      "call_id": "call_HcGLHgY5eNbToezee6C8b781",
+      "name": "bash",
+      "ok": false,
+      "exit_code": 101
+    },
+    {
+      "call_id": "call_a8ImzrvWSYq2mGx2Pidgu0FP",
+      "name": "write_file",
+      "ok": true,
+      "exit_code": null
+    },
+    {
+      "call_id": "call_H7sa8Xr5CpZw789YhkMBbWWu",
+      "name": "bash",
+      "ok": true,
+      "exit_code": 0
+    },
+    {
+      "call_id": "call_Hv8bPp1zAnneV7J0VR5kbWuy",
+      "name": "write_file",
+      "ok": true,
+      "exit_code": null
+    },
+    {
+      "call_id": "call_ExMLO3qwhOVRBEkMPj58MW93",
+      "name": "read_file",
+      "ok": true,
+      "exit_code": null
+    },
+    {
+      "call_id": "call_BJagyhAw55qs167WfJiYuyBX",
+      "name": "read_file",
+      "ok": true,
+      "exit_code": null
+    },
+    {
+      "call_id": "call_bWorOr7rR3N9kUo306tcPrm5",
+      "name": "bash",
+      "ok": true,
+      "exit_code": 0
+    },
+    {
+      "call_id": "call_oUKk4jvahE7MXnDmmukRMYel",
+      "name": "bash",
+      "ok": true,
+      "exit_code": 0
+    }
+  ],
+  "source_diff": "--- before/lib.rs\n+++ after/lib.rs\n@@ -1,3 +1,3 @@\n pub fn last_index(len: usize) -> Option<usize> {\n-    Some(len)\n+    len.checked_sub(1)\n }\n",
+  "workspace": "playground/v1-luna-20261011T134843235452Z",
+  "passed": true
+}

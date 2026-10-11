@@ -1,0 +1,83 @@
+{
+  "date_utc": "2026-10-11T13:59:01.381399+00:00",
+  "scenario": "report",
+  "source_commit": "3c9a909f5a696fbfff062bc8cf8a815421cf235f",
+  "source_sha256": {
+    "src/lib.rs": "e49346d66100198ca8aa0f749f52aaa01bf1a5b1958fa9a795115733da34af01",
+    "src/main.rs": "e36299b1562308f9b2451d62da2cd60cd3219b48e53c5b51726610df2005dbfd",
+    "src/model.rs": "71dae0dc41aef8713f901a3b19d6bd39902476493ca91a0345e85e592f2eb984",
+    "src/tools.rs": "91fda818f06c4560d0420a9aa583e5a8b1b0ebbff55fb48ce7cfd13240871589"
+  },
+  "stage": "v1",
+  "provider": "deepseek",
+  "model": "deepseek-flash",
+  "elapsed_seconds": 9.09,
+  "agent_exit_code": 0,
+  "driver_timeout": false,
+  "baseline_verifier_exit_code": 1,
+  "final_verifier_exit_code": 1,
+  "tool_events": [
+    {
+      "call_id": "call_00_yFs43n1j9DXDnADzctcR9992",
+      "name": "bash",
+      "ok": true,
+      "exit_code": 0
+    },
+    {
+      "call_id": "call_01_CIXaabc3jrP94AEq36pZ2022",
+      "name": "bash",
+      "ok": true,
+      "exit_code": 0
+    },
+    {
+      "call_id": "call_00_ET_dr2pTHPPamZXU1mqbEnG9941",
+      "name": "read_file",
+      "ok": true,
+      "exit_code": null
+    },
+    {
+      "call_id": "call_01_ET_y3MYCZXB8LaKiLXc1tJA8956",
+      "name": "read_file",
+      "ok": true,
+      "exit_code": null
+    },
+    {
+      "call_id": "call_02_ET_0PDMGhiLKVTdzvTAk3zz5335",
+      "name": "read_file",
+      "ok": true,
+      "exit_code": null
+    },
+    {
+      "call_id": "call_03_ET_jrUIcBH7X5iGmaGvBuLn2488",
+      "name": "read_file",
+      "ok": true,
+      "exit_code": null
+    },
+    {
+      "call_id": "call_00_iETizqKKI0pz8JzfbcES0177",
+      "name": "bash",
+      "ok": true,
+      "exit_code": 0
+    },
+    {
+      "call_id": "call_00_5NN9Svohf09TACVE1wbl5999",
+      "name": "write_file",
+      "ok": true,
+      "exit_code": null
+    },
+    {
+      "call_id": "call_01_swCEv7npG3XhWBvg849r6527",
+      "name": "write_file",
+      "ok": true,
+      "exit_code": null
+    },
+    {
+      "call_id": "call_00_9U0zFBcftE8TYfvyAVn76249",
+      "name": "bash",
+      "ok": true,
+      "exit_code": 0
+    }
+  ],
+  "workspace": "playground/v1-report-deepseek-20261011T135900476081Z",
+  "passed": false
+}

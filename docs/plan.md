@@ -167,13 +167,13 @@ assert_eq!(std::fs::read_to_string(&path)?, before); // incomplete 场景
 
 **Interfaces:** 练习代码公开函数为 pub fn last_index(len: usize) -> Option<usize>。初始实现故意把非空长度作为索引；空输入也错误。工作区测试覆盖 len 0、1、10；独立 verifier 位于 harness 内，使用 CRABLOOP_SOLUTION 传入待检 lib.rs 的绝对路径，断言 None、Some(0)、Some(9)。计数脚本扫描全部 src/**/*.rs。
 
-- [ ] Step 1：创建练习 fixture，运行其测试，确认原始项目失败；检查独立 verifier 同样失败。不要把失败 fixture 纳入 harness 自身的通过测试集。
-- [ ] Step 2：写 scripted_bugfix_loop 测试，由 fake Responses 驱动“read_file → bash 原测试失败 → write_file 创建 notes.md → edit_file 修复 → bash 测试通过 → 最终回答”，在真实临时文件/进程中覆盖四工具；运行 cargo test --test loop scripted_bugfix_loop。
-- [ ] Step 3：复制 fixture 到可丢弃 playground/bugfix；设置自己的 OPENAI_API_KEY 和 CRABLOOP_MODEL，以命令 cargo run --locked -- --workspace playground/bugfix "修复 last_index，先运行测试；保留函数签名和测试文件，完成后再次验证" 进行首次真实 Responses 运行。
-- [ ] Step 4：从 harness 根目录执行 bash scripts/verify-playground.sh playground/bugfix，并检查源码差异、原测试和独立 verifier。若 provider/模型失败，保存失败证据，修正问题后再验收；不把 stub 成功记成真实成功。
-- [ ] Step 5：保存终端轨迹、模型 ID、日期、差异、两套测试结果和复盘到 evidence/v1/；凭实际证据填写 v1 验收表。
-- [ ] Step 6：执行 cargo fmt --check、cargo clippy --locked --all-targets -- -D warnings、cargo test --locked、python3 scripts/count-lines.py；报告真实行数，若明显超目标先删除范围外功能，保留错误处理。
-- [ ] Step 7：本地提交 milestone: finish v1，再创建 v1 tag。此后仅在该版本上逐步增加 v2。
+- [x] Step 1：创建练习 fixture，运行其测试，确认原始项目失败；检查独立 verifier 同样失败。不要把失败 fixture 纳入 harness 自身的通过测试集。
+- [x] Step 2：写 scripted_bugfix_loop 测试，由 fake Responses 驱动“read_file → bash 原测试失败 → write_file 创建 notes.md → edit_file 修复 → bash 测试通过 → 最终回答”，在真实临时文件/进程中覆盖四工具；运行 cargo test --test loop scripted_bugfix_loop。
+- [x] Step 3：复制 fixture 到可丢弃 playground/bugfix；设置自己的 OPENAI_API_KEY 和 CRABLOOP_MODEL，以命令 cargo run --locked -- --workspace playground/bugfix "修复 last_index，先运行测试；保留函数签名和测试文件，完成后再次验证" 进行首次真实 Responses 运行。
+- [x] Step 4：从 harness 根目录执行 bash scripts/verify-playground.sh playground/bugfix，并检查源码差异、原测试和独立 verifier。若 provider/模型失败，保存失败证据，修正问题后再验收；不把 stub 成功记成真实成功。
+- [x] Step 5：保存终端轨迹、模型 ID、日期、差异、两套测试结果和复盘到 evidence/v1/；凭实际证据填写 v1 验收表。
+- [x] Step 6：执行 cargo fmt --check、cargo clippy --locked --all-targets -- -D warnings、cargo test --locked、python3 scripts/count-lines.py；报告真实行数，若明显超目标先删除范围外功能，保留错误处理。
+- [x] Step 7：本地提交 milestone: finish v1，再创建 v1 tag。此后仅在该版本上逐步增加 v2。
 
 ## v1 收束后的接口调整
 

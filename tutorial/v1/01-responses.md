@@ -4,9 +4,63 @@
 
 这一章完成时，CrabLoop 还不会读取你的代码。我们先确认它能够正确收发消息，再给它增加动作。
 
+## 从空目录发出第一次请求
+
+如果你要亲手从零写，先在参考仓库之外建一个练习目录：
+
+```bash
+cargo new crabloop-lab --edition 2024
+cd crabloop-lab
+```
+
+将 Cargo.toml 的 dependencies 部分替换成下面这些基础库。后续章节会用到 serde 和 tokio 的进程能力，所以这里一并声明；暂时不需要理解所有 feature。
+
+```toml
+[dependencies]
+anyhow = "=1.0.104"
+reqwest = { version = "=0.13.5", default-features = false, features = ["json", "rustls"] }
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.152"
+tokio = { version = "=1.53.2", features = ["macros", "rt-multi-thread", "process", "io-util", "time"] }
+```
+
+先把 src/main.rs 完整替换为这个只做一次往返的程序：
+
+```rust
+use serde_json::{Value, json};
+
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    let key = std::env::var("OPENAI_API_KEY")?;
+    let model = std::env::var("CRABLOOP_MODEL")?;
+    let base = std::env::var("OPENAI_BASE_URL")?;
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(60))
+        .build()?;
+    let response: Value = client
+        .post(format!("{}/responses", base.trim_end_matches('/')))
+        .bearer_auth(key)
+        .json(&json!({
+            "model": model, "input": "只回复 CRABLOOP_PROTOCOL_OK",
+            "store": false, "max_output_tokens": 2048
+        }))
+        .send().await?
+        .error_for_status()?
+        .json().await?;
+    println!("{}", serde_json::to_string_pretty(&response)?);
+    Ok(())
+}
+```
+
+现在运行 `cargo check`，它会生成 Cargo.lock；后续使用 `cargo check --locked`。配置本章后面列出的三个环境变量，再运行 `cargo run --locked`。这是一个教学小探针，打印整个响应，方便找到 output、message 和文本的位置；它还没有 CLI 任务、工具、循环，也不属于最终实现的另一份运行时代码。
+
+注意两个问号的含义：HTTP 请求可以失败，JSON 解码也可以失败。`Result` 把这些失败交回入口，`async` 则允许等待网络时让出执行权。先让这段代码工作，再添加类型与校验，比一开始就面对一个完整 agent 更容易看清控制流。
+
+下面回到参考仓库的 `step-01-responses`。可以用 `git show step-01-responses:src/model.rs` 对照这一章的完整文件；亲手练习时，把单次 HTTP 调用移入 model.rs，再逐项添加下面解释的返回类型与验证。后续章节通过同样的书签保留每一步可运行的参考状态。
+
 ## 先准备能运行的入口
 
-从仓库根目录开始。Cargo.toml 固定了 HTTP、JSON 和异步运行需要的基础库；Cargo.lock 记录解析后的完整依赖版本。运行 cargo test --locked --test protocol，可以先在本地检查协议，不需要真实密钥。
+以下在参考仓库根目录运行；教学探针则保留在自己的练习目录。Cargo.toml 固定了 HTTP、JSON 和异步运行需要的基础库；Cargo.lock 记录解析后的完整依赖版本。运行 cargo test --locked --test protocol，可以先在本地检查协议，不需要真实密钥。
 
 我们把程序入口留在 src/main.rs，把模型交互放进 src/model.rs。入口拿到 Config 后，创建 ModelClient，发出一次请求：
 

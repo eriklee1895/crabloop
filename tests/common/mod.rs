@@ -25,11 +25,7 @@ pub fn fixture(name: &str) -> Value {
     .unwrap()
 }
 pub fn make_call(call_id: &str, name: &str, arguments: Value) -> ToolCall {
-    ToolCall {
-        call_id: call_id.into(),
-        name: name.into(),
-        arguments: arguments.to_string(),
-    }
+    ToolCall { call_id: call_id.into(), name: name.into(), arguments: arguments.to_string() }
 }
 pub fn test_config(workspace: &Path, endpoint: &str) -> Config {
     Config {
@@ -87,9 +83,7 @@ impl StubResponses {
                 if stop.load(Ordering::SeqCst) {
                     break;
                 }
-                socket
-                    .set_read_timeout(Some(Duration::from_secs(3)))
-                    .unwrap();
+                socket.set_read_timeout(Some(Duration::from_secs(3))).unwrap();
                 let mut wire = Vec::new();
                 let mut byte = [0];
                 while !wire.ends_with(b"\r\n\r\n") {
@@ -110,10 +104,7 @@ impl StubResponses {
                     .unwrap();
                 let mut bytes = vec![0; len];
                 socket.read_exact(&mut bytes).unwrap();
-                recorded
-                    .lock()
-                    .unwrap()
-                    .push(serde_json::from_slice(&bytes).unwrap());
+                recorded.lock().unwrap().push(serde_json::from_slice(&bytes).unwrap());
                 let body = replies
                     .next()
                     .unwrap_or(serde_json::json!({"error":"unexpected extra request"}))
@@ -125,12 +116,7 @@ impl StubResponses {
                 let _ = socket.write_all(response.as_bytes());
             }
         });
-        Self {
-            endpoint,
-            requests,
-            stopped,
-            worker: Some(worker),
-        }
+        Self { endpoint, requests, stopped, worker: Some(worker) }
     }
     pub fn endpoint(&self) -> &str {
         &self.endpoint
@@ -143,9 +129,7 @@ impl Drop for StubResponses {
     fn drop(&mut self) {
         self.stopped.store(true, Ordering::SeqCst);
         let _ = TcpStream::connect(
-            self.endpoint
-                .trim_start_matches("http://")
-                .trim_end_matches("/v1/responses"),
+            self.endpoint.trim_start_matches("http://").trim_end_matches("/v1/responses"),
         );
         self.worker.take().unwrap().join().unwrap();
     }

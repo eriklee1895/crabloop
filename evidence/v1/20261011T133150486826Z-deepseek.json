@@ -1,0 +1,81 @@
+{
+  "date_utc": "2026-10-11T13:31:51.720018+00:00",
+  "source_commit": "3c9a909f5a696fbfff062bc8cf8a815421cf235f",
+  "source_sha256": {
+    "src/lib.rs": "8c82f6650fbe9050e0f232933e8ab97c5030fa2ea69ad6751034cd6923bbf8e7",
+    "src/main.rs": "86d87a432fb493c245db4afd392290557956a1fb557276527bff9b98ca7352d9",
+    "src/model.rs": "02fbf428cc906290b78706248ffa4a86bb72edc2b2ee4ca6ecbecb9a1f868861",
+    "src/tools.rs": "051c8fb9645aeab236e32745f9a702c169b35b20b306f76b3545b556bbc281fa"
+  },
+  "stage": "v1",
+  "provider": "deepseek",
+  "model": "deepseek-flash",
+  "elapsed_seconds": 11.25,
+  "agent_exit_code": 0,
+  "driver_timeout": false,
+  "baseline_verifier_exit_code": 101,
+  "final_verifier_exit_code": 0,
+  "original_tests_unchanged": true,
+  "failed_test_seen": true,
+  "passed_test_seen": true,
+  "notes_created": true,
+  "tool_events": [
+    {
+      "call_id": "call_00_ET_IVXpI6f1LXj3eTtMqrFh7443",
+      "name": "bash",
+      "ok": true,
+      "exit_code": 0
+    },
+    {
+      "call_id": "call_01_ET_r336BBFmrjNMmCtXJHf21908",
+      "name": "read_file",
+      "ok": true,
+      "exit_code": null
+    },
+    {
+      "call_id": "call_00_S8ivnuSeSZDkypad4cpe2037",
+      "name": "read_file",
+      "ok": true,
+      "exit_code": null
+    },
+    {
+      "call_id": "call_01_THmFJzH12ovSV2UU4lkP6286",
+      "name": "read_file",
+      "ok": true,
+      "exit_code": null
+    },
+    {
+      "call_id": "call_00_J7OpUX4LRc8ntfZIlI1y1822",
+      "name": "bash",
+      "ok": true,
+      "exit_code": 0
+    },
+    {
+      "call_id": "call_00_ET_tr1FZZrf0EcY1I3XOi6j3427",
+      "name": "edit_file",
+      "ok": true,
+      "exit_code": null
+    },
+    {
+      "call_id": "call_00_ET_vylC2N6JgnDsK4nvgjdF7759",
+      "name": "bash",
+      "ok": true,
+      "exit_code": 0
+    },
+    {
+      "call_id": "call_00_ZVex8qbAmhyKfxIcxRkz8877",
+      "name": "bash",
+      "ok": true,
+      "exit_code": 0
+    },
+    {
+      "call_id": "call_01_spIsfRgLfNV6ogkviWCF1523",
+      "name": "write_file",
+      "ok": true,
+      "exit_code": null
+    }
+  ],
+  "source_diff": "--- before/lib.rs\n+++ after/lib.rs\n@@ -1,3 +1,7 @@\n pub fn last_index(len: usize) -> Option<usize> {\n-    Some(len)\n+    if len == 0 {\n+        None\n+    } else {\n+        Some(len - 1)\n+    }\n }\n",
+  "workspace": "playground/v1-deepseek-20261011T133150486826Z",
+  "passed": true
+}

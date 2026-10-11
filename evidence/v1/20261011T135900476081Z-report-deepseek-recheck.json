@@ -1,0 +1,11 @@
+{
+  "original_report": "evidence/v1/20261011T135900476081Z-report-deepseek.json",
+  "model": "deepseek-flash",
+  "scenario": "report",
+  "recheck_without_new_model_call": true,
+  "model_output_unchanged": true,
+  "verifier_exit_code": 0,
+  "passed": true,
+  "reason": "Original checker rejected extra valid total; required fields, integer counts and source preservation now checked independently.",
+  "verifier_sha256": "e4b45d825c944030514e152e8bce84971f5cf82bfeaa2568a4c2737ba8fabfca"
+}

@@ -1,0 +1,81 @@
+{
+  "date_utc": "2026-10-11T13:48:32.503544+00:00",
+  "source_commit": "3c9a909f5a696fbfff062bc8cf8a815421cf235f",
+  "source_sha256": {
+    "src/lib.rs": "e49346d66100198ca8aa0f749f52aaa01bf1a5b1958fa9a795115733da34af01",
+    "src/main.rs": "e36299b1562308f9b2451d62da2cd60cd3219b48e53c5b51726610df2005dbfd",
+    "src/model.rs": "71dae0dc41aef8713f901a3b19d6bd39902476493ca91a0345e85e592f2eb984",
+    "src/tools.rs": "91fda818f06c4560d0420a9aa583e5a8b1b0ebbff55fb48ce7cfd13240871589"
+  },
+  "stage": "v1",
+  "provider": "deepseek",
+  "model": "deepseek-flash",
+  "elapsed_seconds": 10.7,
+  "agent_exit_code": 0,
+  "driver_timeout": false,
+  "baseline_verifier_exit_code": 101,
+  "final_verifier_exit_code": 0,
+  "original_tests_unchanged": true,
+  "failed_test_seen": true,
+  "passed_test_seen": true,
+  "notes_created": true,
+  "tool_events": [
+    {
+      "call_id": "call_00_ET_T9eA6EsqXjtMS2XTwaZD7999",
+      "name": "bash",
+      "ok": true,
+      "exit_code": 0
+    },
+    {
+      "call_id": "call_01_ET_aDmGLqau9o90RD7ENKeP6407",
+      "name": "read_file",
+      "ok": true,
+      "exit_code": null
+    },
+    {
+      "call_id": "call_00_Btex3QxbeUNTDazL6TLx9188",
+      "name": "read_file",
+      "ok": true,
+      "exit_code": null
+    },
+    {
+      "call_id": "call_01_FeJJqSUql7mk74o0ep5R2505",
+      "name": "read_file",
+      "ok": true,
+      "exit_code": null
+    },
+    {
+      "call_id": "call_00_F3tZzWooe28ALnhbKdFh7941",
+      "name": "bash",
+      "ok": true,
+      "exit_code": 0
+    },
+    {
+      "call_id": "call_00_VV98gMBWoC7mGaeAoyNL4983",
+      "name": "edit_file",
+      "ok": true,
+      "exit_code": null
+    },
+    {
+      "call_id": "call_00_ET_jhs3CGZYSDvgIVo2HMZ92308",
+      "name": "bash",
+      "ok": true,
+      "exit_code": 0
+    },
+    {
+      "call_id": "call_00_vt0zxRjIUHMjrcwuXPQe4651",
+      "name": "write_file",
+      "ok": true,
+      "exit_code": null
+    },
+    {
+      "call_id": "call_00_ET_dZrXesJBZBXZPzKIcH8F1820",
+      "name": "bash",
+      "ok": true,
+      "exit_code": 0
+    }
+  ],
+  "source_diff": "--- before/lib.rs\n+++ after/lib.rs\n@@ -1,3 +1,7 @@\n pub fn last_index(len: usize) -> Option<usize> {\n-    Some(len)\n+    if len == 0 {\n+        None\n+    } else {\n+        Some(len - 1)\n+    }\n }\n",
+  "workspace": "playground/v1-deepseek-20261011T134831569033Z",
+  "passed": true
+}

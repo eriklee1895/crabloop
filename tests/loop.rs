@@ -15,9 +15,7 @@ async fn two_calls_then_final_preserves_ids_and_returns_both_results() {
     fs::write(dir.path().join("lib.rs"), "A").unwrap();
     fs::write(dir.path().join("tests.rs"), "B").unwrap();
     let server = StubResponses::start(vec![fixture("two_calls"), fixture("text")]);
-    let report = run(test_config(dir.path(), server.endpoint()))
-        .await
-        .unwrap();
+    let report = run(test_config(dir.path(), server.endpoint())).await.unwrap();
     assert_eq!(report.reason, StopReason::Final);
     assert_eq!(report.model_turns, 2);
     assert_eq!(report.final_text, "Done");
@@ -43,52 +41,29 @@ async fn tool_error_then_corrected_call_receives_actionable_feedback() {
             "edit_file",
             json!({"path":"lib.rs","old_text":"missing","new_text":"NEW"}),
         ),
-        call_reply(
-            "good",
-            "edit_file",
-            json!({"path":"lib.rs","old_text":"OLD","new_text":"NEW"}),
-        ),
+        call_reply("good", "edit_file", json!({"path":"lib.rs","old_text":"OLD","new_text":"NEW"})),
         fixture("text"),
     ]);
     assert_eq!(
-        run(test_config(dir.path(), server.endpoint()))
-            .await
-            .unwrap()
-            .reason,
+        run(test_config(dir.path(), server.endpoint())).await.unwrap().reason,
         StopReason::Final
     );
-    assert_eq!(
-        fs::read_to_string(dir.path().join("lib.rs")).unwrap(),
-        "NEW"
-    );
+    assert_eq!(fs::read_to_string(dir.path().join("lib.rs")).unwrap(), "NEW");
     let sent = server.requests();
     let error: Value =
         serde_json::from_str(sent[1]["input"][2]["output"].as_str().unwrap()).unwrap();
     assert_eq!(error["ok"], false);
-    assert!(
-        error["error"]
-            .as_str()
-            .unwrap()
-            .contains("read the file again")
-    );
+    assert!(error["error"].as_str().unwrap().contains("read the file again"));
 }
 #[tokio::test]
 async fn incomplete_never_mutates_the_workspace() {
     let dir = TempDir::new();
     let path = dir.path().join("lib.rs");
     fs::write(&path, "ORIGINAL").unwrap();
-    let mut r = call_reply(
-        "write",
-        "write_file",
-        json!({"path":"lib.rs","content":"CORRUPTED"}),
-    );
+    let mut r = call_reply("write", "write_file", json!({"path":"lib.rs","content":"CORRUPTED"}));
     r["status"] = json!("incomplete");
     let server = StubResponses::start(vec![r]);
-    assert!(
-        run(test_config(dir.path(), server.endpoint()))
-            .await
-            .is_err()
-    );
+    assert!(run(test_config(dir.path(), server.endpoint())).await.is_err());
     assert_eq!(fs::read_to_string(path).unwrap(), "ORIGINAL");
     assert_eq!(server.requests().len(), 1);
 }
@@ -96,34 +71,20 @@ async fn incomplete_never_mutates_the_workspace() {
 async fn commentary_then_final_and_reasoning_are_replayed() {
     let dir = TempDir::new();
     fs::write(dir.path().join("lib.rs"), "code").unwrap();
-    let server = StubResponses::start(vec![
-        fixture("reasoning"),
-        fixture("commentary"),
-        fixture("text"),
-    ]);
-    let report = run(test_config(dir.path(), server.endpoint()))
-        .await
-        .unwrap();
+    let server =
+        StubResponses::start(vec![fixture("reasoning"), fixture("commentary"), fixture("text")]);
+    let report = run(test_config(dir.path(), server.endpoint())).await.unwrap();
     assert_eq!(report.model_turns, 3);
     assert_eq!(report.final_text, "Done");
     let sent = server.requests();
     assert_eq!(sent[1]["input"][1]["encrypted_content"], "opaque");
-    assert!(
-        sent[2]["input"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .any(|i| i["phase"] == "commentary")
-    );
+    assert!(sent[2]["input"].as_array().unwrap().iter().any(|i| i["phase"] == "commentary"));
 }
 #[tokio::test]
 async fn max_turns_stops_before_an_extra_model_request() {
     let dir = TempDir::new();
-    let server = StubResponses::start(vec![
-        fixture("commentary"),
-        fixture("commentary"),
-        fixture("text"),
-    ]);
+    let server =
+        StubResponses::start(vec![fixture("commentary"), fixture("commentary"), fixture("text")]);
     let mut config = test_config(dir.path(), server.endpoint());
     config.limits.max_turns = 2;
     let report = run(config).await.unwrap();
@@ -141,4 +102,55 @@ async fn request_budget_stops_before_network_access() {
     assert_eq!(report.reason, StopReason::ContextLimit);
     assert_eq!(report.model_turns, 0);
     assert_eq!(server.requests().len(), 0);
+}
+
+#[tokio::test]
+async fn scripted_bugfix_loop_uses_all_tools_and_passes_external_verifier() {
+    let dir = TempDir::new();
+    let fixture_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures/buggy-rust");
+    for name in ["lib.rs", "tests.rs"] {
+        fs::copy(fixture_dir.join(name), dir.path().join(name)).unwrap();
+    }
+    let test = "rustc --edition=2024 --test tests.rs -o test-bin && ./test-bin";
+    let server = StubResponses::start(vec![
+        call_reply("read", "read_file", json!({"path":"lib.rs"})),
+        call_reply("before", "bash", json!({"command":test})),
+        call_reply(
+            "note",
+            "write_file",
+            json!({"path":"NOTES.md","content":"Repair checked subtraction; test before and after."}),
+        ),
+        call_reply(
+            "edit",
+            "edit_file",
+            json!({"path":"lib.rs","old_text":"Some(len)","new_text":"len.checked_sub(1)"}),
+        ),
+        call_reply("after", "bash", json!({"command":test})),
+        fixture("text"),
+    ]);
+    let report = run(test_config(dir.path(), server.endpoint())).await.unwrap();
+    assert_eq!(report.reason, StopReason::Final);
+    assert_eq!(report.model_turns, 6);
+    let requests = server.requests();
+    let results: Vec<Value> = requests[5]["input"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|i| i["type"] == "function_call_output")
+        .map(|i| serde_json::from_str(i["output"].as_str().unwrap()).unwrap())
+        .collect();
+    assert_eq!(results[1]["ok"], false);
+    assert!(results[1]["stdout"].as_str().unwrap().contains("FAILED"));
+    assert_eq!(results[4]["ok"], true);
+    assert!(results[4]["stdout"].as_str().unwrap().contains("test result: ok"));
+    assert_eq!(
+        fs::read(dir.path().join("tests.rs")).unwrap(),
+        fs::read(fixture_dir.join("tests.rs")).unwrap()
+    );
+    let verified = std::process::Command::new("bash")
+        .arg(format!("{}/scripts/verify-playground.sh", env!("CARGO_MANIFEST_DIR")))
+        .arg(dir.path())
+        .output()
+        .unwrap();
+    assert!(verified.status.success(), "{}", String::from_utf8_lossy(&verified.stderr));
 }
