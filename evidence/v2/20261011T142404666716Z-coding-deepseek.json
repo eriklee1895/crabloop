@@ -1,0 +1,112 @@
+{
+  "date_utc": "2026-10-11T14:24:05.930563+00:00",
+  "scenario": "coding",
+  "source_commit": "59262575ca0fdfdfb2fcf0e6187d7bb06d0178d8",
+  "source_sha256": {
+    "src/context.rs": "44005e61a19a177289d2dcd4144955972897a7dad0e4ab85bbaa99e77be1b78e",
+    "src/journal.rs": "97528f8f09b4afd0078ac4fa53cfd2f6670fe2e1c50e090ee6f1e75c76de77d4",
+    "src/lib.rs": "d336755f922ce70b16df8c50a486e704d68dbf925d20eb9e72af716dc710f24b",
+    "src/main.rs": "e36299b1562308f9b2451d62da2cd60cd3219b48e53c5b51726610df2005dbfd",
+    "src/model.rs": "e801f9d12eb3d8c0c9f6219552bf192d94144f922506257f0c866180e6be20ff",
+    "src/tools.rs": "91fda818f06c4560d0420a9aa583e5a8b1b0ebbff55fb48ce7cfd13240871589"
+  },
+  "stage": "v2",
+  "provider": "deepseek",
+  "model": "deepseek-flash",
+  "elapsed_seconds": 3.02,
+  "agent_exit_code": 2,
+  "driver_timeout": false,
+  "baseline_verifier_exit_code": 101,
+  "final_verifier_exit_code": 101,
+  "original_tests_unchanged": true,
+  "failed_test_seen": false,
+  "passed_test_seen": false,
+  "notes_created": false,
+  "tool_events": [
+    {
+      "call_id": "call_00_ET_A3zetcB2AYHNZzHCW8UR1586",
+      "name": "bash",
+      "ok": true,
+      "exit_code": 0
+    },
+    {
+      "call_id": "call_01_ET_nsDXHHaNN05i8JvB65Yo6563",
+      "name": "read_file",
+      "ok": true,
+      "exit_code": null
+    },
+    {
+      "call_id": "call_00_ET_C0g5MMHXLAz281kapnjJ3850",
+      "name": "read_file",
+      "ok": true,
+      "exit_code": null
+    },
+    {
+      "call_id": "call_01_ET_LMIZD2DEmoWctWtEuEUf6357",
+      "name": "read_file",
+      "ok": true,
+      "exit_code": null
+    },
+    {
+      "call_id": "call_02_ET_SMLBdp2e4ATZZghwZuHm1481",
+      "name": "bash",
+      "ok": true,
+      "exit_code": 0
+    }
+  ],
+  "source_diff": "",
+  "workspace": "playground/v2-coding-deepseek-20261011T142404666716Z",
+  "passed": false,
+  "context_bytes": 8192,
+  "compactions": [],
+  "requests": [
+    {
+      "kind": "request",
+      "bytes": 1691
+    },
+    {
+      "kind": "request",
+      "bytes": 3326
+    }
+  ],
+  "usage": [
+    {
+      "kind": "response",
+      "usage": {
+        "input_tokens": 599,
+        "input_tokens_details": {
+          "cached_tokens": 384
+        },
+        "output_tokens": 75,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 674
+      }
+    },
+    {
+      "kind": "response",
+      "usage": {
+        "input_tokens": 972,
+        "input_tokens_details": {
+          "cached_tokens": 640
+        },
+        "output_tokens": 124,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 1096
+      }
+    }
+  ],
+  "stop_events": [
+    {
+      "data": {
+        "model_turns": 2,
+        "reason": "ContextLimit"
+      },
+      "kind": "stop"
+    }
+  ],
+  "fixed_task_preserved": true
+}

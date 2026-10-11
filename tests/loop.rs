@@ -97,7 +97,8 @@ async fn request_budget_stops_before_network_access() {
     let dir = TempDir::new();
     let server = StubResponses::start(vec![]);
     let mut config = test_config(dir.path(), server.endpoint());
-    config.limits.request_bytes = 1;
+    config.limits.request_bytes = 4096;
+    config.task = "x".repeat(5000);
     let report = run(config).await.unwrap();
     assert_eq!(report.reason, StopReason::ContextLimit);
     assert_eq!(report.model_turns, 0);

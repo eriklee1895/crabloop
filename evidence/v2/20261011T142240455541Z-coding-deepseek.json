@@ -1,0 +1,147 @@
+{
+  "date_utc": "2026-10-11T14:22:41.614627+00:00",
+  "scenario": "coding",
+  "source_commit": "59262575ca0fdfdfb2fcf0e6187d7bb06d0178d8",
+  "source_sha256": {
+    "src/context.rs": "04ddff3e4280dcdd6b525aa49491bd51e032e909b7772d916b3e5f21f9b67fe3",
+    "src/journal.rs": "97528f8f09b4afd0078ac4fa53cfd2f6670fe2e1c50e090ee6f1e75c76de77d4",
+    "src/lib.rs": "d336755f922ce70b16df8c50a486e704d68dbf925d20eb9e72af716dc710f24b",
+    "src/main.rs": "e36299b1562308f9b2451d62da2cd60cd3219b48e53c5b51726610df2005dbfd",
+    "src/model.rs": "e801f9d12eb3d8c0c9f6219552bf192d94144f922506257f0c866180e6be20ff",
+    "src/tools.rs": "91fda818f06c4560d0420a9aa583e5a8b1b0ebbff55fb48ce7cfd13240871589"
+  },
+  "stage": "v2",
+  "provider": "deepseek",
+  "model": "deepseek-flash",
+  "elapsed_seconds": 5.12,
+  "agent_exit_code": 1,
+  "driver_timeout": false,
+  "baseline_verifier_exit_code": 101,
+  "final_verifier_exit_code": 101,
+  "original_tests_unchanged": true,
+  "failed_test_seen": true,
+  "passed_test_seen": false,
+  "notes_created": false,
+  "tool_events": [
+    {
+      "call_id": "call_00_ET_LUsnVNRxYETTXnp63qDr0705",
+      "name": "bash",
+      "ok": true,
+      "exit_code": 0
+    },
+    {
+      "call_id": "call_01_ET_saRZM7eNzw81Z6l2gFM80926",
+      "name": "read_file",
+      "ok": true,
+      "exit_code": null
+    },
+    {
+      "call_id": "call_00_d18ztbieZlPAyhu1tQTI4558",
+      "name": "read_file",
+      "ok": true,
+      "exit_code": null
+    },
+    {
+      "call_id": "call_01_CyMzkNviJq5xY0WRupSm0064",
+      "name": "read_file",
+      "ok": true,
+      "exit_code": null
+    },
+    {
+      "call_id": "call_00_VsJrB3Q7iPvwJmM9RXI66183",
+      "name": "bash",
+      "ok": true,
+      "exit_code": 0
+    }
+  ],
+  "source_diff": "",
+  "workspace": "playground/v2-coding-deepseek-20261011T142240455541Z",
+  "passed": false,
+  "context_bytes": 8192,
+  "compactions": [],
+  "requests": [
+    {
+      "kind": "request",
+      "bytes": 1691
+    },
+    {
+      "kind": "request",
+      "bytes": 3454
+    },
+    {
+      "kind": "request",
+      "bytes": 4742
+    },
+    {
+      "kind": "summary_request",
+      "bytes": 2784
+    }
+  ],
+  "usage": [
+    {
+      "kind": "response",
+      "usage": {
+        "input_tokens": 599,
+        "input_tokens_details": {
+          "cached_tokens": 384
+        },
+        "output_tokens": 83,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 682
+      }
+    },
+    {
+      "kind": "response",
+      "usage": {
+        "input_tokens": 1017,
+        "input_tokens_details": {
+          "cached_tokens": 640
+        },
+        "output_tokens": 77,
+        "output_tokens_details": {
+          "reasoning_tokens": 9
+        },
+        "total_tokens": 1094
+      }
+    },
+    {
+      "kind": "response",
+      "usage": {
+        "input_tokens": 1261,
+        "input_tokens_details": {
+          "cached_tokens": 1024
+        },
+        "output_tokens": 103,
+        "output_tokens_details": {
+          "reasoning_tokens": 5
+        },
+        "total_tokens": 1364
+      }
+    },
+    {
+      "kind": "summary_response",
+      "usage": {
+        "input_tokens": 622,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 77,
+        "output_tokens_details": {
+          "reasoning_tokens": 9
+        },
+        "total_tokens": 699
+      }
+    }
+  ],
+  "stop_events": [
+    {
+      "data": {
+        "message": "summary missing required sections"
+      },
+      "kind": "error"
+    }
+  ],
+  "fixed_task_preserved": true
+}

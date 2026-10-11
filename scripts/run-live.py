@@ -16,6 +16,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--provider', choices=['deepseek', 'luna'], default='deepseek')
 parser.add_argument('--stage', choices=['v1', 'v2'], default='v1')
 parser.add_argument('--context-bytes', type=int)
+parser.add_argument('--require-compaction', action='store_true')
 parser.add_argument('--scenario', choices=['coding', 'report'], default='coding')
 args = parser.parse_args()
 settings = dict(os.environ)
@@ -95,6 +96,17 @@ if args.scenario == 'report':
     record['passed'] = proc.returncode == 0 and final.returncode == 0
     for field in ('original_tests_unchanged','failed_test_seen','passed_test_seen','notes_created','source_diff'):
         record.pop(field, None)
+if args.stage == 'v2':
+    journals = sorted((workspace / '.crabloop').glob('run-*.jsonl'))
+    journal_events = [json.loads(line) for path in journals for line in path.read_text().splitlines()]
+    record['context_bytes'] = args.context_bytes or 49152
+    record['compactions'] = [e['data'] for e in journal_events if e['kind'] == 'compaction']
+    record['requests'] = [{'kind': e['kind'], 'bytes': len(json.dumps(e['data'], ensure_ascii=False, separators=(',', ':')).encode())} for e in journal_events if e['kind'] in ('request', 'summary_request')]
+    record['usage'] = [{'kind': e['kind'], 'usage': e['data'].get('usage')} for e in journal_events if e['kind'] in ('response', 'summary_response')]
+    record['stop_events'] = [e for e in journal_events if e['kind'] in ('stop', 'error')]
+    record['fixed_task_preserved'] = all(e['data']['input'][0].get('content') == task for e in journal_events if e['kind'] == 'request')
+    if args.require_compaction:
+        record['passed'] = record['passed'] and bool(record['compactions'])
 report = ROOT / 'evidence' / args.stage / f'{stamp}-{args.scenario}-{args.provider}.json'
 report.parent.mkdir(parents=True, exist_ok=True)
 report.write_text(json.dumps(record, ensure_ascii=False, indent=2) + '\n')

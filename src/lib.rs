@@ -103,7 +103,10 @@ pub async fn run(config: Config) -> anyhow::Result<RunReport> {
     let outcome: anyhow::Result<RunReport> = async {
         let mut report = RunReport { reason: StopReason::MaxTurns, final_text: String::new(), model_turns: 0 };
         for _ in 0..config.limits.max_turns {
-            let input = state.input();
+            let Some(input) = state.prepare(&client, &config, &tools, &context::ContextPolicy::new(config.limits.request_bytes)?, &mut journal).await? else {
+                report.reason = StopReason::ContextLimit;
+                break;
+            };
             let request = model::request(&config, &state.instructions, &input, &tools);
             if request.to_string().len() > config.limits.request_bytes {
                 report.reason = StopReason::ContextLimit;

@@ -205,12 +205,12 @@ assert!(projected_request_bytes < full_request_bytes);
 
 **Files:** Modify src/context.rs、src/lib.rs；Create tests/compaction.rs、tutorial/v2/07-compaction.md、docs/devlog/07-compaction.md。
 
-**Interfaces:** async ContextState::prepare(&mut self, client: &reqwest::Client, config: &Config, tools: &[Value], policy: &ContextPolicy, journal: &mut Journal) -> Result<Vec<Value>>；返回可直接用于下一次主请求的 input。摘要调用继续使用 model::request/respond，但 tools 为空；Run 内记录主调用数与摘要调用数。
+**Interfaces:** async ContextState::prepare(&mut self, client: &reqwest::Client, config: &Config, tools: &[Value], policy: &ContextPolicy, journal: &mut Journal) -> Result<Option<Vec<Value>>>；Some 返回可直接用于下一次主请求的 input，None 表示预算停止。摘要调用继续使用 model::request/respond，但 tools 为空；Run 内记录主调用数与摘要调用数。
 
-- [ ] Step 1：写 below_threshold_skips_summary、compaction_preserves_recent_two_rounds、summary_request_has_own_budget、oversized_tail_stops、empty_or_incomplete_summary_is_rejected、failed_summary_does_not_commit、summary_does_not_execute_tools。stub 的有效摘要使用已完成、修改文件、验证结果、剩余工作、不确定事项五段。
-- [ ] Step 2：运行 cargo test --test compaction，确认预期失败。
-- [ ] Step 3：按设计说明六步实现 prepare；总结较早前缀和上一份摘要，原任务/AGENTS 不交给摘要替代，先验证新输入再提交。密文 reasoning 保持不透明，随完整组处理。
-- [ ] Step 4：运行 cargo test --locked --test compaction；验证失败的原状态和成功候选：
+- [x] Step 1：写 below_threshold_skips_summary、compaction_preserves_recent_two_rounds、summary_request_has_own_budget、oversized_tail_stops、empty_or_incomplete_summary_is_rejected、failed_summary_does_not_commit、summary_does_not_execute_tools。stub 的有效摘要使用已完成、修改文件、验证结果、剩余工作、不确定事项五段。
+- [x] Step 2：运行 cargo test --test compaction，确认预期失败。
+- [x] Step 3：按设计说明六步实现 prepare；总结较早前缀和上一份摘要，原任务/AGENTS 不交给摘要替代，先验证新输入再提交。密文 reasoning 保持不透明，随完整组处理。
+- [x] Step 4：运行 cargo test --locked --test compaction；验证失败的原状态和成功候选：
 
 ```rust
 assert_eq!(failed_state.input(), before_input);
@@ -219,8 +219,8 @@ assert!(compacted_request_bytes < policy.soft_bytes);
 assert_eq!(summary_request["tools"], serde_json::json!([]));
 ```
 
-- [ ] Step 5：主 loop 在每次主请求前调用 prepare；一轮最多摘要一次，累计最多 15 次，日志区分 main/summary usage、压缩前后 bytes 和失败原因。原请求预算保护继续保留。
-- [ ] Step 6：回归 cargo test --locked，完成强制小预算实验并本地提交 feat: add bounded context compaction。
+- [x] Step 5：主 loop 在每次主请求前调用 prepare；一轮最多摘要一次，累计最多 15 次，日志区分 main/summary usage、压缩前后 bytes 和失败原因。原请求预算保护继续保留。
+- [x] Step 6：回归 cargo test --locked，完成强制小预算实验并本地提交 feat: add bounded context compaction。
 
 ## Task 8: 协议与事实保留对照，站点 08
 
