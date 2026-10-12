@@ -16,25 +16,22 @@ Line counts are flexible scope guides: the user explicitly accepts v1 at 350–3
 
 ## Current state and layout
 
-Implementation is active under the approved v1 → v2 plan. Build the reference implementation and the Chinese tutorial together, in small verified increments. The Cargo package lives at the repository root, with src/ and tests/ beside Cargo.toml.
+This branch is the v1.1 early-interaction learning snapshot, derived from immutable v1. Frozen v1 remains 314 code lines / 319 physical lines. v1.1 has 571 code lines / 581 physical lines across all src/**/*.rs, including the CLI and terminal interface. The larger count is reported honestly; no runtime code is hidden outside src/. v2 context projection, compression, journals and AGENTS.md loading are absent here.
 
-The Responses client, CLI configuration, and all four bounded tools, and the serial action loop are implemented. The v1 real coding task passed with DeepSeek and gpt-6-luna; a local-document report also passed after correcting an overly strict verifier. v1 is complete at 314 core code lines (319 physical), with 29 Rust and 3 Python regression tests. The next task is v2 context projection. Preferred live model: DeepSeek V4.1 Flash, API id deepseek-flash at https://api.deepseek.com/responses. Test fallback: gpt-6-luna through the user's TeamoRouter endpoint. Marker probes and tool-loop evidence are recorded separately; v2 compaction remains to be implemented and verified.
+The root Cargo package contains the hand-written Responses loop and four bounded tools. `Session` owns the client and full in-memory Responses history across user turns, including final answers and call/result associations. `run(Config)` remains the one-shot wrapper. Context is bounded by serialized request bytes (default 131,072; CRABLOOP_CONTEXT_BYTES overrides it, minimum 4,096); v1.1 stops at the limit without compaction. Histories disappear on exit. `/new` clears only the conversation, retaining files. Protocol/transport errors and interruptions poison the session until `/new`, without automatic tool replay.
 
-Runtime configuration reads environment variables. OPENAI_API_KEY is the key for the selected endpoint; CRABLOOP_MODEL chooses the model. CRABLOOP_API_URL is a full endpoint; otherwise OPENAI_BASE_URL is a prefix to which /responses is appended. Local .env is not executed or loaded by the Rust runtime. v3 will introduce home-based TOML and credential files; keep v1/v2 configuration small until then.
+`cargo run` enters a scrolling terminal chat in a TTY. `-p/--print TASK` runs once; positional tasks and whole-stdin one-shot input remain supported. `--chat` forces line-by-line chat, including pipes. rustyline provides input editing and in-memory history. Ctrl-C cancels; Ctrl-D and `/exit` quit. This version has no streaming or full-screen layout.
 
-Tutorial chapters live under tutorial/v1/ and tutorial/v2/. Actual development records live under docs/devlog/. Keep one Rust implementation at the repository root; use commits and tags to identify the code corresponding to each chapter.
+Configuration reads only the startup directory's .env as data with dotenvy; it neither executes that file nor mutates process environment. Process values win. Prefer DEEPSEEK_API_KEY/deepseek-flash without an explicit generic model/endpoint; CRABLOOP_PROVIDER=deepseek/openai overrides selection. Generic mode uses OPENAI_API_KEY/OPENAI_BASE_URL/CRABLOOP_MODEL; CRABLOOP_API_URL is a full endpoint override. Credentials stay paired with the selected provider. Home/TOML/catalog remain later work.
 
-Read the relevant design and task before implementation:
+Original v1 live tasks passed on DeepSeek V4.1 Flash and gpt-6-luna; the v1.1 changes have offline protocol, real local tool, CLI and session checks. No live-model run was performed for this backport. Current checks: 43 Rust and 3 Python tests, fmt and clippy. Tutorials 00–05 retain the original v1 path; tutorial/v1/06-conversation.md adds the interactive step. Detailed changes and verification are in docs/devlog/06-v1-interactive.md.
 
-- [Design](docs/design.md)
-- [Implementation and learning plan](docs/plan.md)
-
-The user's latest instructions take precedence over those documents.
+Read docs/design.md and docs/plan.md as the frozen v1 → v2 design; the v1.1 addendum and latest user instructions take precedence. Keep one implementation at the repository root, and identify learning states with Git commits and immutable tags.
 
 ## How to develop
 
 - Keep AGENTS.md current throughout implementation, as requested by the user. Update it when repository state, interfaces, commands, or durable decisions change. Put detailed history and evidence in docs/devlog/ rather than accumulating a session transcript here.
-- Continue the approved plan without asking again between tasks. Maintain its progress ledger and resume from completed commits after compaction.
+- Keep this v1.1 snapshot focused on early interaction. Continue v2 and later features on the main development line; do not add them here.
 
 - Work in small increments, each with an observable behavior, an appropriate check, and a short explanation of what it teaches.
 - Keep the current milestone focused. Introduce abstractions when a concrete need appears.
@@ -70,8 +67,8 @@ Once the Cargo package exists, use cargo fmt --check, cargo clippy --locked --al
 
 Distinguish deterministic protocol tests, real local tool execution, and live-model runs. Report only what the actual evidence establishes.
 
-Commit Cargo.lock for the application. The user explicitly authorized committing and pushing every verified stage to GitHub. Push completed increments and their checkpoint tags on feat/crabloop-v1-v2; do not bundle unfinished changes into a stage commit.
+Commit Cargo.lock. The user authorizes verified increments to be committed and pushed, with main holding the latest validated tree. This separate v1.1 learning snapshot is based on v1; preserve the original v1/v2 references. Publish the new milestone branch/tag only after review; never merge its older backend over current main.
 
-Formatting uses rustfmt with max_width = 100 and use_small_heuristics = Max. Count all src/**/*.rs under this same public style for every milestone; never hide runtime code in scripts or documentation.
+Formatting uses rustfmt with max_width = 100 and use_small_heuristics = Max; expand protocol JSON for teaching clarity. Count all src/**/*.rs under this same public style for every milestone; never hide runtime code in scripts or documentation.
 
 Keep credentials, local environment files, generated workspaces, and raw session logs out of Git. Publish only deliberately selected and sanitized learning evidence.

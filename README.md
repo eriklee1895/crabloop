@@ -4,13 +4,42 @@ A small coding-agent harness that grows step by step in Rust.
 
 用 Rust 从零实现一个小型 coding agent，通过读取代码、修改文件、运行测试和处理反馈，练习 agent harness 的核心机制。
 
-项目采用逐步开发的方式：先完成约 300 行的 v1，再扩展到约 500 行的 v2，随后规划约 1000 行的 v3。通过 coding 和通用本地任务，逐步练习同一套 harness。
+这是 **v1.1 交互学习快照**：在原 v1 的四工具循环上提前加入多轮终端对话和 `-p` 单次任务。原 `v1` 标签保留 314 行闭环；这里完整实现为 **571 行代码 / 581 物理行**，包含所有 CLI、界面和错误处理。后续主线继续增加上下文压缩、配置和其他能力。
+
+## 直接运行
+
+在启动目录的 `.env` 写入自己的配置；文件已被 Git 忽略。例如：
+
+```dotenv
+DEEPSEEK_API_KEY=your-key
+```
+
+然后启动：
+
+```sh
+cargo run
+```
+
+默认使用当前目录作为工作区。终端里可以连续提问，方向键编辑或召回输入；`/new` 开始新对话但保留文件，`/exit` 或 Ctrl-D 退出。Ctrl-C 可以取消当前回合；取消后先检查文件，再用 `/new` 开始。
+
+```sh
+cargo run -- -p "检查 README，简要说明这个项目"
+cargo run -- --workspace path/to/project
+printf '检查 README\n' | cargo run --quiet
+```
+
+`-p`（也可写为 `--print`）回答后退出，stdout 只保留回答；进度在 stderr。位置任务参数继续兼容。普通管道输入整体作为一次任务，`--chat` 则按行进行多轮对话。
+
+程序只读取启动目录 `.env`，不会执行里面的 shell 内容；进程环境值优先。也支持 `OPENAI_API_KEY`、`OPENAI_BASE_URL`、`CRABLOOP_MODEL`，以及完整端点 `CRABLOOP_API_URL`。若同时配置多个 provider，可用 `CRABLOOP_PROVIDER=deepseek` 或 `openai` 明确选择。不要把真实密钥写入 README 或提交到 Git。
+
+本版终端界面使用 rustyline，支持滚动阅读、输入编辑、工具进度和多轮历史。回答仍是非流式返回。更完整的终端布局留在后续主线。
 
 ## 逐步生长的里程碑
 
 | 版本 | 核心实现目标 | 要亲手弄清楚的问题 |
 |---|---:|---|
 | v1 | 约 300 行 Rust，四个工具 | 模型如何根据真实工具反馈继续行动？ |
+| v1.1（本分支） | 571 行 Rust，提前补上交互入口 | 多轮提问怎样复用同一份历史？ |
 | v2 | 约 500 行 Rust，上下文管理与压缩 | 每轮模型看到什么，历史怎样被选择和整理？ |
 | v3 | 约 1000 行 Rust，home、TOML、provider 与模型目录 | 怎样配置一次，持续使用和切换模型？ |
 | v4 | Skills、web_fetch、web_search | 怎样复用方法，完成联网资料任务？ |
@@ -41,7 +70,9 @@ v2 增加上下文预算、历史整理和摘要压缩，通过实验检查任�
 
 ## 当前进度与文档
 
-当前已实现四工具与 Responses 行动循环，教程 00–05 已完成。DeepSeek V4.1 Flash 与备选 gpt-6-luna 已通过真实修复任务；通用本地报告任务也有独立验收。v1 核心为 314 行（319 物理行）；[验收证据](evidence/v1/acceptance.md) 已保存，随后实现 v2 上下文管理。v3–v5 为路线规划。
+原 v1 的教程 00–05 和[真实任务验收](evidence/v1/acceptance.md)保留不变；v1.1 增加[交互补篇](tutorial/v1/06-conversation.md)。本次回移通过 43 项 Rust 测试、3 项 Python 验收器回归、fmt 和 clippy；没有把旧 v1 的真实模型证据当作本次交互实测。
+
+会话保存在进程内的 `Vec<Value>`，后续提问携带旧问题、工具记录和最终回答。请求 JSON 默认限制 131,072 字节（可用 `CRABLOOP_CONTEXT_BYTES` 调整），超过后明确停止；本快照不压缩、不落盘、不恢复跨进程历史。模型或协议错误后需要 `/new`，不会自动重复可能已有副作用的工具。固定工具边界与原 v1 相同：Bash 有超时和输出限制，但没有 OS sandbox，也不保证取消所有后代进程。
 
 Cargo 工程放在仓库根目录；教程按阶段组织在 tutorial/v1/ 和 tutorial/v2/；实际开发记录放在 docs/devlog/。
 
