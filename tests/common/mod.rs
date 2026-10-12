@@ -62,6 +62,7 @@ impl Drop for TempDir {
 pub struct StubResponses {
     endpoint: String,
     requests: Arc<Mutex<Vec<Value>>>,
+    authorizations: Arc<Mutex<Vec<String>>>,
     stopped: Arc<AtomicBool>,
     worker: Option<thread::JoinHandle<()>>,
 }
@@ -75,6 +76,8 @@ impl StubResponses {
         let requests = Arc::new(Mutex::new(Vec::new()));
         let stopped = Arc::new(AtomicBool::new(false));
         let recorded = Arc::clone(&requests);
+        let authorizations = Arc::new(Mutex::new(Vec::new()));
+        let auth = Arc::clone(&authorizations);
         let stop = Arc::clone(&stopped);
         let worker = thread::spawn(move || {
             let mut replies = replies.into_iter();
@@ -94,6 +97,16 @@ impl StubResponses {
                 }
                 let headers = String::from_utf8(wire).unwrap();
                 assert!(headers.starts_with("POST /v1/responses HTTP/1.1"));
+                auth.lock().unwrap().push(
+                    headers
+                        .lines()
+                        .find_map(|line| {
+                            let (name, value) = line.split_once(':')?;
+                            name.eq_ignore_ascii_case("authorization")
+                                .then(|| value.trim().to_owned())
+                        })
+                        .unwrap_or_default(),
+                );
                 let len = headers
                     .lines()
                     .find_map(|line| {
@@ -116,10 +129,13 @@ impl StubResponses {
                 let _ = socket.write_all(response.as_bytes());
             }
         });
-        Self { endpoint, requests, stopped, worker: Some(worker) }
+        Self { endpoint, requests, authorizations, stopped, worker: Some(worker) }
     }
     pub fn endpoint(&self) -> &str {
         &self.endpoint
+    }
+    pub fn authorizations(&self) -> Vec<String> {
+        self.authorizations.lock().unwrap().clone()
     }
     pub fn requests(&self) -> Vec<Value> {
         self.requests.lock().unwrap().clone()

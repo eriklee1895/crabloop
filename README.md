@@ -44,7 +44,7 @@ v2 增加上下文预算、历史整理和摘要压缩，通过实验检查任�
 
 ## 当前进度与文档
 
-当前已实现四工具与 Responses 行动循环，教程 00–09 已完成。DeepSeek V4.1 Flash 与备选 gpt-6-luna 已通过真实修复任务；通用本地报告任务也有独立验收。固定 v1 为 314 行、v2 为 504 行；main 经可读性展开后为 556 行。[v1 验收](evidence/v1/acceptance.md) 和 [v2 压缩验收](evidence/v2/acceptance.md) 已保存。DeepSeek 在 10 KB 预算下五次压缩后完成修复，独立测试通过。v3–v5 为路线规划，v6–v8 为新增建议与选修。
+当前已实现四工具与 Responses 行动循环，教程 00–09 已完成。DeepSeek V4.1 Flash 与备选 gpt-6-luna 已通过真实修复任务；通用本地报告任务也有独立验收。固定 v1 为 314 行、v2 为 504 行；main 加入便捷启动后为 628 行。[v1 验收](evidence/v1/acceptance.md) 和 [v2 压缩验收](evidence/v2/acceptance.md) 已保存。DeepSeek 在 10 KB 预算下五次压缩后完成修复，独立测试通过。v3–v5 为路线规划，v6–v8 为新增建议与选修。
 
 Cargo 工程放在仓库根目录；教程按阶段组织在 tutorial/v1/ 和 tutorial/v2/；实际开发记录放在 docs/devlog/。
 
@@ -56,12 +56,29 @@ Cargo 工程放在仓库根目录；教程按阶段组织在 tutorial/v1/ 和 tu
 
 ## 运行与版本切换
 
-需要 Rust 1.94.0 和 Bash。在本机配置 OPENAI_API_KEY（所选端点的 Key）、CRABLOOP_MODEL 与 OPENAI_BASE_URL，例如 DeepSeek 的模型为 deepseek-flash，URL 为 https://api.deepseek.com。运行时直接读取进程环境，尚不自动加载 .env。
+需要 Rust 1.94.0 和 Bash。在仓库根目录直接启动：
 
 ```bash
-cargo run --locked -- --workspace /path/to/your/workspace "你的任务"
+cargo run
 ```
 
-stderr 给出工具轨迹与工作区 .crabloop 内的 JSONL 路径。CRABLOOP_CONTEXT_BYTES 默认 49152，最小 4096。摘要请求要求模型支持 reasoning.effort=none；v2 主验收模型为 DeepSeek V4.1 Flash。
+程序默认使用当前目录，显示当前 provider/模型，然后提示输入任务。空行可以重新输入，Ctrl-D 退出。当前入口执行一个任务后返回终端；连续会话留给后续交互版本。
+
+当前目录的 `.env` 会自动作为配置数据读取，已有进程环境优先。推荐只配置 `DEEPSEEK_API_KEY`，默认使用 `deepseek-flash`。仓库已有 `.env` 时直接使用；新的配置格式见 [.env.example](.env.example)。
+
+也可以直接给任务，或为脚本保留显式工作目录：
+
+```bash
+cargo run -- "检查 README，说明这个项目能做什么"
+cargo run -- --workspace /path/to/project "修复测试"
+printf '%s\n' "检查当前目录" | cargo run
+cargo run -- --help
+```
+
+自动选择遵循已有配置：没有显式模型/完整端点或进程级 OpenAI 配置时，优先使用 DEEPSEEK_API_KEY；否则沿用 OPENAI_API_KEY、OPENAI_BASE_URL、CRABLOOP_MODEL。可用 CRABLOOP_PROVIDER=deepseek/openai 明确指定。openai 模式默认模型为 gpt-6-luna，官方 DeepSeek base URL 则默认 deepseek-flash；其他服务应显式填写支持的模型名。CRABLOOP_API_URL 覆盖所选 provider 的完整端点，Key 始终来自该 provider 对应变量。
+
+只读取启动目录的 .env，不向父目录搜索，也不执行文件里的命令。模型配置加载后，交互输入或管道输入作为任务；没有输入时退出，不创建运行日志或发模型请求。
+
+stderr 给出工具轨迹与工作区 .crabloop 内的 JSONL 路径。CRABLOOP_CONTEXT_BYTES 默认 49152，最小 4096。摘要请求要求模型支持 reasoning.effort=none；v2 主验收模型为 DeepSeek V4.1 Flash。固定 v1/v2 标签仍保留原有显式参数入口，以上便捷启动属于 main 的后续增量。
 
 每版保留稳定学习分支与固定标签：`milestone/v1` + `v1`，`milestone/v2` + `v2`。使用 `git switch milestone/v1` 回到第一版，或 `git switch --detach v1` 精确查看标签；想动手修改时从标签另开自己的分支，例如 `git switch -c my-v1-exercise v1`。main 的文件保持最新可运行实现，并保留每轮提交历史；每个通过验证的小迭代都合入并推送 main。旧版本通过学习分支和标签查看，根目录保持一个 Cargo 工程。详细约定见 [Git 工作流](docs/git-workflow.md)。

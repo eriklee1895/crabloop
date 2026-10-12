@@ -1,0 +1,28 @@
+{
+  "kind": "live_interactive_startup_smoke",
+  "date_utc": "2026-10-12T02:01:49.431973+00:00",
+  "command": "cargo run --locked (no application arguments)",
+  "workspace": "repository root",
+  "provider": "deepseek",
+  "model": "deepseek-flash",
+  "main_requests": 1,
+  "tool_calls": 0,
+  "final_marker": "CRABLOOP_STARTUP_OK",
+  "stop": [
+    {
+      "model_turns": 1,
+      "reason": "Final"
+    }
+  ],
+  "source_commit": "2e65c79b932003c9e154c308bb1a02b28214baa0",
+  "source_sha256": {
+    "src/cli.rs": "4f364a7da9b886e6bb4af38c7229ac490fd410caaa73f7adec5dec9c319ee8e2",
+    "src/context.rs": "b2538e81f8ab144f7601329453175aecae654e2f6eb4c80c2d646181643bbaf6",
+    "src/journal.rs": "97528f8f09b4afd0078ac4fa53cfd2f6670fe2e1c50e090ee6f1e75c76de77d4",
+    "src/lib.rs": "4a1e7beb6f4a0424f707cbb6d1dc65856e8a236a2576782563a50ea417557fec",
+    "src/main.rs": "1207b751378c22819e8ebe3ebb50c1ea2fbe4ea28ba398e5a69e7735b6bde6c4",
+    "src/model.rs": "2d5bb4523701bbb31c08c828224b1b7bae99837b84456db52c31a7e45d007883",
+    "src/tools.rs": "93a2953fad517e340ffcc46d19c8548fb86b3ea26fddf1a0dd5dc04d2e497929"
+  },
+  "scope": "One live startup and response; raw journal remains local."
+}

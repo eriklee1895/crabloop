@@ -1,7 +1,10 @@
-use crabloop::{Config, StopReason, run};
+use crabloop::{StopReason, cli, run};
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let report = run(Config::from_args_env(&std::env::args().collect::<Vec<_>>())?).await?;
+    let Some(config) = cli::load(&std::env::args().collect::<Vec<_>>())? else {
+        return Ok(());
+    };
+    let report = run(config).await?;
     println!("{}", report.final_text);
     eprintln!("stop: {:?}; model turns: {}", report.reason, report.model_turns);
     if report.reason != StopReason::Final {

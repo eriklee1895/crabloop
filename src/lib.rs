@@ -1,3 +1,4 @@
+pub mod cli;
 pub mod context;
 pub mod journal;
 pub mod model;
@@ -35,44 +36,6 @@ pub struct Config {
     pub model: String,
     pub api_key: String,
     pub limits: Limits,
-}
-
-impl Config {
-    pub fn from_args_env(args: &[String]) -> anyhow::Result<Self> {
-        use anyhow::{Context, ensure};
-        const USAGE: &str = "usage: crabloop --workspace DIR TASK";
-        let [_, flag, workspace, task] = args else {
-            anyhow::bail!(USAGE);
-        };
-        ensure!(flag == "--workspace" && !task.trim().is_empty(), USAGE);
-        let workspace = std::fs::canonicalize(workspace).context("invalid workspace")?;
-        ensure!(workspace.is_dir(), "workspace must be a directory");
-        let required = |name| -> anyhow::Result<String> {
-            let value = std::env::var(name).with_context(|| format!("{name} is required"))?;
-            ensure!(!value.trim().is_empty(), "{name} must not be empty");
-            Ok(value)
-        };
-        let base =
-            std::env::var("OPENAI_BASE_URL").unwrap_or_else(|_| "https://api.openai.com/v1".into());
-        let endpoint = std::env::var("CRABLOOP_API_URL")
-            .unwrap_or_else(|_| format!("{}/responses", base.trim_end_matches('/')));
-        Ok(Self {
-            workspace,
-            task: task.clone(),
-            api_key: required("OPENAI_API_KEY")?,
-            model: required("CRABLOOP_MODEL")?,
-            endpoint,
-            limits: Limits {
-                request_bytes: context::ContextPolicy::new(
-                    std::env::var("CRABLOOP_CONTEXT_BYTES")
-                        .unwrap_or_else(|_| "49152".into())
-                        .parse()?,
-                )?
-                .hard_bytes,
-                ..Limits::default()
-            },
-        })
-    }
 }
 
 #[derive(Debug, PartialEq)]
