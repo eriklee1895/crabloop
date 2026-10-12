@@ -6,14 +6,15 @@ CrabLoop is a small coding-agent harness built from scratch in Rust for hands-on
 
 - v1: target about 300 lines, HARD cap below 400 total production Rust code lines. Teach the hand-written model/tool/feedback/stop loop with four tools.
 - v2: approximately 500 lines total, adding context management and summary compaction.
-- v3: approximately 1,000 lines total, adding ~/.crabloop, TOML configuration, provider presets/Custom, credentials, and model catalog discovery/cache. Minimal Skills is optional if comfortably within scope.
-- Planned v4: Skills, Tavily Search/Firecrawl Scrape, a config menu sharing TOML files with manual edits, selective .env import and visible config sources. Planned v5: recoverable JSONL sessions and interruption handling under ~/.crabloop. See docs/roadmap.md.
-- v1/v2 stay non-streaming; v3 adds basic SSE as a separate learning increment. Rich terminal layout is v6, memory v7, optional Rig comparison v8. Early product polish must not expand v1.
+- v3: approximately 1,000 lines total: basic SSE, ~/.crabloop, TOML, credentials, provider presets/Custom, and model catalog/cache. Minimal Skills is optional within scope.
+- After v3: a separate opt-in telemetry topic using lifecycle observers and Rust OpenTelemetry/OTLP to Langfuse v4. Share event IDs with TUI/journal; export failure must not stop the agent. See docs/roadmap.md.
+- Planned v4: Skills, Tavily Search/Firecrawl Scrape, TOML config menu, selective .env import and visible sources. v5: recoverable JSONL sessions and interruption handling under ~/.crabloop.
+- v1/v2 stay non-streaming. v6: output rendering, slash-command UI, then layout/focus; keep step/budget and tool outcomes visible. v7: memory. v8: optional Rig comparison; mainline has no Rig prerequisite. Keep product polish out of v1.
 - Acceptance includes both coding repairs and general local agentic tasks such as reading source documents and producing a verifiable structured report.
 - Use the OpenAI native Responses API and a hand-written agent loop.
 - Grow the same implementation through small, explainable steps. Preserve runnable milestones with v1 and v2 Git tags.
 
-The user tightened v1 scope on 2026-10-12: <400 is mandatory. Count all production src/**/*.rs with scripts/count-lines.py after normal rustfmt; report physical lines too. Tests/docs/fixtures/dev scripts are separate. Reduce features, never hide code, code-golf, outsource the loop, or drop necessary error handling. See docs/v1-scope.md.
+2026-10-12 v1 rule: <400 is mandatory. After normal rustfmt, count all production src/**/*.rs with scripts/count-lines.py and report physical lines. Tests/docs/fixtures/dev scripts are separate. Reduce scope; never hide code, code-golf, outsource the loop or omit necessary errors. See docs/v1-scope.md.
 
 ## Current state and layout
 
@@ -23,9 +24,9 @@ Historical tags: v1/step-05-v1 314 code / 319 physical; v2 504/511. Main is 813/
 
 Preferred model: DeepSeek V4.1 Flash (deepseek-flash); fallback: gpt-6-luna through TeamoRouter. Both passed v1 tasks. DeepSeek passed v2 with five compactions; Luna v2 is untested. Summaries use reasoning.effort=none and at least 4,096 output tokens; main requests use provider defaults. Request limit: 49,152 bytes; CRABLOOP_CONTEXT_BYTES overrides it (min 4,096). Root AGENTS.md is pinned and must stay below 8,192 bytes. Distinguish offline, live and semantic evidence.
 
-`cargo run` enters multi-turn chat in cwd; `-p/--print TASK` runs once. Positional tasks and piped stdin remain supported; `--chat` forces chat. Rustyline handles editable input/history; /new resets, /exit or Ctrl-D quits, Ctrl-C cancels. Session retains final answers and tool groups. Errors/interruption require /new and file inspection; no automatic effect replay. Empty chat creates no journal or request. UI is scrolling, with whole-response text; streaming/full-screen layout is later.
+`cargo run`: multi-turn chat in cwd; `-p/--print TASK`: one task. Positional tasks and piped stdin remain supported; `--chat` forces chat. Rustyline edits input/history; /new resets, /exit or Ctrl-D quits, Ctrl-C cancels. Session retains final answers/tool groups. After errors/interruption, inspect files and use /new; no automatic effect replay. Empty chat creates no journal/request. UI scrolls and displays whole responses.
 
-`src/cli.rs` reads only cwd .env as data with dotenvy; process values win. Prefer DEEPSEEK_API_KEY/deepseek-flash absent explicit generic config; CRABLOOP_PROVIDER=deepseek/openai overrides. Generic mode uses OPENAI_API_KEY/OPENAI_BASE_URL/CRABLOOP_MODEL; CRABLOOP_API_URL overrides the endpoint. Keep provider keys paired. v3 home/TOML/catalog remains planned. Original v1/v2 keep their old CLI.
+`src/cli.rs` reads only cwd .env as data with dotenvy; process values win. Prefer DEEPSEEK_API_KEY/deepseek-flash absent explicit generic config; CRABLOOP_PROVIDER=deepseek/openai overrides. Generic mode uses OPENAI_API_KEY/OPENAI_BASE_URL/CRABLOOP_MODEL; CRABLOOP_API_URL overrides the endpoint. Keep provider keys paired. SSE/home/TOML/catalog and telemetry remain planned; Langfuse ingestion is unverified. Original v1/v2 keep their old CLI.
 
 Chapters: tutorial/v1/ and tutorial/v2/. Records: docs/devlog/. Keep one root implementation; commits/tags identify chapter code.
 
@@ -38,7 +39,7 @@ The user's latest instructions take precedence over those documents.
 
 ## How to develop
 
-- Keep AGENTS.md current throughout implementation, as requested by the user. Update it when repository state, interfaces, commands, or durable decisions change. Put detailed history and evidence in docs/devlog/ rather than accumulating a session transcript here.
+- Keep AGENTS.md current when state, interfaces, commands or durable decisions change. Put detailed history and evidence in docs/devlog/.
 - Continue the approved plan without asking again between tasks. Maintain its progress ledger and resume from completed commits after compaction.
 
 - Work in small increments, each with an observable behavior, an appropriate check, and a short explanation of what it teaches.
@@ -75,7 +76,7 @@ Once the Cargo package exists, use cargo fmt --check, cargo clippy --locked --al
 
 Distinguish deterministic protocol tests, real local tool execution, and live-model runs. Report only what the actual evidence establishes.
 
-Commit Cargo.lock. Merge and push each verified iteration to main, preserving teaching commits. Keep main, milestone/* and immutable v*/step-* tags; remove completed temporary branches after verifying their commits are retained. Run scripts/count-lines.py --max 399 on v1. Develop on a short-lived codex/* branch. No history rewriting for routine cleanup. Keep one learning branch per major stage; see docs/git-workflow.md for branch/tag distinctions.
+Commit Cargo.lock. Verify, merge and push each iteration to main; preserve teaching commits. Keep main, milestone/* and immutable v*/step-* tags. Develop on short-lived codex/* branches; remove them after commit-retention checks. No routine history rewriting. Run scripts/count-lines.py --max 399 on v1. Keep one learning branch per major stage; see docs/git-workflow.md.
 
 Use rustfmt (100 columns, small heuristics Max), but expand protocol JSON for teaching clarity. Count all src/**/*.rs; retain historical milestone counts and report current counts separately. Never hide runtime code in scripts or docs.
 

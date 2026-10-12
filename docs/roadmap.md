@@ -1,6 +1,6 @@
 # CrabLoop：从一轮行动，长到自己的工作台
 
-更新：2026-10-12。用户重新明确 v1 的 <400 行硬约束；当前 v1 已收敛为 398 行，历史快照保留。[教学边界](v1-scope.md)优先于此前的功能扩充安排。main 提前实现默认多轮终端聊天、-p 单次任务、当前目录 .env 和工具进度；milestone/v1 已收回单任务核心。下文 v3–v8 的配置与高级能力仍为规划。
+更新：2026-10-12。用户重新明确 v1 的 <400 行硬约束；当前 v1 已收敛为 398 行，历史快照保留。[教学边界](v1-scope.md)优先于此前的功能扩充安排。main 提前实现默认多轮终端聊天、-p 单次任务、当前目录 .env 和工具进度；milestone/v1 已收回单任务核心。本次补充 v3 后的 Agent 可观测性专题，细分 v6 的输出、命令交互与布局，并明确 Rig 的选修定位。下文这些能力仍待实现；Langfuse 账号连通性与实际 trace 尚未验证。
 
 最值得保留的是逐步生长的节奏。先看见模型调用一次工具，再看见历史变长，最后才遇到“每次都要设置环境”“换模型不方便”“明天怎样接着做”。每版解决一个能亲手观察的问题。
 
@@ -11,15 +11,18 @@
 | v1 | 目标约 300 行，硬上限 <400；当前 398 行 | 怎样快速看懂一个完整 agent loop？ | 非流式 Responses、四工具、结果反馈、明确停止与必要限制；完成真实工具反馈闭环 |
 | v2 | 约 500 行，允许合理浮动 | 历史变长后，下一轮看到什么？ | 根 AGENTS.md、完整交互组、输入预算、摘要、JSONL 运行记录；小预算下完成任务 |
 | v3 | 约 1000 行，优先保持可读 | 怎样成为不用反复配置的个人 CLI？ | 基础 SSE、`~/.crabloop`、TOML、凭证、provider 预置/Custom、模型目录与缓存；分别学习流式显示和模型配置 |
+| v3 后：可观测性专题 | 单独估算增量，仍计入源码总量 | 每一步看到了什么，执行了什么，为什么继续或停止？ | 可选 telemetry、生命周期 observer、Rust OpenTelemetry → Langfuse v4；把终端轮次与模型、工具、压缩轨迹对应起来 |
 | v4 | 先按功能估算，不预设硬上限 | 怎样复用工作方法，并查阅外部资料？ | Skills 最小支持、web_fetch、web_search、CLI 配置菜单；查官方资料，保存带来源的比较报告 |
 | v5 | 先按功能估算，不预设硬上限 | 进程退出后，怎样知道做到哪里并继续？ | JSONL sessions、list/show/resume、压缩状态重建、取消与未完成操作；中断后核对并继续 |
-| v6（建议） | 分别记录核心与界面增量 | 怎样观察长任务和丰富输出？ | 在基础流式之上增加 Markdown、Ratatui 布局、工具详情和状态栏 |
+| v6（建议） | 分别记录核心与界面增量 | 怎样观察长任务和丰富输出，并控制输入？ | 输出渲染 → slash command 交互 → 完整布局；保留可见的 step、预算、工具结果与停止原因 |
 | v7（建议） | 先做可解释的小型 memory | 新会话应该记住哪些旧经验？ | 分作用域记忆、来源、检索、修正和遗忘；跨会话复用验证过的项目知识 |
-| v8（选修） | 按对照结果决定是否采用 | 哪些基础能力适合交给 Rust 库？ | 固定版本的 Rig 适配实验；保留手写 loop，比较协议行为与维护成本 |
+| v8（选修，可跳过） | 按对照结果决定是否采用 | 哪些基础能力适合交给 Rust 库？ | 固定版本的 Rig 适配实验；主线独立推进，是否采用由协议验证与维护收益决定 |
 
 v1 的 <400 行是硬边界：统计全部 src/**/*.rs，测试、教程与开发脚本单独记录。超预算时删减功能，不放宽 v1 的范围；其他阶段仍按范围预算控制。不会为了从 360 降到 300 而压缩难读的代码，也不会因为模型多输出一个正确的统计字段就判失败。验收看任务事实、工具结果和程序的关键边界。
 
 v3 若完成配置与目录后仍有余量，可以提前加入最小 Skills：只列名称/简介、按需读 SKILL.md。它是候选项，不阻塞 v3；完整讲解与联网实践归 v4。完整交互保留在 main，v1 为符合 <400 行约束的单任务入口。v1/v2 继续非流式；基础 SSE 在 v3 单独展开，完整屏幕布局在 v6 展开；MCP、插件市场、多 agent 调度继续留作后续候选。
+
+可观测性专题安排在 v3 配置完成后、v4 Skills 与联网之前，单独提交、写教程和验收，现有主版本编号保持。先保留 v3 的学习快照，再沿主线加入观测增量；全部生产 Rust 继续计入总行数。这样练习后续能力时，已经可以沿 trace 查看模型请求、工具反馈与上下文变化。
 
 ## v3：基础流式与个人配置
 
@@ -96,6 +99,50 @@ credentials.toml 按 provider/profile 保存 API Key；目录在 Unix 下使用 
 
 官方协议依据：[OpenAI models](https://developers.openai.com/api/reference/resources/models/methods/list)、[DeepSeek Responses](https://api-docs.deepseek.com/api/create-response/)、[DeepSeek models](https://api-docs.deepseek.com/api/list-models/)、[MiniMax Responses](https://platform.minimaxi.com/docs/api-reference/responses-create)、[MiniMax models](https://platform.minimaxi.com/docs/api-reference/models/openai/list-models)。这些是 2026-10-11 的核查结果，实施 v3 时再复核字段和端点。
 
+## v3 后的独立专题：Agent 可观测性
+
+终端显示 `thinking (step 10)` 时，学习者已经能看见循环在推进。下一步会想知道：这一轮发给模型的历史是什么，模型为什么提出这次调用，工具反馈怎样进入下一轮，压缩又移除了哪些旧记录。这个专题把这些问题连成可复盘的执行轨迹。
+
+从已有 Progress 和 journal 的事件语义出发，补齐模型开始/结束、工具开始/结束、压缩提交、错误与停止。用具体事件和小型 observer 接收生命周期 hook，关联 session、用户回合、step 与原始 call_id；执行、历史提交和停止仍由手写核心负责。终端消费进度，telemetry 适配器把观测事件映射为 spans。现有 journal 的写入契约独立保留。
+
+一次用户任务对应一条 trace，多轮对话用 session_id 关联多条 trace。每次主模型和摘要调用各有自己的 generation，工具与请求它的 generation 同属相应 step。结构示意如下：
+
+```text
+session：一次多轮对话
+└─ trace：本次用户任务
+   ├─ step 1
+   │  ├─ generation：主模型请求
+   │  └─ tool：bash
+   └─ step 2
+      ├─ compaction
+      │  └─ generation：摘要请求
+      ├─ generation：主模型请求
+      └─ tool：edit_file
+```
+
+当前 `thinking (step N)` 在主循环开始时发出，表示进入第 N 轮；最终 `N steps` 统计成功取得主模型响应的轮数。计划分别记录循环轮次、主模型完成次数、工具调用次数和摘要请求次数。一个 step 可以有多个工具，压缩还可能增加模型请求；这些计数必须有明确含义。
+
+telemetry 默认关闭，配置显式使能。以下是计划中的 TOML 接口：
+
+```toml
+[telemetry]
+enabled = true
+backend = "langfuse"
+capture_content = false
+```
+
+关闭内容采集时记录模型名称、实际 usage、耗时、调用关联、工具结果状态、压缩前后字节数与停止原因。学习具体决策时可显式开启脱敏、限长后的模型输入/输出与工具参数/结果；密钥、认证头和 encrypted_content 始终排除。模型未返回的 usage 保持未知。模型给出最终回答与独立任务验证继续分别记录。
+
+初始凭证沿用 `LANGFUSE_PUBLIC_KEY`、`LANGFUSE_SECRET_KEY`、`LANGFUSE_BASE_URL`。通过现有配置加载方式解析 cwd .env，进程值优先，再把选定值传给 exporter；变量存在不会自动开启上传。后续配置菜单沿用同一配置与凭证来源。凭证值不进入配置示例、日志或 trace。
+
+Rust 接入采用原生 OpenTelemetry API 与 OTLP/HTTP exporter。2026-10-12 核查的已发布候选为 `opentelemetry`、`opentelemetry_sdk`、`opentelemetry-otlp` 0.33.1；实施时核对该固定版本与当前依赖的组合。Langfuse Server 版本和 Rust SDK 版本分别记录。按 v4 文档用项目公钥/密钥生成 Basic Auth，向 `/api/public/otel/v1/traces` 导出，并设置 `x-langfuse-ingestion-version: 4`；每个 span 完成后导出，session 等查询维度传播到相关子 span，call_id 作为元数据保留，span ID 由 OTel 生成。
+
+网络导出使用有界后台队列，失败或丢弃数量清楚可见，遥测故障不改变工具执行与任务停止。结束和取消时做有时限的 flush；取消仍按核心契约记录结果未知。本地 JSONL 是执行记录，Langfuse 是可观测投影，恢复判断继续由 v5 的会话契约承担。
+
+验收分两层：离线检查事件顺序、父子关系、call_id、开关、导出失败与有界退出；真实运行后从 Langfuse 读回 observations，核对多轮任务、工具故障反馈、强制压缩和取消轨迹是否与本地记录一致。终端可给出本次 trace 链接。2026-10-12 只确认了本地变量声明和官方协议，尚未验证账号、部署版本或实际入库。评估器与自动评分另作后续实验。
+
+协议与层次依据：[Langfuse v4 自定义接入](https://langfuse.com/integrations/native/opentelemetry/migration-to-v4)、[轨迹组织建议](https://langfuse.com/docs/observability/best-practices)、[Rust OTLP 0.33.1](https://docs.rs/opentelemetry-otlp/0.33.1/opentelemetry_otlp/)。
+
 ## v4：工具负责取资料，Skills 负责组织工作
 
 web_fetch 与 web_search 值得做，它们让通用任务不再只围绕本地文件。但可以等行动循环、上下文和配置都清楚以后再引入。
@@ -156,7 +203,19 @@ v2 的 `.crabloop/run-*.jsonl` 只用于观察一次运行，已经可以教“�
 
 ## v6 建议：从基础流式长出完整终端界面
 
-早期交互版已经用 rustyline 提供输入编辑和历史，用同一个 Session 处理多次提问，并显示工具进度。Ctrl-C 取消后显式要求检查文件和 /new；当前没有恢复语义。基础文字增量安排在 v3；v6 在其上增加 Markdown、可展开的工具细节与布局，并接入 v5 的中断/恢复协议。
+早期交互版已经用 rustyline 提供输入编辑和历史，用同一个 Session 处理多次提问，并显示工具进度。Ctrl-C 取消后显式要求检查文件和 /new；当前没有恢复语义。基础文字增量安排在 v3；v6 在其上分步增加内容渲染、命令交互与布局，并接入 v5 的中断/恢复协议。
+
+v6 拆成三个可运行、独立验收的增量：
+
+| 增量 | 范围 | 需要观察的行为 |
+|---|---|---|
+| 输出渲染 | Markdown 标题、列表、引用、代码块；thinking 状态、可读推理内容；工具命令与结果详情 | 中文换行和终端宽度正确，回答与执行状态容易区分；先在滚动终端中完成 |
+| 输入与 slash command 交互 | 输入 / 展示命令说明，继续输入过滤；↑↓ 选择、Tab 补全、Enter 提交、Esc 关闭并保留草稿 | 候选选择清楚可见，参数与未知命令有提示，命令复用本地处理逻辑 |
+| 完整布局与焦点管理 | 对话区、输入区、状态栏、滚动、详情展开、焦点和增量刷新 | 模型等待期间按键仍可响应，窗口缩放、中文粘贴、多行输入、取消与退出恢复正常 |
+
+thinking 状态表示运行进度；推理正文只展示供应商实际提供的可读 reasoning/summary。encrypted_content 继续保持不透明。commentary、final_answer 和推理内容分别呈现，完整协议项仍用于历史回传；当前混合 phase 正文拼接的限制见[已知问题](../evidence/v2/review.md)。流式 Markdown 需要处理稳定内容与未完成尾部。实时 bash stdout/stderr 还需执行层的输出事件，作为明确增量实现。
+
+现有 /new、/help、/exit 已有本地执行逻辑。未来 /model、/config、/skills、/resume 的功能随配置、Skills、会话版本实现，v6 菜单提供统一入口。命令的可用状态和取消行为遵循同一个运行核心；配置菜单与手改 TOML 使用同一来源。
 
 终端库按实际问题选择：
 
@@ -174,11 +233,11 @@ Codex CLI 的 Rust TUI 作为具体源码参考。本次只读检查本机 opena
 
 阅读顺序：[依赖声明](https://github.com/openai/codex/blob/279ba894152b2c01c5294cc0723b463b209bdca4/codex-rs/tui/Cargo.toml#L82) → [终端与输入事件](https://github.com/openai/codex/blob/279ba894152b2c01c5294cc0723b463b209bdca4/codex-rs/tui/src/tui.rs) → [自有 TextArea](https://github.com/openai/codex/blob/279ba894152b2c01c5294cc0723b463b209bdca4/codex-rs/tui/src/bottom_pane/textarea.rs) / [ChatComposer](https://github.com/openai/codex/blob/279ba894152b2c01c5294cc0723b463b209bdca4/codex-rs/tui/src/bottom_pane/chat_composer.rs) → [流式显示控制器](https://github.com/openai/codex/blob/279ba894152b2c01c5294cc0723b463b209bdca4/codex-rs/tui/src/streaming/controller.rs)。源码显示 Codex 在基础库之上持有编辑与渲染状态；依赖中另有 pulldown-cmark、textwrap、Unicode 处理及 insta 快照测试。
 
-CrabLoop 优先借鉴终端退出恢复、输入/粘贴与提交的区分、流式内容的稳定部分和可更新尾部，以及小组件快照测试。先用 Ratatui/Crossterm 发布版完成最小界面，输入框先选兼容组件；需要自有交互行为时再读 Codex 对应实现。只有遇到具体问题时才评估 fork 或复杂组件，保持核心与界面职责清楚。
+CrabLoop 优先借鉴终端退出恢复、输入/粘贴与提交的区分、流式内容的稳定部分和可更新尾部，以及小组件快照测试。完整布局增量先用 Ratatui/Crossterm 发布版完成最小界面，输入框先选兼容组件；需要自有交互行为时再读 Codex 对应实现。只有遇到具体问题时才评估 fork 或复杂组件，保持核心与界面职责清楚。
 
-当前核心通过 Progress 回调发出模型轮次和工具开始/结束，交互与单次入口共享 Session::turn。v6 计划扩展为 channel 上的 TextDelta、ToolStarted、ToolFinished、Compaction、Stopped 等事件，CLI/TUI 消费事件并展示。界面刷新不执行工具，模型网络等待不阻塞按键。当前单次 CLI 入口仍可用于脚本和验收；TUI 复用同一个运行核心。可以在具体需要出现时拆出 src/ui/，所有生产 Rust 仍计入总行数，另列核心/界面分项帮助阅读。
+当前核心通过 Progress 回调发出模型轮次和工具开始/结束，交互与单次入口共享 Session::turn。v6 复用可观测性专题的生命周期与关联 ID，再按需要增加 channel 上的 TextDelta、可读推理和 ToolOutputDelta。CLI/TUI 消费事件并展示，核心负责工具执行；模型网络等待不阻塞按键。当前单次 CLI 入口仍可用于脚本和验收；TUI 复用同一个运行核心。可以在具体需要出现时拆出 src/ui/，所有生产 Rust 仍计入总行数，另列核心/界面分项帮助阅读。
 
-最小界面只有对话区、输入区和状态栏，工具详情可展开。先验证中文粘贴、多行输入、窗口缩放、流式输出与取消，以及退出后的终端恢复。Markdown 美化、主题与复杂快捷键随后按需要添加，不把一个版本变成终端编辑器项目。
+教学验收要求学习者能从界面追踪主循环、工具反馈、压缩和停止，并找到对应代码位置。保留可见的当前 step 与轮次预算，工具和摘要调用另行计数；状态栏与 Langfuse 的同一任务、step、call_id 能对应。输出渲染、slash 交互和完整布局分别验证，主题与复杂快捷键随后按需要添加。
 
 ## v7 建议：记住可复用的经验
 
@@ -200,11 +259,11 @@ memory 不保存密钥，也不把工具/网页里的指令提升成全局规则
 
 ## v8 选修：把手写实现与 Rig 放在一起比较
 
-Rig 适合列入高阶实验。它的当前官方文档覆盖模型/provider、工具、流式、embedding、向量存储与 memory，并明确允许调用模型、保留自有 loop；也提供更完整的 agent runtime。[Rig 官方介绍](https://rig.rs/docs)、[当前 API 入口](https://docs.rs/rig/latest/rig/)
+Rig 是可跳过的高阶对照项，v1–v7 主线可以沿手写实现独立完成。它的官方文档覆盖模型/provider、工具、流式、embedding、向量存储与 memory，并允许直接调用模型、保留自有 loop；也提供 agent runtime。[Rig 官方介绍](https://rig.rs/docs)、[API 入口](https://docs.rs/rig/latest/rig/)
 
 建议先在独立的实验开发分支里接一个 Rig 模型后端，保留 CrabLoop 的循环、上下文策略、工具执行与 session/memory 规则。用相同 fixture 和代表任务比较原手写 HTTP 与 Rig 适配：调用/结果匹配、reasoning 与 phase 回传、流式中断、usage/错误、工具副作用和预算是否仍有相同含义。尤其不能因为 API 都叫 Responses 就假定原生字段一定完整往返。
 
-实验需要固定实际采用的已发布版本，阅读对应源码/API，而不是直接把 main 分支文档当稳定契约。记录依赖变化、适配代码和调试成本，解释哪些重复代码减少了、哪些状态仍由 harness 持有。通过对照后，再决定并入后续里程碑还是作为选修保留。使用 Rig agent runtime 则是第二个独立对照题，不与替换模型客户端同时发生。
+出现重复的多协议 provider 接入、embedding 等具体需要时，再评估 Rig 能减少的维护工作。实验固定实际采用的已发布版本并阅读对应源码/API，记录依赖变化、适配代码和调试成本，解释哪些重复代码减少了、哪些状态仍由 harness 持有。通过协议与任务对照后决定是否采用；使用 Rig agent runtime 是第二个独立对照题，不与替换模型客户端同时发生。
 
 Rig 的当前 API 也有图像生成接口。如果之后希望 CrabLoop 增加生图任务，可以单独规划 generate_image 工具与产物文件管理；它与引入通用 agent 基础库分开决定，不影响当前 Responses 主循环路线。
 
