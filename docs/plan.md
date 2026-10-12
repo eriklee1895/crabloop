@@ -1,6 +1,6 @@
 # CrabLoop v1 → v2 Implementation Plan
 
-> 版本说明（2026-10-12）：本文记录原始 v1 → v2 设计。v1.1 按用户的新要求提前增加 `-p` 和多轮终端入口；完整内存历史仍保留 v1 的边界，不带压缩和 journal。以[交互补篇](../tutorial/v1/06-conversation.md)和[本次记录](devlog/06-v1-interactive.md)说明的变更为准。
+> 版本说明（2026-10-12）：本文记录原始 v1 → v2 设计。当前 v1 学习分支按用户的新要求增加 `-p` 和多轮终端入口；完整内存历史仍保留 v1 的边界，不带压缩和 journal。以[交互补篇](../tutorial/v1/06-conversation.md)和[本次记录](devlog/06-v1-interactive.md)说明的变更为准。
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 

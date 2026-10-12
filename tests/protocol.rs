@@ -108,6 +108,7 @@ fn cli_validates_configuration_before_network_access() {
     assert!(String::from_utf8_lossy(&invalid.stderr).contains("usage"));
     let dir = common::TempDir::new();
     let absent = Command::new(exe)
+        .current_dir(dir.path())
         .arg("--workspace")
         .arg(dir.path())
         .arg("hello")
@@ -123,6 +124,7 @@ fn cli_uses_the_requested_workspace_task_and_model() {
     let dir = common::TempDir::new();
     let server = StubResponses::start(vec![fixture("text")]);
     let output = std::process::Command::new(env!("CARGO_BIN_EXE_crabloop"))
+        .current_dir(dir.path())
         .arg("--workspace")
         .arg(dir.path())
         .arg("inspect this project")
@@ -141,6 +143,7 @@ fn cli_honors_openai_base_url_without_full_endpoint_override() {
     let dir = common::TempDir::new();
     let server = StubResponses::start(vec![fixture("text")]);
     let output = std::process::Command::new(env!("CARGO_BIN_EXE_crabloop"))
+        .current_dir(dir.path())
         .arg("--workspace")
         .arg(dir.path())
         .arg("base prefix")
