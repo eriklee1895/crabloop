@@ -8,7 +8,7 @@ A small coding-agent harness that grows step by step in Rust.
 
 真实 DeepSeek V4.1 Flash 录制：第一轮创建并读取文件，第二轮沿用对话修改同一个文件。GIF 缩短等待间隔；[录制与独立验证](evidence/interactive/README.md)。
 
-项目采用逐步开发的方式：先用约 300 行写出最小循环，再加入终端交互与上下文管理，随后规划约 1000 行的 v3。通过 coding 和通用本地任务，逐步练习同一套 harness。
+项目首先帮助学习者快速读懂一个 agent 核心循环：v1 目标约 300 行，全部生产 Rust 严格少于 400 行。复杂 Harness 在后续版本逐步生长。当前 v1 分支为 571 行，尚待收敛，具体约束见[教学边界](docs/v1-scope.md)。
 
 ## 从哪里开始
 
@@ -17,7 +17,7 @@ A small coding-agent harness that grows step by step in Rust.
 | 入口 | 适合学习什么 | 启动与交互 |
 |---|---|---|
 | `main` | 当前完整实现：四工具、多轮会话和上下文压缩 | `cargo run` 聊天；`cargo run -- -p "任务"` 单次执行 |
-| `milestone/v1` | 四工具循环、默认工作目录、.env、输入编辑和多轮 Session | 与 main 相同的聊天和 `-p` 入口；完整源码 571 行，无压缩或 journal |
+| `milestone/v1` | 四工具循环、默认工作目录、.env、输入编辑和多轮 Session | 与 main 相同的聊天和 `-p` 入口；当前 571 行，待收敛到 <400；无压缩或 journal |
 | `milestone/v2` / `v2` | 504 行的上下文投影与摘要压缩 | 保留当时的显式参数入口；便捷交互已接入 main |
 
 想学习带交互的第一版，可以运行：
@@ -33,12 +33,12 @@ cargo run
 
 | 版本 | 核心实现目标 | 要亲手弄清楚的问题 |
 |---|---:|---|
-| v1 | 原始闭环 314 行；含 CLI/UI 的当前分支 571 行 | 模型如何行动，并沿着同一份历史继续提问？ |
+| v1 | 目标约 300 行，硬上限 <400；当前 571 行待收敛 | 如何快速看懂模型—工具—反馈—停止的核心循环？ |
 | v2 | 约 500 行 Rust，上下文管理与压缩 | 每轮模型看到什么，历史怎样被选择和整理？ |
-| v3 | 约 1000 行 Rust，home、TOML、provider 与模型目录 | 怎样配置一次，持续使用和切换模型？ |
+| v3 | 约 1000 行 Rust，基础 SSE、home、TOML、provider 与模型目录 | 怎样配置一次，持续使用和切换模型？ |
 | v4 | Skills、web_fetch、web_search | 怎样复用方法，完成联网资料任务？ |
 | v5 | JSONL 会话保存与恢复 | 中断之后如何接着做？ |
-| v6（建议） | 流式输出与完整 Ratatui TUI | 怎样让长任务、工具详情与终端布局更易观察？ |
+| v6（建议） | 完整 Ratatui TUI 与丰富渲染 | 怎样让长任务、工具详情与终端布局更易观察？ |
 | v7（建议） | 跨会话 memory | 哪些经验值得保存、召回、修正与遗忘？ |
 | v8（选修） | Rig 后端对照 | 哪些基础能力适合交给第三方 Rust 库？ |
 
@@ -63,7 +63,7 @@ v2 增加上下文预算、历史整理和摘要压缩，通过实验检查任�
 
 从[教程入口](tutorial/README.md)了解这条路线；[完整代码增量](tutorial/v1/patches/README.md)可从空目录逐步构建 v1，最后展开为 352 行的教学排版。再读[接着问下一句](tutorial/v1/05b-interactive.md)，体验 v1 分支的交互入口：571 代码行 / 581 物理行，含完整 CLI/UI，保留内存历史，尚无压缩或 journal。
 
-行数计算覆盖全部 src/**/*.rs，测试、文档和练习仓库另算。代码规模是弹性的范围预算，v1 在 350–360 行也可以接受；保留正常格式化与必要错误处理。
+行数计算覆盖全部 src/**/*.rs，测试、文档和练习仓库另算。v1 的 <400 行是硬约束，其他版本按范围预算控制；保留正常格式化与必要错误处理，超预算时减少功能。
 
 ## 当前进度与文档
 
@@ -101,7 +101,7 @@ cargo run -- --help
 
 自动选择遵循已有配置：没有显式模型/完整端点或进程级 OpenAI 配置时，优先使用 DEEPSEEK_API_KEY；否则沿用 OPENAI_API_KEY、OPENAI_BASE_URL、CRABLOOP_MODEL。可用 CRABLOOP_PROVIDER=deepseek/openai 明确指定。openai 模式默认模型为 gpt-6-luna，官方 DeepSeek base URL 则默认 deepseek-flash；其他服务应显式填写支持的模型名。CRABLOOP_API_URL 覆盖所选 provider 的完整端点，Key 始终来自该 provider 对应变量。
 
-旧的任务位置参数仍可用。无参数管道输入作为一个完整任务；`--chat` 显式按行进行多轮对话。只读取启动目录的 .env，不向父目录搜索，也不执行文件里的命令。空会话退出不会创建日志或请求模型。当前界面使用 rustyline 编辑输入，模型回答仍整段显示；流式显示和完整屏幕布局留给 v6。
+旧的任务位置参数仍可用。无参数管道输入作为一个完整任务；`--chat` 显式按行进行多轮对话。只读取启动目录的 .env，不向父目录搜索，也不执行文件里的命令。空会话退出不会创建日志或请求模型。当前界面使用 rustyline 编辑输入，模型回答仍整段显示；基础流式显示安排在 v3，完整屏幕布局留给 v6。
 
 单次模式的 stderr 保留工具 JSON 轨迹和日志路径；交互模式显示工具进度。每个实际开始的会话写入工作区 .crabloop 的 JSONL，用于观察，不支持跨进程恢复。请求错误或中断后要先检查文件状态，再用 `/new`；这不会回滚已发生的修改。CRABLOOP_CONTEXT_BYTES 默认 49152，最小 4096。摘要请求要求模型支持 reasoning.effort=none；v2 主验收模型为 DeepSeek V4.1 Flash。
 

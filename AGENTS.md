@@ -4,22 +4,22 @@
 
 CrabLoop is a small coding-agent harness built from scratch in Rust for hands-on learning.
 
-- v1: approximately 300 lines of core Rust, with read_file, write_file, edit_file, and bash.
+- v1: target about 300 lines, HARD cap below 400 total production Rust code lines. Teach the hand-written model/tool/feedback/stop loop with four tools.
 - v2: approximately 500 lines total, adding context management and summary compaction.
 - v3: approximately 1,000 lines total, adding ~/.crabloop, TOML configuration, provider presets/Custom, credentials, and model catalog discovery/cache. Minimal Skills is optional if comfortably within scope.
 - Planned v4: Skills, Tavily Search/Firecrawl Scrape, a config menu sharing TOML files with manual edits, selective .env import and visible config sources. Planned v5: recoverable JSONL sessions and interruption handling under ~/.crabloop. See docs/roadmap.md.
-- Basic multi-turn terminal chat belongs in the early learning stage. v6 adds streaming and Ratatui/Crossterm layout; v7 adds scoped memory; optional v8 compares a pinned Rig backend. See docs/roadmap.md.
+- v1/v2 stay non-streaming; v3 adds basic SSE as a separate learning increment. Rich terminal layout is v6, memory v7, optional Rig comparison v8. Early product polish must not expand v1.
 - Acceptance includes both coding repairs and general local agentic tasks such as reading source documents and producing a verifiable structured report.
 - Use the OpenAI native Responses API and a hand-written agent loop.
 - Grow the same implementation through small, explainable steps. Preserve runnable milestones with v1 and v2 Git tags.
 
-Line counts guide scope; v1 at 350–360 is accepted. Count all production Rust under src/; tests/docs/fixtures/dev scripts are separate. Keep readable formatting and error handling; never code-golf or hide implementation. Accept correct extra output fields.
+The user tightened v1 scope on 2026-10-12: <400 is mandatory. Count all production src/**/*.rs with scripts/count-lines.py after normal rustfmt; report physical lines too. Tests/docs/fixtures/dev scripts are separate. Reduce features, never hide code, code-golf, outsource the loop, or drop necessary error handling. See docs/v1-scope.md.
 
 ## Current state and layout
 
 Seven patches rebuild v1 from scratch; see tutorial/v1/patches/README.md. Keep code and Chinese tutorials together. The Cargo package, src/ and tests/ live at root.
 
-Historical v1/step-05-v1 tags retain 314 code lines (319 physical); v2 retains 504 (511). The v1 readability patch yields 352/357. Current main has 813/825 including CLI/UI. The single milestone/v1 branch includes interaction at 571/581, without compaction or journals; no separate interaction-version branch/tag. Tutorials 00–09 and evidence/v1|v2/ preserve historical results. Checks: 61 Rust + 6 Python, fmt and clippy passed. Multi-turn live/PTY evidence and the genuine README recording are in evidence/interactive/. A minor mixed commentary/final-text display issue remains in evidence/v2/review.md.
+Historical v1/step-05-v1: 314 code / 319 physical lines; v2: 504/511; main: 813/825. The v1 readability patch is 352/357. Current milestone/v1 is 571/581 and violates the new <400 cap: scope reduction remains required. Tutorials 00–09 and evidence retain historical results. Last implementation checks: 61 Rust + 6 Python, fmt/clippy passed. Multi-turn/PTY evidence is in evidence/interactive/; a mixed commentary/final display limitation remains in evidence/v2/review.md.
 
 Preferred model: DeepSeek V4.1 Flash (deepseek-flash); fallback: gpt-6-luna through TeamoRouter. Both passed v1 tasks. DeepSeek passed v2 with five compactions; Luna v2 is untested. Summaries use reasoning.effort=none and at least 4,096 output tokens; main requests use provider defaults. Request limit: 49,152 bytes; CRABLOOP_CONTEXT_BYTES overrides it (min 4,096). Root AGENTS.md is pinned and must stay below 8,192 bytes. Distinguish offline, live and semantic evidence.
 
