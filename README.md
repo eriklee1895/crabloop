@@ -47,7 +47,7 @@ cd /path/to/project
 
 ## 阅读与验证
 
-从[教程入口](tutorial/README.md)进入 00–05 的最小循环学习。原始标签、已有验收和开发记录保留原来的含义；当前分支的范围见[教学边界](docs/v1-scope.md)，本次删减见[收敛记录](docs/devlog/08-v1-reduction.md)。
+从[教程入口](tutorial/README.md)进入 00–05 的最小循环学习。原始标签、已有验收和开发记录保留原来的含义；当前分支已通过 40 项 Rust、4 项 Python 回归，真实 DeepSeek 修复和独立验证也通过。范围见[教学边界](docs/v1-scope.md)，本次删减见[收敛记录](docs/devlog/08-v1-reduction.md)。
 
 ```bash
 python3 scripts/count-lines.py --max 399

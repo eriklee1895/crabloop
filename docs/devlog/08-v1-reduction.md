@@ -8,4 +8,4 @@
 
 最后为 398 代码行 / 403 物理行。差异来自减少功能和状态，没有压缩 rustfmt 或把运行逻辑移到脚本。src/model.rs 和 src/tools.rs 保持展开的协议结构，核心 loop 在 src/lib.rs 的一个 run 函数中。行数门禁：python3 scripts/count-lines.py --max 399。
 
-当前 40 Rust + 3 Python 测试、fmt/clippy 与行数检查通过。被移出的跨用户回合功能及其测试继续保留在 main。真实 DeepSeek 修复验收与最终审查将在这一实现上追加；原始标签和旧模型证据不改写。
+当前 40 Rust + 4 Python 测试、fmt/clippy 与行数检查通过。被移出的跨用户回合功能及其测试继续保留在 main。真实 DeepSeek 修复已通过：commit be8131b，9 次工具调用、11.21 秒；修复前失败、修复后测试通过，独立 verifier 通过，原测试未改且 NOTES.md 生成。证据见 [本次运行](../../evidence/v1/20261012T035314137932Z-coding-deepseek.json)。实际 PTY 加本地模型 fixture 也验证了无参数中文任务输入、一次请求与正常退出。最终审查未发现运行时阻塞；两项清理已落实：第 01 章显式给出历史 checkout，v1 live driver 拒绝 --context-bytes 和 --stage v2，防止产生错误的预算/版本证据。后者先观察回归失败再修复；原始标签和旧模型证据不改写。

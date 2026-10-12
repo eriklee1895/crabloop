@@ -20,16 +20,22 @@ rustc --edition=2024 --test tests.rs -o checks
 
 ## 给模型一个目标，把动作留给循环
 
-按第 01 章配置模型与密钥之后运行：
+原始 v1 标签的命令在历史记录中保留。使用当前 milestone/v1 时，在仓库根目录构建，并将匹配的凭证导出到进程环境后运行：
 
 ```bash
-cargo run --locked -- --workspace playground/my-first-repair \
+export CRABLOOP_PROVIDER=deepseek
+# 在当前终端设置 DEEPSEEK_API_KEY；子目录会继承它。
+cargo build --locked
+crabloop_bin="$PWD/target/debug/crabloop"
+cd playground/my-first-repair
+"$crabloop_bin" -p \
   "阅读 README.md，修复 last_index。先运行原有测试，再修改，再测试。保留函数签名和 tests.rs，写 NOTES.md 记录实际验证。"
+cd ../..
 ```
 
 stderr 中会出现 turn 和 tool 记录；stdout 只留下最终回答。顺着记录看：模型先提出了什么，工具真实返回了什么，下一次动作是否反映了这个结果。模型可能合并几项调用，也可能多读一次文件，这些差异不影响任务是否完成。
 
-完成之后再独立执行：
+回到仓库根目录后再独立执行：
 
 ```bash
 bash scripts/verify-playground.sh playground/my-first-repair
@@ -55,9 +61,9 @@ python3 scripts/run-live.py --provider deepseek --scenario report
 
 ## 在 v1 停一下，再看下一步
 
-v1 的最终核心是 314 行非空、非独立 // 注释的 Rust，物理行数 319。为了让状态归属更清楚，我们删去了重复存储配置的 ModelClient，让 run 持有 reqwest::Client，model::request/respond 接收借用的 Config；工具返回 JSON，loop 负责包装 function_call_output。这也是前几章旧接口在最终 v1 中发生的小幅整理，行为没有改变。
+原始 v1 标签的核心是 314 代码行 / 319 物理行；当前分支在保留简洁启动方式与正常排版后是 398 / 403。为了让状态归属更清楚，我们删去了重复存储配置的 ModelClient，让 run 持有 reqwest::Client，model::request/respond 接收借用的 Config；工具返回 JSON，loop 负责包装 function_call_output。这也是前几章旧接口在最终 v1 中发生的小幅整理，行为没有改变。
 
-格式统一为 100 列、rustfmt 的 Max 小表达式排版；语义简化与格式变化都记录在开发日志里。300 行是提醒我们只做核心问题，350–360 行同样可以接受，数字不值得牺牲可读性。
+格式统一为 100 列、rustfmt 的 Max 小表达式排版；语义简化与格式变化都记录在开发日志里。当前硬约束是全部生产 Rust <400 代码行；超预算时减少功能，同时保留可读性和必要错误处理。
 
 现在试着只看一条工具轨迹，解释 call_id 从哪里来、谁执行动作、谁把结果加入历史。如果你能顺着一次失败走到下一次行动，v1 的主要学习目标就达到了。
 

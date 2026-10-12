@@ -14,8 +14,7 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser()
 parser.add_argument('--provider', choices=['deepseek', 'luna'], default='deepseek')
-parser.add_argument('--stage', choices=['v1', 'v2'], default='v1')
-parser.add_argument('--context-bytes', type=int)
+parser.add_argument('--stage', choices=['v1'], default='v1')
 parser.add_argument('--scenario', choices=['coding', 'report'], default='coding')
 args = parser.parse_args()
 settings = dict(os.environ)
@@ -51,8 +50,6 @@ if baseline.returncode == 0:
 env = os.environ.copy()
 env.update(CRABLOOP_PROVIDER="openai", OPENAI_API_KEY=key, OPENAI_BASE_URL=base, CRABLOOP_MODEL=model)
 env.pop('CRABLOOP_API_URL', None)
-if args.context_bytes:
-    env['CRABLOOP_CONTEXT_BYTES'] = str(args.context_bytes)
 task = 'Read README.md and inspect the source. Fix last_index in lib.rs. Run the existing tests before editing and after the fix. Preserve the public signature and tests.rs. Write NOTES.md describing the change and actual verification. Report only observed results.'
 subprocess.run(['cargo', 'build', '--locked'], cwd=ROOT, check=True, capture_output=True)
 if args.scenario == 'report':

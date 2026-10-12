@@ -1,0 +1,10 @@
+{
+  "date": "2026-10-12",
+  "kind": "real PTY with localhost Responses fixture",
+  "no_arguments": true,
+  "prompt_seen": true,
+  "requests": 1,
+  "task": "检查当前目录",
+  "final_text": "PTY_OK",
+  "exit_code": 0
+}
