@@ -17,9 +17,9 @@ The user tightened v1 scope on 2026-10-12: <400 is mandatory. Count all producti
 
 ## Current state and layout
 
-Seven patches rebuild v1 from scratch; see tutorial/v1/patches/README.md. Keep code and Chinese tutorials together. The Cargo package, src/ and tests/ live at root.
+Seven patches rebuild historical v1; see tutorial/v1/patches/README.md. Keep Chinese tutorials with code. Cargo/src/tests live at root.
 
-Historical v1/step-05-v1: 314 code / 319 physical lines; v2: 504/511; main: 813/825. The v1 readability patch is 352/357. Current milestone/v1 is 571/581 and violates the new <400 cap: scope reduction remains required. Tutorials 00–09 and evidence retain historical results. Last implementation checks: 61 Rust + 6 Python, fmt/clippy passed. Multi-turn/PTY evidence is in evidence/interactive/; a mixed commentary/final display limitation remains in evidence/v2/review.md.
+Historical tags: v1/step-05-v1 314 code / 319 physical; v2 504/511. Main is 813/825. Current milestone/v1 is 398/403: direct run(Config), cwd, fixed budget, no Session/TUI. v1 checks: 40 Rust + 4 Python, live repair and PTY passed. Main checks: 61 Rust + 6 Python, fmt/clippy passed. Historical evidence stays separate. The mixed commentary/final display limitation is in evidence/v2/review.md.
 
 Preferred model: DeepSeek V4.1 Flash (deepseek-flash); fallback: gpt-6-luna through TeamoRouter. Both passed v1 tasks. DeepSeek passed v2 with five compactions; Luna v2 is untested. Summaries use reasoning.effort=none and at least 4,096 output tokens; main requests use provider defaults. Request limit: 49,152 bytes; CRABLOOP_CONTEXT_BYTES overrides it (min 4,096). Root AGENTS.md is pinned and must stay below 8,192 bytes. Distinguish offline, live and semantic evidence.
 
@@ -75,7 +75,7 @@ Once the Cargo package exists, use cargo fmt --check, cargo clippy --locked --al
 
 Distinguish deterministic protocol tests, real local tool execution, and live-model runs. Report only what the actual evidence establishes.
 
-Commit Cargo.lock. Merge and push each verified iteration to main, preserving teaching commits. Keep main, milestone/* and immutable v*/step-* tags; remove completed temporary branches after verifying their commits are retained. Develop on a short-lived codex/* branch. No history rewriting for routine cleanup. Keep one learning branch per major stage; see docs/git-workflow.md for branch/tag distinctions.
+Commit Cargo.lock. Merge and push each verified iteration to main, preserving teaching commits. Keep main, milestone/* and immutable v*/step-* tags; remove completed temporary branches after verifying their commits are retained. Run scripts/count-lines.py --max 399 on v1. Develop on a short-lived codex/* branch. No history rewriting for routine cleanup. Keep one learning branch per major stage; see docs/git-workflow.md for branch/tag distinctions.
 
 Use rustfmt (100 columns, small heuristics Max), but expand protocol JSON for teaching clarity. Count all src/**/*.rs; retain historical milestone counts and report current counts separately. Never hide runtime code in scripts or docs.
 

@@ -8,7 +8,7 @@ A small coding-agent harness that grows step by step in Rust.
 
 真实 DeepSeek V4.1 Flash 录制：第一轮创建并读取文件，第二轮沿用对话修改同一个文件。GIF 缩短等待间隔；[录制与独立验证](evidence/interactive/README.md)。
 
-项目首先帮助学习者快速读懂一个 agent 核心循环：v1 目标约 300 行，全部生产 Rust 严格少于 400 行。复杂 Harness 在后续版本逐步生长。当前 v1 分支为 571 行，尚待收敛，具体约束见[教学边界](docs/v1-scope.md)。
+项目首先帮助学习者快速读懂一个 agent 核心循环：v1 目标约 300 行，全部生产 Rust 严格少于 400 行。复杂 Harness 在后续版本逐步生长。当前 v1 分支已收敛到 398 代码行 / 403 物理行，具体约束见[教学边界](docs/v1-scope.md)。
 
 ## 从哪里开始
 
@@ -17,23 +17,23 @@ A small coding-agent harness that grows step by step in Rust.
 | 入口 | 适合学习什么 | 启动与交互 |
 |---|---|---|
 | `main` | 当前完整实现：四工具、多轮会话和上下文压缩 | `cargo run` 聊天；`cargo run -- -p "任务"` 单次执行 |
-| `milestone/v1` | 四工具循环、默认工作目录、.env、输入编辑和多轮 Session | 与 main 相同的聊天和 `-p` 入口；当前 571 行，待收敛到 <400；无压缩或 journal |
+| `milestone/v1` | 398 行手写四工具循环，任务内多轮模型反馈 | cwd 工作区；无参数输入一个任务，或用 `-p`；无聊天编辑器、压缩或 journal |
 | `milestone/v2` / `v2` | 504 行的上下文投影与摘要压缩 | 保留当时的显式参数入口；便捷交互已接入 main |
 
-想学习带交互的第一版，可以运行：
+想快速看懂最小循环，可以运行：
 
 ```bash
 git switch milestone/v1
 cargo run
 ```
 
-阅读顺序是 [00–05 最小循环](tutorial/README.md) → [05b 多轮交互](tutorial/v1/05b-interactive.md) → [06–09 上下文管理](tutorial/v2/06-context-projection.md)。v1 学习分支已经包含使用优化；原始 314 行闭环保留在 `step-05-v1` / `v1` 历史标签。进入 v2 时按章节选择对应代码基线，main 同时具备交互和压缩。完整关系见 [版本与 Git 工作流](docs/git-workflow.md)。
+阅读顺序是 [00–05 最小循环](tutorial/README.md) → [06–09 上下文管理](tutorial/v2/06-context-projection.md)；[多轮交互](tutorial/v1/05b-interactive.md)作为后续选读。v1 保留简洁启动，main 保留完整交互；原始 314 行闭环保留在 `step-05-v1` / `v1` 历史标签。进入 v2 时按章节选择对应代码基线，main 同时具备交互和压缩。完整关系见 [版本与 Git 工作流](docs/git-workflow.md)。
 
 ## 逐步生长的里程碑
 
 | 版本 | 核心实现目标 | 要亲手弄清楚的问题 |
 |---|---:|---|
-| v1 | 目标约 300 行，硬上限 <400；当前 571 行待收敛 | 如何快速看懂模型—工具—反馈—停止的核心循环？ |
+| v1 | 目标约 300 行，硬上限 <400；当前 398 行 | 如何快速看懂模型—工具—反馈—停止的核心循环？ |
 | v2 | 约 500 行 Rust，上下文管理与压缩 | 每轮模型看到什么，历史怎样被选择和整理？ |
 | v3 | 约 1000 行 Rust，基础 SSE、home、TOML、provider 与模型目录 | 怎样配置一次，持续使用和切换模型？ |
 | v4 | Skills、web_fetch、web_search | 怎样复用方法，完成联网资料任务？ |
@@ -61,13 +61,13 @@ v2 增加上下文预算、历史整理和摘要压缩，通过实验检查任�
 
 每一步都包含必要的原理、亲手实现、故障实验、验证和复盘。通过 Git 提交记录演进，在里程碑完成后保留 v1、v2 tag，方便回到相应版本学习。
 
-从[教程入口](tutorial/README.md)了解这条路线；[完整代码增量](tutorial/v1/patches/README.md)可从空目录逐步构建 v1，最后展开为 352 行的教学排版。再读[接着问下一句](tutorial/v1/05b-interactive.md)，体验 v1 分支的交互入口：571 代码行 / 581 物理行，含完整 CLI/UI，保留内存历史，尚无压缩或 journal。
+从[教程入口](tutorial/README.md)了解这条路线；[完整代码增量](tutorial/v1/patches/README.md)可从空目录逐步构建 v1，最后展开为 352 行的教学排版。当前 v1 分支加入简洁启动后为 398 行；完成核心学习后可选读[接着问下一句](tutorial/v1/05b-interactive.md)，该交互专题使用历史提交，日常界面保留在 main。
 
 行数计算覆盖全部 src/**/*.rs，测试、文档和练习仓库另算。v1 的 <400 行是硬约束，其他版本按范围预算控制；保留正常格式化与必要错误处理，超预算时减少功能。
 
 ## 当前进度与文档
 
-当前已实现四工具、Responses 行动循环、上下文压缩和轻量多轮终端界面，教程 00–09 已完成。DeepSeek V4.1 Flash 与备选 gpt-6-luna 已通过真实修复任务；通用本地报告任务也有独立验收。固定 v1 为 314 行、v2 为 504 行；加入 CLI、交互和正常教学排版后的当前实现为 **813 代码行 / 825 物理行**，包含全部 src 文件，不再把它称作 300 行版本。[v1 验收](evidence/v1/acceptance.md) 和 [v2 压缩验收](evidence/v2/acceptance.md) 已保存。v3–v5 仍是规划，v6–v8 为建议与选修。
+当前已实现四工具、Responses 行动循环、上下文压缩和轻量多轮终端界面，教程 00–09 已完成。DeepSeek V4.1 Flash 与备选 gpt-6-luna 已通过真实修复任务；通用本地报告任务也有独立验收。固定 v1 标签为 314 行、v2 为 504 行；当前 v1 分支为 398 行，加入 CLI、交互和正常教学排版后的当前实现为 **813 代码行 / 825 物理行**，包含全部 src 文件，不再把它称作 300 行版本。[v1 验收](evidence/v1/acceptance.md) 和 [v2 压缩验收](evidence/v2/acceptance.md) 已保存。v3–v5 仍是规划，v6–v8 为建议与选修。
 
 Cargo 工程放在仓库根目录；教程按阶段组织在 tutorial/v1/ 和 tutorial/v2/；实际开发记录放在 docs/devlog/。
 
