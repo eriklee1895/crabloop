@@ -17,7 +17,6 @@ pub struct ModelReply {
     pub calls: Vec<ToolCall>,
     pub text: String,
     pub is_final: bool,
-    pub usage: Option<Value>,
 }
 pub fn request(config: &Config, instructions: &str, input: &[Value], tools: &[Value]) -> Value {
     json!({
@@ -67,5 +66,5 @@ pub async fn respond(client: &Client, config: &Config, body: Value) -> Result<Mo
         }
     }
     ensure!(!calls.is_empty() || !text.trim().is_empty(), "empty response output");
-    Ok(ModelReply { output, calls, text, is_final, usage: raw.get("usage").cloned() })
+    Ok(ModelReply { output, calls, text, is_final })
 }

@@ -16,22 +16,20 @@ The user tightened v1 scope on 2026-10-12: <400 is mandatory, superseding earlie
 
 ## Current state and layout
 
-This is the consolidated milestone/v1 learning branch, including early terminal interaction. Historical v1 and step-05-v1 tags retain the original 314 code lines / 319 physical lines. This branch has 571 code lines / 581 physical lines across all src/**/*.rs, including the CLI and terminal interface. This exceeds the newly required <400 cap and is pending scope reduction, not an accepted completed v1. No runtime code is hidden outside src/. v2 context projection, compression, journals and AGENTS.md loading are absent here.
+The milestone/v1 implementation has been reduced to 398 code lines / 403 physical lines under the established counting rule. The old 571-line interaction expansion remains in Git history and main. Original v1 / step-05-v1 tags retain 314/319. Production Rust lives in five files; run(Config) directly owns history and the serial model/tool loop. No Session, Progress, terminal editor, cross-user-turn chat or SSE remains in v1.
 
-The root Cargo package contains the hand-written Responses loop and four bounded tools. `Session` owns the client and full in-memory Responses history across user turns, including final answers and call/result associations. `run(Config)` remains the one-shot wrapper. Context is bounded by serialized request bytes (default 131,072; CRABLOOP_CONTEXT_BYTES overrides it, minimum 4,096); v1 stops at the limit without compaction. Histories disappear on exit. `/new` clears only the conversation, retaining files. Protocol/transport errors and interruptions poison the session until `/new`, without automatic tool replay.
+Startup is a single task: cargo run prompts for one line in a terminal, reads all piped stdin, or accepts -p/--print TASK (legacy positional TASK also works). The workspace is cwd; change directories before invoking the binary. Empty input exits without a model request. --chat and --workspace are not supported here. The request budget is fixed at 131,072 bytes; other limits and errors remain intact.
 
-`cargo run` enters a scrolling terminal chat in a TTY. `-p/--print TASK` runs once; positional tasks and whole-stdin one-shot input remain supported. `--chat` forces line-by-line chat, including pipes. rustyline provides input editing and in-memory history. Ctrl-C cancels; Ctrl-D and `/exit` quit. This version has no streaming or full-screen layout.
+Only the startup directory's .env is read as data; process environment wins. CRABLOOP_PROVIDER defaults to deepseek (DEEPSEEK_API_KEY, deepseek-flash). Explicit openai uses OPENAI_API_KEY, OPENAI_BASE_URL (default https://api.openai.com/v1) and default gpt-6-luna. CRABLOOP_MODEL and full CRABLOOP_API_URL override the selected profile. No model-name, hostname or key-presence inference. The live test driver explicitly selects openai while supplying the chosen provider's matching key/base/model; it runs the binary from the fixture directory. Never execute or print .env contents.
 
-Configuration reads only the startup directory's .env as data with dotenvy; it neither executes that file nor mutates process environment. Process values win. Prefer DEEPSEEK_API_KEY/deepseek-flash without an explicit generic model/endpoint; CRABLOOP_PROVIDER=deepseek/openai overrides selection. Generic mode uses OPENAI_API_KEY/OPENAI_BASE_URL/CRABLOOP_MODEL; CRABLOOP_API_URL is a full endpoint override. Credentials stay paired with the selected provider. Home/TOML/catalog remain later work.
+Current offline verification: 40 Rust and 3 Python tests; fmt/clippy and scripts/count-lines.py --max 399 passed. New live acceptance and final whole-change review are in progress. Historical live evidence remains distinct. Tests for removed chat functionality remain on main; v1 retains core protocol, bounded tools, feedback/error loops and single-task CLI coverage.
 
-Original v1 live tasks passed on DeepSeek V4.1 Flash and gpt-6-luna; the interaction changes have offline protocol, real local tool, CLI and session checks. No live-model run was performed for this backport. Current checks: 43 Rust and 3 Python tests, fmt and clippy. Tutorials 00–05 retain the original v1 path; tutorial/v1/06-conversation.md adds the interactive step. Detailed changes and verification are in docs/devlog/06-v1-interactive.md.
-
-Read docs/design.md and docs/plan.md as the frozen v1 → v2 design; the interaction addendum and latest user instructions take precedence. Keep one implementation at the repository root, and identify learning states with Git commits and immutable tags.
+Read docs/v1-scope.md and docs/v1-reduction-plan.md for this accepted reduction; docs/design.md and docs/plan.md preserve the original learning sequence. Tutorial 06-conversation is a later interaction experiment preserved through its historical commit, not a current v1 capability.
 
 ## How to develop
 
 - Keep AGENTS.md current throughout implementation, as requested by the user. Update it when repository state, interfaces, commands, or durable decisions change. Put detailed history and evidence in docs/devlog/ rather than accumulating a session transcript here.
-- Keep v1 focused on the smallest readable loop. Reduce the existing 571-line scope before declaring it complete; richer interaction/configuration belongs later. v1/v2 stay non-streaming; basic SSE moves to v3.
+- Keep v1 focused on the smallest readable loop. Keep all production Rust below 400 lines; richer interaction/configuration belongs later. v1/v2 stay non-streaming; basic SSE moves to v3.
 
 - Work in small increments, each with an observable behavior, an appropriate check, and a short explanation of what it teaches.
 - Keep the current milestone focused. Introduce abstractions when a concrete need appears.
@@ -67,7 +65,7 @@ Once the Cargo package exists, use cargo fmt --check, cargo clippy --locked --al
 
 Distinguish deterministic protocol tests, real local tool execution, and live-model runs. Report only what the actual evidence establishes.
 
-Commit Cargo.lock. The user authorizes verified increments to be committed and pushed, with main holding the latest validated tree. The user requested one v1 branch: milestone/v1 includes the interaction improvements. Keep main and milestone/v2 separately, and preserve historical v1/v2 and step tags. Do not create another interaction-version branch/tag or merge this older backend over main.
+Commit Cargo.lock. The user authorizes verified increments to be committed and pushed, with main holding the latest validated tree. The user requested one v1 branch: milestone/v1 is the reduced single-task teaching core. Keep main and milestone/v2 separately, and preserve historical v1/v2 and step tags. Do not create another interaction-version branch/tag or merge this older backend over main.
 
 Formatting uses rustfmt with max_width = 100 and use_small_heuristics = Max; expand protocol JSON for teaching clarity. Count all src/**/*.rs under this same public style for every milestone; never hide runtime code in scripts or documentation.
 

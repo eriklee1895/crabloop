@@ -49,7 +49,7 @@ baseline = verify()
 if baseline.returncode == 0:
     raise SystemExit('Fixture unexpectedly passes before repair')
 env = os.environ.copy()
-env.update(OPENAI_API_KEY=key, OPENAI_BASE_URL=base, CRABLOOP_MODEL=model)
+env.update(CRABLOOP_PROVIDER="openai", OPENAI_API_KEY=key, OPENAI_BASE_URL=base, CRABLOOP_MODEL=model)
 env.pop('CRABLOOP_API_URL', None)
 if args.context_bytes:
     env['CRABLOOP_CONTEXT_BYTES'] = str(args.context_bytes)
@@ -58,7 +58,7 @@ subprocess.run(['cargo', 'build', '--locked'], cwd=ROOT, check=True, capture_out
 if args.scenario == 'report':
     task = 'Follow README.md: inspect all inbox documents, produce report.json with exact facts, source paths and counts, and a Chinese SUMMARY.md citing every source. Preserve the original inbox files. Verify your output against the input documents before reporting completion.'
 start = datetime.now(timezone.utc)
-proc = subprocess.Popen([str(ROOT / 'target/debug/crabloop'), '--workspace', str(workspace), task], env=env, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True)
+proc = subprocess.Popen([str(ROOT / 'target/debug/crabloop'), '-p', task], env=env, cwd=workspace, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True)
 timed_out = False
 try:
     stdout, stderr = proc.communicate(timeout=300)

@@ -1,84 +1,59 @@
 # CrabLoop 🦀
 
-A small coding-agent harness that grows step by step in Rust.
+用 Rust 从零写一个能读文件、修改代码、运行测试，再根据真实反馈继续行动的 mini agent。
 
-> 当前学习约束：v1 目标约 300 行，全部生产 Rust 必须少于 400 行。此分支现有 571 行，尚待收敛；详见[教学边界](docs/v1-scope.md)。
+这是 **milestone/v1 的最小教学实现**：398 代码行 / 403 物理行，统计包含全部 src/**/*.rs。目标约 300 行、硬上限 <400 代码行；保持正常 rustfmt，没有把运行逻辑移出 src。原始 314 行快照仍在 v1 / step-05-v1 标签。
 
-用 Rust 从零实现一个小型 coding agent，通过读取代码、修改文件、运行测试和处理反馈，练习 agent harness 的核心机制。
+## 先运行一个任务
 
-这是 **v1 学习分支（milestone/v1）**：四工具循环已经包含多轮终端对话和 `-p` 单次任务，完整实现为 **571 行代码 / 581 物理行**。原始 314 行闭环保留在 `step-05-v1` 和历史 `v1` 标签，便于单独学习核心。后续主线继续增加上下文压缩、配置和其他能力。
+需要 Rust 1.94.0 和 Bash。在当前目录的 .env 配置 DEEPSEEK_API_KEY，然后：
 
-## 直接运行
-
-在启动目录的 `.env` 写入自己的配置；文件已被 Git 忽略。例如：
-
-```dotenv
-DEEPSEEK_API_KEY=your-key
-```
-
-然后启动：
-
-```sh
+```bash
 cargo run
 ```
 
-默认使用当前目录作为工作区。终端里可以连续提问，方向键编辑或召回输入；`/new` 开始新对话但保留文件，`/exit` 或 Ctrl-D 退出。Ctrl-C 可以取消当前回合；取消后先检查文件，再用 `/new` 开始。
+看到提示后输入一个任务，按 Enter 提交；完成后程序退出。也可以直接指定任务或传入管道：
 
-```sh
-cargo run -- -p "检查 README，简要说明这个项目"
-cargo run -- --workspace path/to/project
-printf '检查 README\n' | cargo run --quiet
+```bash
+cargo run -- -p "检查 README，说明这个项目的结构"
+printf '%s\n' "检查当前目录" | cargo run --quiet
+cargo run -- --help
 ```
 
-`-p`（也可写为 `--print`）回答后退出，stdout 只保留回答；进度在 stderr。位置任务参数继续兼容。普通管道输入整体作为一次任务，`--chat` 则按行进行多轮对话。
+工作区就是启动目录。要操作另一个目录，先构建，再从那个目录调用二进制：
 
-程序只读取启动目录 `.env`，不会执行里面的 shell 内容；进程环境值优先。也支持 `OPENAI_API_KEY`、`OPENAI_BASE_URL`、`CRABLOOP_MODEL`，以及完整端点 `CRABLOOP_API_URL`。若同时配置多个 provider，可用 `CRABLOOP_PROVIDER=deepseek` 或 `openai` 明确选择。不要把真实密钥写入 README 或提交到 Git。
+```bash
+cargo build --locked
+crabloop_bin="$PWD/target/debug/crabloop"
+cd /path/to/project
+"$crabloop_bin" -p "读取项目说明并检查测试"
+```
 
-本版终端界面使用 rustyline，支持滚动阅读、输入编辑、工具进度和多轮历史。回答仍是非流式返回。更完整的终端布局留在后续主线。
+配置从启动目录的 .env 和进程环境读取，进程环境优先。默认 DeepSeek；使用 OpenAI 或兼容端点时显式设置 CRABLOOP_PROVIDER=openai，再提供 OPENAI_API_KEY、OPENAI_BASE_URL 和 CRABLOOP_MODEL。完整端点可由 CRABLOOP_API_URL 覆盖。配置格式见 [.env.example](.env.example)，凭证不可提交。
 
-## 逐步生长的里程碑
+## 从哪里读核心
 
-| 版本 | 核心实现目标 | 要亲手弄清楚的问题 |
-|---|---:|---|
-| v1（本分支） | 571 行 Rust，四工具和交互入口；最初闭环目标约 300 行 | 模型怎样行动，多轮提问怎样复用同一份历史？ |
-| v2 | 约 500 行 Rust，上下文管理与压缩 | 每轮模型看到什么，历史怎样被选择和整理？ |
-| v3 | 约 1000 行 Rust，home、TOML、provider 与模型目录 | 怎样配置一次，持续使用和切换模型？ |
-| v4 | Skills、web_fetch、web_search | 怎样复用方法，完成联网资料任务？ |
-| v5 | JSONL 会话保存与恢复 | 中断之后如何接着做？ |
+从 [src/lib.rs](src/lib.rs) 的 run 函数开始。input 保存当前任务的完整历史：请求模型、追加 response.output、执行工具、用原 call_id 追加结果，再进入下一轮。模型给出最终回答或耗尽预算时停止。
 
-v3 优先完成配置和模型目录；有余量可提前体验最小 Skills，正式的 Skills 与联网实践安排在 v4。具体安排见[后续路线](docs/roadmap.md)。
+| 文件 | 职责 |
+|---|---|
+| src/main.rs | 调用入口、显示最终答案和退出状态 |
+| src/cli.rs | 单次任务输入和最小配置 |
+| src/lib.rs | 限制、停止原因与手写 agent loop |
+| src/model.rs | Responses 请求和完整响应校验 |
+| src/tools.rs | read_file、write_file、edit_file、bash |
 
-模型接入使用 **OpenAI 原生 Responses API**。v1 提供四个工具：
+一个用户任务可以触发多轮模型和工具交互。工具失败是下一次模型输入的一部分；模型说完成后，仍需独立检查文件和测试结果。v1 不包含多轮用户聊天、输入编辑器、SSE、摘要或会话恢复；这些逐步在后续实现中展开。日常多轮界面仍可在 main 使用。
 
-- `read_file`：读取文件。
-- `write_file`：创建或覆盖文件。
-- `edit_file`：唯一匹配的精确文本替换。
-- `bash`：在工作目录中执行 Bash 命令，收集结果。
+## 阅读与验证
 
-v1 的验收是一次完整的修复过程：读取代码 → 测试失败 → 修改 → 再次测试 → 独立验证。
+从[教程入口](tutorial/README.md)进入 00–05 的最小循环学习。原始标签、已有验收和开发记录保留原来的含义；当前分支的范围见[教学边界](docs/v1-scope.md)，本次删减见[收敛记录](docs/devlog/08-v1-reduction.md)。
 
-v2 增加上下文预算、历史整理和摘要压缩，通过实验检查任务约束、修改记录和测试结果是否得到保留。
+```bash
+python3 scripts/count-lines.py --max 399
+cargo fmt --check
+cargo clippy --locked --all-targets -- -D warnings
+cargo test --locked
+```
 
-## 学习与开发方式
-
-教程会从一个空 Cargo 工程开始，用耐心、连贯的中文叙述陪你一步步写下代码。先看看当前程序能做什么，再从运行结果中发现下一个问题，让每个工具、循环和上下文机制都有出现的理由。
-
-每一步都包含必要的原理、亲手实现、故障实验、验证和复盘。通过 Git 提交记录演进，在里程碑完成后保留 v1、v2 tag，方便回到相应版本学习。
-
-从[教程入口](tutorial/README.md)了解这条路线。
-
-行数计算覆盖全部 src/**/*.rs，测试、文档和练习仓库另算。代码规模是弹性的范围预算，v1 在 350–360 行也可以接受；保留正常格式化与必要错误处理。
-
-## 当前进度与文档
-
-原 v1 的教程 00–05 和[真实任务验收](evidence/v1/acceptance.md)保留不变；当前 v1 增加[交互补篇](tutorial/v1/06-conversation.md)。本次回移通过 43 项 Rust 测试、3 项 Python 验收器回归、fmt 和 clippy；没有把旧 v1 的真实模型证据当作本次交互实测。
-
-会话保存在进程内的 `Vec<Value>`，后续提问携带旧问题、工具记录和最终回答。请求 JSON 默认限制 131,072 字节（可用 `CRABLOOP_CONTEXT_BYTES` 调整），超过后明确停止；本快照不压缩、不落盘、不恢复跨进程历史。模型或协议错误后需要 `/new`，不会自动重复可能已有副作用的工具。固定工具边界与原 v1 相同：Bash 有超时和输出限制，但没有 OS sandbox，也不保证取消所有后代进程。
-
-Cargo 工程放在仓库根目录；教程按阶段组织在 tutorial/v1/ 和 tutorial/v2/；实际开发记录放在 docs/devlog/。
-
-- [设计说明](docs/design.md)：版本边界、协议、运行限制、上下文策略与完成标准。
-- [完整实施与学习计划](docs/plan.md)：10 个学习站点、9 个实施任务、故障实验和验收方法。
-- [教程写作约定](docs/writing-guide.md)：叙述方式、代码讲解、实验和章节质量要求。
-- [仓库起步记录](docs/devlog/00-bootstrap.md)：初始化、目录与写作方式的决定。
-- [开发约定](AGENTS.md)：项目目标、核心契约和验证要求。
+行数门禁超标会返回非零退出码。文件大小、工具输出、请求预算和 Bash 超时仍有限制；v1 不提供 OS sandbox、原子写入回滚或完整进程树清理。模型调用失败明确结束，不自动重放工具。

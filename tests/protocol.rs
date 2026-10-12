@@ -109,10 +109,9 @@ fn cli_validates_configuration_before_network_access() {
     let dir = common::TempDir::new();
     let absent = Command::new(exe)
         .current_dir(dir.path())
-        .arg("--workspace")
-        .arg(dir.path())
         .arg("hello")
         .env_remove("OPENAI_API_KEY")
+        .env("CRABLOOP_PROVIDER", "openai")
         .env("CRABLOOP_MODEL", "test-model")
         .output()
         .unwrap();
@@ -125,10 +124,9 @@ fn cli_uses_the_requested_workspace_task_and_model() {
     let server = StubResponses::start(vec![fixture("text")]);
     let output = std::process::Command::new(env!("CARGO_BIN_EXE_crabloop"))
         .current_dir(dir.path())
-        .arg("--workspace")
-        .arg(dir.path())
         .arg("inspect this project")
         .env("OPENAI_API_KEY", "test-key")
+        .env("CRABLOOP_PROVIDER", "openai")
         .env("CRABLOOP_MODEL", "test-model")
         .env("CRABLOOP_API_URL", server.endpoint())
         .output()
@@ -144,10 +142,9 @@ fn cli_honors_openai_base_url_without_full_endpoint_override() {
     let server = StubResponses::start(vec![fixture("text")]);
     let output = std::process::Command::new(env!("CARGO_BIN_EXE_crabloop"))
         .current_dir(dir.path())
-        .arg("--workspace")
-        .arg(dir.path())
         .arg("base prefix")
         .env("OPENAI_API_KEY", "test-key")
+        .env("CRABLOOP_PROVIDER", "openai")
         .env("CRABLOOP_MODEL", "test-model")
         .env_remove("CRABLOOP_API_URL")
         .env("OPENAI_BASE_URL", server.endpoint().trim_end_matches("/responses"))
