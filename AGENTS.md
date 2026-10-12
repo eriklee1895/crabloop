@@ -19,7 +19,7 @@ Line counts guide scope; v1 at 350–360 is accepted. Count all production Rust 
 
 Seven patches rebuild v1 from scratch; see tutorial/v1/patches/README.md. Keep code and Chinese tutorials together. The Cargo package, src/ and tests/ live at root.
 
-Frozen v1 has 314 code lines (319 physical); frozen v2 has 504 (511), with stable milestone branches and immutable tags. The v1 readability patch yields 352/357. Current main has 813/825 including CLI/UI. v1.1 has 571/581, based on v1 without compaction or journals. Tutorials 00–09 and evidence/v1|v2/ preserve historical results. Checks: 61 Rust + 6 Python, fmt and clippy passed. Multi-turn live/PTY evidence and the genuine README recording are in evidence/interactive/. A minor mixed commentary/final-text display issue remains in evidence/v2/review.md.
+Historical v1/step-05-v1 tags retain 314 code lines (319 physical); v2 retains 504 (511). The v1 readability patch yields 352/357. Current main has 813/825 including CLI/UI. The single milestone/v1 branch includes interaction at 571/581, without compaction or journals; no separate interaction-version branch/tag. Tutorials 00–09 and evidence/v1|v2/ preserve historical results. Checks: 61 Rust + 6 Python, fmt and clippy passed. Multi-turn live/PTY evidence and the genuine README recording are in evidence/interactive/. A minor mixed commentary/final-text display issue remains in evidence/v2/review.md.
 
 Preferred model: DeepSeek V4.1 Flash (deepseek-flash); fallback: gpt-6-luna through TeamoRouter. Both passed v1 tasks. DeepSeek passed v2 with five compactions; Luna v2 is untested. Summaries use reasoning.effort=none and at least 4,096 output tokens; main requests use provider defaults. Request limit: 49,152 bytes; CRABLOOP_CONTEXT_BYTES overrides it (min 4,096). Root AGENTS.md is pinned and must stay below 8,192 bytes. Distinguish offline, live and semantic evidence.
 
@@ -44,7 +44,7 @@ The user's latest instructions take precedence over those documents.
 - Work in small increments, each with an observable behavior, an appropriate check, and a short explanation of what it teaches.
 - Keep the current milestone focused. Introduce abstractions when a concrete need appears.
 - Prefer concrete functions and small types. Use standard Rust and basic HTTP/JSON/async libraries.
-- Maintain one implementation. For every completed version (v1 through v5 and future v6/v7), preserve a stable milestone/vN learning branch and an immutable vN tag. Use step commits/tags for chapter progression; continue new work on a development branch.
+- Maintain one implementation. For every completed version (v1 through v5 and future v6/v7), preserve a milestone/vN learning branch and immutable snapshot tags; same-version usability fixes may advance its branch. Use step commits/tags for chapter progression; continue new work on a development branch.
 - Write tutorials and explanations in Chinese, with Rust identifiers and protocol names in their original form.
 - Tutorials explain a reproducible learning path. Development records capture actual decisions, changes, failures, verification results, and relevant commits.
 
@@ -75,7 +75,7 @@ Once the Cargo package exists, use cargo fmt --check, cargo clippy --locked --al
 
 Distinguish deterministic protocol tests, real local tool execution, and live-model runs. Report only what the actual evidence establishes.
 
-Commit Cargo.lock. Merge and push each verified iteration to main, preserving teaching commits. Keep main, milestone/* and immutable v*/step-* tags; remove completed temporary branches after verifying their commits are retained. Develop on a short-lived codex/* branch. No history rewriting for routine cleanup. See docs/git-workflow.md for v1/v1.1/v2 relationships.
+Commit Cargo.lock. Merge and push each verified iteration to main, preserving teaching commits. Keep main, milestone/* and immutable v*/step-* tags; remove completed temporary branches after verifying their commits are retained. Develop on a short-lived codex/* branch. No history rewriting for routine cleanup. Keep one learning branch per major stage; see docs/git-workflow.md for branch/tag distinctions.
 
 Use rustfmt (100 columns, small heuristics Max), but expand protocol JSON for teaching clarity. Count all src/**/*.rs; retain historical milestone counts and report current counts separately. Never hide runtime code in scripts or docs.
 

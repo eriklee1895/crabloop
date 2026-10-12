@@ -55,4 +55,4 @@ python3 scripts/check-lessons.py
 
 第一次 fetch 准备固定依赖；检查脚本随后在临时目录离线应用全部七个增量。00 只构建，01–06 跑各阶段的完整 Rust 测试，05 额外核对 src 是否与 v1 一致，06 检查格式。测试使用本地 HTTP stub 和真实临时文件/进程，不需要模型 Key。
 
-正文里的旧接口属于各自步骤。最终去掉 ModelClient/ToolResult 的变化见 05 补丁及第 05 章的迁移表；06 只负责展开排版。原始 milestone/v1 与 v1 标签继续保留当时的完整记录。
+正文里的旧接口属于各自步骤。最终去掉 ModelClient/ToolResult 的变化见 05 补丁及第 05 章的迁移表；06 只负责展开排版。原始 step-05-v1 / v1 标签继续保留当时的完整记录；milestone/v1 分支已加入后续交互增量。

@@ -8,7 +8,7 @@ A small coding-agent harness that grows step by step in Rust.
 
 真实 DeepSeek V4.1 Flash 录制：第一轮创建并读取文件，第二轮沿用对话修改同一个文件。GIF 缩短等待间隔；[录制与独立验证](evidence/interactive/README.md)。
 
-项目采用逐步开发的方式：先完成约 300 行的 v1，再扩展到约 500 行的 v2，随后规划约 1000 行的 v3。通过 coding 和通用本地任务，逐步练习同一套 harness。
+项目采用逐步开发的方式：先用约 300 行写出最小循环，再加入终端交互与上下文管理，随后规划约 1000 行的 v3。通过 coding 和通用本地任务，逐步练习同一套 harness。
 
 ## 从哪里开始
 
@@ -17,25 +17,23 @@ A small coding-agent harness that grows step by step in Rust.
 | 入口 | 适合学习什么 | 启动与交互 |
 |---|---|---|
 | `main` | 当前完整实现：四工具、多轮会话和上下文压缩 | `cargo run` 聊天；`cargo run -- -p "任务"` 单次执行 |
-| `milestone/v1` / `v1` | 314 行的原始最小 agent loop | 原始显式参数入口，配置来自进程环境 |
-| `milestone/v1.1` / `v1.1` | v1 的使用优化：默认工作目录、.env、输入编辑和多轮 Session | 与 main 相同的聊天和 `-p` 入口；完整源码 571 行，无压缩或 journal |
+| `milestone/v1` | 四工具循环、默认工作目录、.env、输入编辑和多轮 Session | 与 main 相同的聊天和 `-p` 入口；完整源码 571 行，无压缩或 journal |
 | `milestone/v2` / `v2` | 504 行的上下文投影与摘要压缩 | 保留当时的显式参数入口；便捷交互已接入 main |
 
 想学习带交互的第一版，可以运行：
 
 ```bash
-git switch milestone/v1.1
+git switch milestone/v1
 cargo run
 ```
 
-阅读顺序是 [00–05 最小循环](tutorial/README.md) → [05b 多轮交互](tutorial/v1/05b-interactive.md) → [06–09 上下文管理](tutorial/v2/06-context-projection.md)。v1.1 和 v2 分别从 v1 演进，进入 v2 时按章节选择对应代码基线；main 汇合了两者的能力。完整关系见 [版本与 Git 工作流](docs/git-workflow.md)。
+阅读顺序是 [00–05 最小循环](tutorial/README.md) → [05b 多轮交互](tutorial/v1/05b-interactive.md) → [06–09 上下文管理](tutorial/v2/06-context-projection.md)。v1 学习分支已经包含使用优化；原始 314 行闭环保留在 `step-05-v1` / `v1` 历史标签。进入 v2 时按章节选择对应代码基线，main 同时具备交互和压缩。完整关系见 [版本与 Git 工作流](docs/git-workflow.md)。
 
 ## 逐步生长的里程碑
 
 | 版本 | 核心实现目标 | 要亲手弄清楚的问题 |
 |---|---:|---|
-| v1 | 约 300 行 Rust，四个工具 | 模型如何根据真实工具反馈继续行动？ |
-| v1.1（交互增补） | 571 行 Rust，含 CLI/UI | 怎样直接启动，并沿着同一份历史继续提问？ |
+| v1 | 原始闭环 314 行；含 CLI/UI 的当前分支 571 行 | 模型如何行动，并沿着同一份历史继续提问？ |
 | v2 | 约 500 行 Rust，上下文管理与压缩 | 每轮模型看到什么，历史怎样被选择和整理？ |
 | v3 | 约 1000 行 Rust，home、TOML、provider 与模型目录 | 怎样配置一次，持续使用和切换模型？ |
 | v4 | Skills、web_fetch、web_search | 怎样复用方法，完成联网资料任务？ |
@@ -63,7 +61,7 @@ v2 增加上下文预算、历史整理和摘要压缩，通过实验检查任�
 
 每一步都包含必要的原理、亲手实现、故障实验、验证和复盘。通过 Git 提交记录演进，在里程碑完成后保留 v1、v2 tag，方便回到相应版本学习。
 
-从[教程入口](tutorial/README.md)了解这条路线；[完整代码增量](tutorial/v1/patches/README.md)可从空目录逐步构建 v1，最后展开为 352 行的教学排版。再读[接着问下一句](tutorial/v1/05b-interactive.md)，体验 v1.1 的早期交互版：571 代码行 / 581 物理行，含完整 CLI/UI，保留内存历史，尚无压缩或 journal。
+从[教程入口](tutorial/README.md)了解这条路线；[完整代码增量](tutorial/v1/patches/README.md)可从空目录逐步构建 v1，最后展开为 352 行的教学排版。再读[接着问下一句](tutorial/v1/05b-interactive.md)，体验 v1 分支的交互入口：571 代码行 / 581 物理行，含完整 CLI/UI，保留内存历史，尚无压缩或 journal。
 
 行数计算覆盖全部 src/**/*.rs，测试、文档和练习仓库另算。代码规模是弹性的范围预算，v1 在 350–360 行也可以接受；保留正常格式化与必要错误处理。
 
@@ -107,4 +105,4 @@ cargo run -- --help
 
 单次模式的 stderr 保留工具 JSON 轨迹和日志路径；交互模式显示工具进度。每个实际开始的会话写入工作区 .crabloop 的 JSONL，用于观察，不支持跨进程恢复。请求错误或中断后要先检查文件状态，再用 `/new`；这不会回滚已发生的修改。CRABLOOP_CONTEXT_BYTES 默认 49152，最小 4096。摘要请求要求模型支持 reasoning.effort=none；v2 主验收模型为 DeepSeek V4.1 Flash。
 
-学习分支和标签作为固定书签；想动手修改时从标签另开自己的分支，例如 `git switch -c my-v1-exercise v1.1`。main 保持最新可运行实现，每个通过验证的小迭代都合入并推送；已完成的临时开发分支随后清理，教学提交与里程碑继续保留。
+学习分支展示该版当前实现，标签保存固定历史快照；想动手修改时从标签另开自己的分支，例如 `git switch -c my-v1-exercise milestone/v1`。main 保持最新可运行实现，每个通过验证的小迭代都合入并推送；已完成的临时开发分支随后清理，教学提交与里程碑继续保留。

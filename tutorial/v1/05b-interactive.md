@@ -4,11 +4,11 @@
 
 现在先从使用方式改起。直接运行 `cargo run`，应该出现一个可以输入任务的终端界面。想在脚本里执行一次任务时，再写 `cargo run -- -p "检查 README"`。两种入口背后仍然使用同一条模型—工具循环。
 
-这篇是原 v1 之后的交互增补，学习快照为 `v1.1`，不含 v2 的压缩。原 v1/v2 标签保持原样；main 则已经把交互接到了 v2 上。可以从 `v1.1` 创建练习分支，查看全部改动：
+这篇从原始最小循环继续，交互增量直接包含在 `milestone/v1` 学习分支中，不含 v2 的压缩。`step-05-v1` 和历史 v1/v2 标签保持原样；main 已把交互接到 v2 上。可以从 v1 分支创建练习分支，查看全部改动：
 
 ```bash
-git switch -c my-chat-exercise v1.1
-git diff v1..v1.1 -- src Cargo.toml
+git switch -c my-chat-exercise milestone/v1
+git diff step-05-v1..milestone/v1 -- src Cargo.toml
 cargo run
 ```
 
