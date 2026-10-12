@@ -208,3 +208,19 @@ async fn oversized_candidate_keeps_original_state() {
     assert!(error.to_string().contains("compacted context"));
     assert_eq!(state.input(), before);
 }
+
+#[tokio::test]
+async fn latest_followup_remains_after_retained_history_when_compacting() {
+    let dir = TempDir::new();
+    let stub = StubResponses::start(vec![reply(SUMMARY)]);
+    let (cfg, policy, mut state, mut journal) = setup(&dir, stub.endpoint());
+    state.begin_task("Now explain the remaining failure".into());
+    let input = state
+        .prepare(&reqwest::Client::new(), &cfg, &tools::schemas(), &policy, &mut journal)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(input.last().unwrap()["content"], "Now explain the remaining failure");
+    assert_eq!(state.rounds.len(), 2);
+    assert!(stub.requests()[0]["input"].to_string().contains("Repair the bug"));
+}

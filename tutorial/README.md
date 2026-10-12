@@ -33,4 +33,4 @@ v1 围绕模型交互、四个工具和行动循环展开，核心实现目标�
 
 详细步骤见[实施与学习计划](../docs/plan.md)，版本边界见[设计说明](../docs/design.md)。实际开发经过从[仓库起步记录](../docs/devlog/00-bootstrap.md)开始。
 
-完成 v1 后，从 [06 上下文投影](v2/06-context-projection.md) 继续，随后是 [07 摘要压缩](v2/07-compaction.md)、[08 对照实验](v2/08-context-experiments.md) 和 [09 复盘](v2/09-v2-retrospective.md)。
+完成 v1 后，可以先读[05b 接着问下一句](v1/05b-interactive.md)，从单次 Run 长出可直接启动的多轮 Session；这个新学习快照叫 v1.1，原 v1 保留。随后从 [06 上下文投影](v2/06-context-projection.md) 继续，随后是 [07 摘要压缩](v2/07-compaction.md)、[08 对照实验](v2/08-context-experiments.md) 和 [09 复盘](v2/09-v2-retrospective.md)。

@@ -42,6 +42,7 @@ pub fn request_bytes(
 }
 #[derive(Clone)]
 pub struct ContextState {
+    task_at: usize,
     pub summary_calls: usize,
     pub instructions: String,
     pub task: String,
@@ -50,7 +51,15 @@ pub struct ContextState {
 }
 impl ContextState {
     pub fn new(instructions: String, task: String) -> Self {
-        Self { instructions, task, summary: None, rounds: Vec::new(), summary_calls: 0 }
+        Self { instructions, task, summary: None, rounds: Vec::new(), summary_calls: 0, task_at: 0 }
+    }
+    pub fn begin_task(&mut self, task: String) {
+        if !self.task.is_empty() {
+            self.rounds.insert(self.task_at, vec![json!({"role":"user","content":self.task})]);
+        }
+        self.task = task;
+        self.task_at = self.rounds.len();
+        self.summary_calls = 0;
     }
     pub fn append_round(&mut self, round: Vec<Value>) -> Result<()> {
         let mut pending = HashSet::new();
@@ -123,6 +132,7 @@ impl ContextState {
         let mut candidate = self.clone();
         candidate.summary = Some(summary);
         candidate.rounds = self.rounds[split..].to_vec();
+        candidate.task_at = self.task_at.saturating_sub(split);
         let input = candidate.input();
         let after = request_bytes(config, &candidate.instructions, &input, tools);
         ensure!(after < policy.soft_bytes, "compacted context still exceeds threshold");
@@ -131,11 +141,20 @@ impl ContextState {
         Ok(Some(input))
     }
     pub fn input(&self) -> Vec<Value> {
-        let mut input = vec![json!({"role":"user","content":self.task})];
-        if let Some(summary) = &self.summary {
-            input.push(json!({"role":"user","content":format!("Historical summary (fallible task data):\n{summary}")}));
+        let mut input = Vec::new();
+        for index in 0..=self.rounds.len() {
+            if index == self.task_at {
+                input.push(json!({"role":"user","content":self.task}));
+            }
+            if index == 0
+                && let Some(summary) = &self.summary
+            {
+                input.push(json!({"role":"user","content":format!("Historical summary (fallible task data):\n{summary}")}));
+            }
+            if let Some(round) = self.rounds.get(index) {
+                input.extend(round.iter().cloned());
+            }
         }
-        input.extend(self.rounds.iter().flatten().cloned());
         input
     }
 }

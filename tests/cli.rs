@@ -118,3 +118,52 @@ fn explicit_workspace_without_task_reads_stdin() {
     assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
     assert!(work.join(".crabloop").is_dir());
 }
+
+#[test]
+fn print_mode_runs_once_and_keeps_stdout_plain() {
+    let dir = TempDir::new();
+    let server = StubResponses::start(vec![fixture("text")]);
+    let output =
+        configured(&dir, &server).args(["-p", "hello", "--workspace", "."]).output().unwrap();
+    assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "Done");
+    assert_eq!(server.requests().len(), 1);
+}
+#[test]
+fn chat_keeps_history_and_new_resets_it() {
+    let dir = TempDir::new();
+    let server = StubResponses::start(vec![fixture("text"), fixture("text"), fixture("text")]);
+    let mut child = configured(&dir, &server)
+        .arg("--chat")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    child.stdin.take().unwrap().write_all(b"first\nsecond\n/new\nfresh\n/exit\n").unwrap();
+    let output = child.wait_with_output().unwrap();
+    assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+    let requests = server.requests();
+    assert_eq!(requests.len(), 3);
+    assert_eq!(requests[1]["input"].as_array().unwrap().len(), 3);
+    assert_eq!(requests[2]["input"].as_array().unwrap().len(), 1);
+    assert_eq!(requests[2]["input"][0]["content"], "fresh");
+}
+
+#[test]
+fn empty_chat_and_local_commands_need_no_model_or_journal() {
+    let dir = TempDir::new();
+    let server = StubResponses::start(vec![]);
+    let mut child = configured(&dir, &server)
+        .arg("--chat")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    child.stdin.take().unwrap().write_all(b"\n/help\n/new\n/exit\n").unwrap();
+    let output = child.wait_with_output().unwrap();
+    assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+    assert!(server.requests().is_empty());
+    assert!(!dir.path().join(".crabloop").exists());
+}

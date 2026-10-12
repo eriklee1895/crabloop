@@ -8,24 +8,26 @@ CrabLoop is a small coding-agent harness built from scratch in Rust for hands-on
 - v2: approximately 500 lines total, adding context management and summary compaction.
 - v3: approximately 1,000 lines total, adding ~/.crabloop, TOML configuration, provider presets/Custom, credentials, and model catalog discovery/cache. Minimal Skills is optional if comfortably within scope.
 - Planned v4: Skills, Tavily Search/Firecrawl Scrape, a config menu sharing TOML files with manual edits, selective .env import and visible config sources. Planned v5: recoverable JSONL sessions and interruption handling under ~/.crabloop. See docs/roadmap.md.
-- Proposed advanced stages: v6 streaming REPL and Ratatui/Crossterm TUI (study Codex CLI source); v7 scoped cross-session memory with provenance/update/forget; optional v8 pinned-version Rig backend comparison while retaining the hand-written loop. v4 config prompts can use dialoguer.
+- Basic multi-turn terminal chat belongs in the early learning stage. v6 adds streaming and Ratatui/Crossterm layout; v7 adds scoped memory; optional v8 compares a pinned Rig backend. See docs/roadmap.md.
 - Acceptance includes both coding repairs and general local agentic tasks such as reading source documents and producing a verifiable structured report.
 - Use the OpenAI native Responses API and a hand-written agent loop.
 - Grow the same implementation through small, explainable steps. Preserve runnable milestones with v1 and v2 Git tags.
 
-Line counts are flexible scope guides: the user explicitly accepts v1 at 350–360 lines. Do not code-golf or reject correct extra output fields just to meet an arbitrary shape. Line counts cover all production Rust under src/. Tests, documentation, fixtures, and development scripts are separate. Keep normal formatting and necessary error handling; do not move implementation elsewhere to reduce the count.
+Line counts guide scope; v1 at 350–360 is accepted. Count all production Rust under src/; tests/docs/fixtures/dev scripts are separate. Keep readable formatting and error handling; never code-golf or hide implementation. Accept correct extra output fields.
 
 ## Current state and layout
 
-v1 → v2 is complete. Seven teaching patches rebuild v1 from an empty directory; see tutorial/v1/patches/README.md. Continue code and Chinese tutorials together. The Cargo package, src/ and tests/ live at the repository root.
+Seven patches rebuild v1 from scratch; see tutorial/v1/patches/README.md. Keep code and Chinese tutorials together. The Cargo package, src/ and tests/ live at root.
 
-v1 and v2 are complete, with stable milestone/v1 and milestone/v2 branches and immutable v1/v2 tags. Frozen v1 has 314 core code lines (319 physical); frozen v2 has 504 (511). Current main is 628 code lines / 637 physical lines; the optional v1 teaching patch yields 352/357 with the same behavior. Tutorials 00–09 and acceptance evidence are in tutorial/ and evidence/v1|v2/. Current checks: 54 Rust and 6 Python tests, fmt and clippy passed; a minor same-response commentary/final-text display issue remains documented in evidence/v2/review.md.
+Frozen v1 has 314 code lines (319 physical); frozen v2 has 504 (511), with stable milestone branches and immutable tags. The v1 readability patch yields 352/357. Current main has 813/825 including CLI/UI. v1.1 has 571/581, based on v1 without compaction or journals. Tutorials 00–09 and evidence/v1|v2/ preserve historical results. Checks: 61 Rust + 6 Python, fmt and clippy passed. Multi-turn live/PTY evidence and the genuine README recording are in evidence/interactive/. A minor mixed commentary/final-text display issue remains in evidence/v2/review.md.
 
-Preferred model: DeepSeek V4.1 Flash (deepseek-flash); fallback: gpt-6-luna through TeamoRouter. Both passed v1 coding tasks. DeepSeek passed v2 with five compactions; Luna v2 is untested. Summaries use reasoning.effort=none and at least 4,096 output tokens; main requests use provider-default reasoning. Request limit: 49,152 bytes, overridden by CRABLOOP_CONTEXT_BYTES (minimum 4,096). Root AGENTS.md is pinned. Keep offline tests, live runs and semantic summary limitations distinct.
+Preferred model: DeepSeek V4.1 Flash (deepseek-flash); fallback: gpt-6-luna through TeamoRouter. Both passed v1 tasks. DeepSeek passed v2 with five compactions; Luna v2 is untested. Summaries use reasoning.effort=none and at least 4,096 output tokens; main requests use provider defaults. Request limit: 49,152 bytes; CRABLOOP_CONTEXT_BYTES overrides it (min 4,096). Root AGENTS.md is pinned and must stay below 8,192 bytes. Distinguish offline, live and semantic evidence.
 
-Current main starts with `cargo run`: cwd is the workspace, missing task prompts on a terminal or reads stdin. `src/cli.rs` parses arguments and reads only cwd .env using dotenvy without executing it or mutating process environment; process values win. Prefer DEEPSEEK_API_KEY/deepseek-flash when no explicit generic model/endpoint configuration is selected; CRABLOOP_PROVIDER=deepseek/openai overrides selection. Generic mode uses OPENAI_API_KEY/OPENAI_BASE_URL/CRABLOOP_MODEL; CRABLOOP_API_URL overrides the full endpoint. Keep credentials paired with their provider. Frozen v1/v2 retain their original CLI. v3 home/TOML/catalog work remains planned.
+`cargo run` enters multi-turn chat in cwd; `-p/--print TASK` runs once. Positional tasks and piped stdin remain supported; `--chat` forces chat. Rustyline handles editable input/history; /new resets, /exit or Ctrl-D quits, Ctrl-C cancels. Session retains final answers and tool groups. Errors/interruption require /new and file inspection; no automatic effect replay. Empty chat creates no journal or request. UI is scrolling, with whole-response text; streaming/full-screen layout is later.
 
-Chapters: tutorial/v1/ and tutorial/v2/. Actual records: docs/devlog/. Keep one root Rust implementation; commits/tags identify chapter code.
+`src/cli.rs` reads only cwd .env as data with dotenvy; process values win. Prefer DEEPSEEK_API_KEY/deepseek-flash absent explicit generic config; CRABLOOP_PROVIDER=deepseek/openai overrides. Generic mode uses OPENAI_API_KEY/OPENAI_BASE_URL/CRABLOOP_MODEL; CRABLOOP_API_URL overrides the endpoint. Keep provider keys paired. v3 home/TOML/catalog remains planned. Original v1/v2 keep their old CLI.
+
+Chapters: tutorial/v1/ and tutorial/v2/. Records: docs/devlog/. Keep one root implementation; commits/tags identify chapter code.
 
 Read the relevant design and task before implementation:
 

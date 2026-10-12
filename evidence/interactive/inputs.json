@@ -1,0 +1,20 @@
+[
+  {
+    "wait_for": "crab> ",
+    "send": "Create hello.txt with 'Hello, CrabLoop!' and read it back. Reply briefly.\r",
+    "delay": 0.6,
+    "type_delay": 0.025
+  },
+  {
+    "wait_for": "crab> ",
+    "send": "Replace Hello with Bonjour in that file and read it back. Reply briefly.\r",
+    "delay": 1,
+    "type_delay": 0.025
+  },
+  {
+    "wait_for": "crab> ",
+    "send": "/exit\r",
+    "delay": 1.5,
+    "type_delay": 0.12
+  }
+]

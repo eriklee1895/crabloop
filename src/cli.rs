@@ -1,27 +1,39 @@
-use crate::{Config, Limits, context::ContextPolicy};
+use crate::{Config, Limits};
 use anyhow::{Context, Result, bail, ensure};
 use std::{
     collections::HashMap,
-    io::{self, IsTerminal, Read, Write},
+    io::{self, IsTerminal, Read},
     path::Path,
 };
 
-pub const HELP: &str = "usage: crabloop [--workspace DIR] [TASK]\n\n直接启动：在当前目录输入任务\ncrabloop \"检查 README\"\ncrabloop --workspace path/to/project \"修复测试\"\n\n读取当前目录的 .env，进程环境优先。\n推荐配置 DEEPSEEK_API_KEY；也支持 OPENAI_API_KEY / OPENAI_BASE_URL / CRABLOOP_MODEL。\nCRABLOOP_PROVIDER 可显式选择 deepseek 或 openai。";
+pub const HELP: &str = "usage: crabloop [--workspace DIR] [-p TASK | --chat]\n\ncrabloop                              多轮对话（默认当前目录）\ncrabloop -p \"检查 README\"              单次任务，回答后退出\ncrabloop --workspace path/to/project   在指定目录对话\ncrabloop --chat                        强制聊天（包括管道输入）\n\n-p / --print TASK；也兼容旧的 TASK 位置参数。无参数管道输入作为单次任务。\n聊天：/new 清空会话，/help 帮助，/exit 或 Ctrl-D 退出。\n读取当前目录的 .env，进程环境优先。\n推荐 DEEPSEEK_API_KEY；也支持 OPENAI_API_KEY / OPENAI_BASE_URL / CRABLOOP_MODEL。\nCRABLOOP_PROVIDER 可显式选择 deepseek 或 openai。";
 
-pub fn load(args: &[String]) -> Result<Option<Config>> {
+pub struct Launch {
+    pub config: Config,
+    pub chat: bool,
+}
+pub fn load(args: &[String]) -> Result<Option<Launch>> {
     let args = args.get(1..).unwrap_or_default();
     if matches!(args, [flag] if flag == "--help" || flag == "-h") {
         println!("{HELP}");
         return Ok(None);
     }
-    let (workspace, task) = match args {
-        [] => (".", None),
-        [task] if !task.starts_with('-') => (".", Some(task.as_str())),
-        [flag, dir] if flag == "--workspace" => (dir.as_str(), None),
-        [flag, dir, task] if flag == "--workspace" => (dir.as_str(), Some(task.as_str())),
-        _ => bail!(HELP),
-    };
-    ensure!(task.is_none_or(|t| !t.trim().is_empty()), "任务不能为空\n{HELP}");
+    let (mut workspace, mut task, mut chat) = (".", None, false);
+    let mut args = args.iter();
+    while let Some(arg) = args.next() {
+        match arg.as_str() {
+            "--workspace" => workspace = args.next().context("--workspace 需要目录")?,
+            "--chat" => chat = true,
+            "-p" | "--print" if task.is_none() => {
+                task = Some(args.next().context("-p 需要任务")?.as_str())
+            }
+            value if !value.starts_with('-') && task.is_none() => task = Some(value),
+            _ => bail!(HELP),
+        }
+    }
+    ensure!(!chat || task.is_none(), "--chat 不能与单次任务同时使用");
+    ensure!(task.is_none_or(|t| !t.trim().is_empty()), "任务不能为空");
+    chat |= task.is_none() && io::stdin().is_terminal();
     let workspace = std::fs::canonicalize(workspace).context("invalid workspace")?;
     ensure!(workspace.is_dir(), "workspace must be a directory");
     let local: HashMap<String, String> = match dotenvy::from_path_iter(Path::new(".env")) {
@@ -59,6 +71,10 @@ pub fn load(args: &[String]) -> Result<Option<Config>> {
     };
     let api_key = get(key_name)
         .with_context(|| format!("缺少 {key_name}；请在当前目录 .env 配置，或导出到终端环境"))?;
+    let request_bytes = get("CRABLOOP_CONTEXT_BYTES")
+        .unwrap_or_else(|| Limits::default().request_bytes.to_string())
+        .parse()?;
+    ensure!(request_bytes >= 4096, "context budget must be at least 4096 bytes");
     let mut config = Config {
         workspace,
         task: task.unwrap_or_default().into(),
@@ -66,40 +82,20 @@ pub fn load(args: &[String]) -> Result<Option<Config>> {
         model: get("CRABLOOP_MODEL").unwrap_or_else(|| default_model.into()),
         endpoint: get("CRABLOOP_API_URL")
             .unwrap_or_else(|| format!("{}/responses", base.trim_end_matches('/'))),
-        limits: Limits {
-            request_bytes: ContextPolicy::new(
-                get("CRABLOOP_CONTEXT_BYTES").unwrap_or_else(|| "49152".into()).parse()?,
-            )?
-            .hard_bytes,
-            ..Limits::default()
-        },
+        limits: Limits { request_bytes, ..Limits::default() },
     };
     eprintln!("CrabLoop · {provider}/{} · {}", config.model, config.workspace.display());
-    if task.is_none() {
+    if task.is_none() && !chat {
         let Some(task) = read_task(config.limits.request_bytes)? else {
             return Ok(None);
         };
         config.task = task;
     }
-    Ok(Some(config))
+    Ok(Some(Launch { config, chat }))
 }
 
 fn read_task(limit: usize) -> Result<Option<String>> {
     let stdin = io::stdin();
-    if stdin.is_terminal() {
-        loop {
-            eprint!("任务（Ctrl-D 退出）> ");
-            io::stderr().flush()?;
-            let mut task = String::new();
-            if stdin.read_line(&mut task)? == 0 {
-                return Ok(None);
-            }
-            ensure!(task.len() <= limit, "任务超过输入预算");
-            if !task.trim().is_empty() {
-                return Ok(Some(task.trim().into()));
-            }
-        }
-    }
     let mut bytes = Vec::new();
     stdin.lock().take(limit as u64 + 1).read_to_end(&mut bytes)?;
     ensure!(bytes.len() <= limit, "任务超过输入预算");

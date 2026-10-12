@@ -1,0 +1,60 @@
+{
+  "date": "2026-10-12",
+  "provider": "DeepSeek",
+  "model": "deepseek-flash",
+  "kind": "live Responses API, real PTY, two user turns",
+  "tasks": [
+    "Create hello.txt with 'Hello, CrabLoop!' and read it back. Reply briefly.",
+    "Replace Hello with Bonjour in that file and read it back. Reply briefly."
+  ],
+  "main_requests": 6,
+  "summary_requests": 0,
+  "tool_names": [
+    "write_file",
+    "bash",
+    "read_file",
+    "edit_file",
+    "read_file"
+  ],
+  "stops": [
+    {
+      "model_turns": 3,
+      "reason": "Final"
+    },
+    {
+      "model_turns": 3,
+      "reason": "Final"
+    }
+  ],
+  "independent_verification": {
+    "file": "hello.txt",
+    "content": "Bonjour, CrabLoop!",
+    "second_turn_inherits_first_user_and_assistant": true
+  },
+  "recording": {
+    "format": "asciicast v2",
+    "size": [
+      96,
+      30
+    ],
+    "gif_bytes": 251843,
+    "agg_version": "1.9.0",
+    "idle_time_limit_seconds": 1.5,
+    "last_frame_seconds": 4
+  },
+  "source_sha256": {
+    "src/cli.rs": "15efd7b1dc0eaed7c896c283e4d4ffe618a7f13d30f0a7a8ce5d02a5bb95f170",
+    "src/context.rs": "33ba6eb92c1251c2fc2d6d1504425ccd869d1da4e5bc2a1bf69b21e42bd0700d",
+    "src/journal.rs": "97528f8f09b4afd0078ac4fa53cfd2f6670fe2e1c50e090ee6f1e75c76de77d4",
+    "src/lib.rs": "eb846a80e45e48067adeffc61cb4ff5f7be1b450c6b8113375920148a06023fb",
+    "src/main.rs": "045d680472d277ca6543731b825c32d98a23120ea4d8e357fe3561b6eb866a84",
+    "src/model.rs": "2d5bb4523701bbb31c08c828224b1b7bae99837b84456db52c31a7e45d007883",
+    "src/terminal.rs": "53aae90a618770077b2bb880713f1a2f72d16f15a62fab4bbc53fbbbdb7d3365",
+    "src/tools.rs": "93a2953fad517e340ffcc46d19c8548fb86b3ea26fddf1a0dd5dc04d2e497929"
+  },
+  "limitations": [
+    "This single demo is not a success-rate benchmark.",
+    "No streaming output or cross-process resume.",
+    "Raw session journal and credentials remain local."
+  ]
+}

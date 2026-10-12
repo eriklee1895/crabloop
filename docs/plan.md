@@ -12,6 +12,8 @@
 
 **Execution:** 用户于 2026-10-11 授权设置 goal 并开始实施。由助手在本会话顺序构建参考实现、教程与开发记录；每个可验收增量同步 AGENTS.md 和进度。主用 DeepSeek V4.1 Flash，备选 gpt-6-luna。用户已授权每个通过验证的阶段提交并推送 GitHub。后续 v3–v5、配置/模型目录、Skills/联网和 sessions 补充见[路线图](roadmap.md)。
 
+2026-10-12 增补：基础多轮终端体验提前实现，`-p` 保留单次任务。本文的单次 Run 和行数描述属于原 v1/v2 快照；当前 Session 与交互增量见[交互实施记录](interactive-plan.md)，原始标签不移动。
+
 ## Global Constraints
 
 - 模型接入使用 OpenAI 原生 Responses API。公开工具名固定为 read_file、write_file、edit_file、bash。

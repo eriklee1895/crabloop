@@ -1,0 +1,6 @@
+{
+  "test": "PTY default chat, Ctrl-C during HTTP, poisoned session, /new",
+  "requests": 2,
+  "new_session_input_items": 1,
+  "passed": true
+}
