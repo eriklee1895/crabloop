@@ -29,8 +29,11 @@ v1 围绕模型交互、四个工具和行动循环展开，核心实现目标�
 | 阶段 | 章节范围 | 主要问题 |
 |---|---|---|
 | tutorial/v1/ | 00–05：状态地图、Responses、文件工具、Bash、循环、综合修复 | 一条请求怎样变成真实的修改和测试？ |
+| tutorial/v1/05b-interactive.md | v1.1 交互增补：直接启动、-p、多轮 Session | 下一句怎样接着前面的历史继续？ |
 | tutorial/v2/ | 06–09：上下文投影、摘要、对照实验、综合复盘 | 任务继续推进时，模型应该看到哪些历史？ |
 
 详细步骤见[实施与学习计划](../docs/plan.md)，版本边界见[设计说明](../docs/design.md)。实际开发经过从[仓库起步记录](../docs/devlog/00-bootstrap.md)开始。
 
-完成 v1 后，可以先读[05b 接着问下一句](v1/05b-interactive.md)，从单次 Run 长出可直接启动的多轮 Session；这个新学习快照叫 v1.1，原 v1 保留。随后从 [06 上下文投影](v2/06-context-projection.md) 继续，随后是 [07 摘要压缩](v2/07-compaction.md)、[08 对照实验](v2/08-context-experiments.md) 和 [09 复盘](v2/09-v2-retrospective.md)。
+完成 v1 后，可以先读[05b 接着问下一句](v1/05b-interactive.md)，从单次 Run 长出可直接启动的多轮 Session；这个学习快照叫 v1.1。用 `git switch milestone/v1.1` 体验多轮聊天；要自己修改，可从标签新建练习分支。
+
+之后读 [06 上下文投影](v2/06-context-projection.md)、[07 摘要压缩](v2/07-compaction.md)、[08 对照实验](v2/08-context-experiments.md) 和 [09 复盘](v2/09-v2-retrospective.md)。这里回到各章指定的 v1 / step-06-context 等基线，单独观察上下文机制怎样加入。v1.1 是从 v1 补出的交互支线；v2 同样由 v1 演进，main 已同时具备交互和压缩。阅读顺序可以先交互再压缩，Git 祖先关系见[版本说明](../docs/git-workflow.md)。

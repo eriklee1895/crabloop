@@ -75,7 +75,7 @@ Once the Cargo package exists, use cargo fmt --check, cargo clippy --locked --al
 
 Distinguish deterministic protocol tests, real local tool execution, and live-model runs. Report only what the actual evidence establishes.
 
-Commit Cargo.lock. The user authorizes merging and pushing every verified iteration to main, not only full milestones. main holds the latest validated tree and the full teaching commit history. Develop on a short-lived branch, then fast-forward or merge into main without squashing learning steps. Preserve milestone/vN and immutable vN/step tags. See docs/git-workflow.md.
+Commit Cargo.lock. Merge and push each verified iteration to main, preserving teaching commits. Keep main, milestone/* and immutable v*/step-* tags; remove completed temporary branches after verifying their commits are retained. Develop on a short-lived codex/* branch. No history rewriting for routine cleanup. See docs/git-workflow.md for v1/v1.1/v2 relationships.
 
 Use rustfmt (100 columns, small heuristics Max), but expand protocol JSON for teaching clarity. Count all src/**/*.rs; retain historical milestone counts and report current counts separately. Never hide runtime code in scripts or docs.
 

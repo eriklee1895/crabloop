@@ -10,11 +10,32 @@ A small coding-agent harness that grows step by step in Rust.
 
 项目采用逐步开发的方式：先完成约 300 行的 v1，再扩展到约 500 行的 v2，随后规划约 1000 行的 v3。通过 coding 和通用本地任务，逐步练习同一套 harness。
 
+## 从哪里开始
+
+第一次体验建议使用 **main**，在仓库根目录配置 `.env` 后直接 `cargo run`。按学习目的选择其他快照：
+
+| 入口 | 适合学习什么 | 启动与交互 |
+|---|---|---|
+| `main` | 当前完整实现：四工具、多轮会话和上下文压缩 | `cargo run` 聊天；`cargo run -- -p "任务"` 单次执行 |
+| `milestone/v1` / `v1` | 314 行的原始最小 agent loop | 原始显式参数入口，配置来自进程环境 |
+| `milestone/v1.1` / `v1.1` | v1 的使用优化：默认工作目录、.env、输入编辑和多轮 Session | 与 main 相同的聊天和 `-p` 入口；完整源码 571 行，无压缩或 journal |
+| `milestone/v2` / `v2` | 504 行的上下文投影与摘要压缩 | 保留当时的显式参数入口；便捷交互已接入 main |
+
+想学习带交互的第一版，可以运行：
+
+```bash
+git switch milestone/v1.1
+cargo run
+```
+
+阅读顺序是 [00–05 最小循环](tutorial/README.md) → [05b 多轮交互](tutorial/v1/05b-interactive.md) → [06–09 上下文管理](tutorial/v2/06-context-projection.md)。v1.1 和 v2 分别从 v1 演进，进入 v2 时按章节选择对应代码基线；main 汇合了两者的能力。完整关系见 [版本与 Git 工作流](docs/git-workflow.md)。
+
 ## 逐步生长的里程碑
 
 | 版本 | 核心实现目标 | 要亲手弄清楚的问题 |
 |---|---:|---|
 | v1 | 约 300 行 Rust，四个工具 | 模型如何根据真实工具反馈继续行动？ |
+| v1.1（交互增补） | 571 行 Rust，含 CLI/UI | 怎样直接启动，并沿着同一份历史继续提问？ |
 | v2 | 约 500 行 Rust，上下文管理与压缩 | 每轮模型看到什么，历史怎样被选择和整理？ |
 | v3 | 约 1000 行 Rust，home、TOML、provider 与模型目录 | 怎样配置一次，持续使用和切换模型？ |
 | v4 | Skills、web_fetch、web_search | 怎样复用方法，完成联网资料任务？ |
@@ -86,4 +107,4 @@ cargo run -- --help
 
 单次模式的 stderr 保留工具 JSON 轨迹和日志路径；交互模式显示工具进度。每个实际开始的会话写入工作区 .crabloop 的 JSONL，用于观察，不支持跨进程恢复。请求错误或中断后要先检查文件状态，再用 `/new`；这不会回滚已发生的修改。CRABLOOP_CONTEXT_BYTES 默认 49152，最小 4096。摘要请求要求模型支持 reasoning.effort=none；v2 主验收模型为 DeepSeek V4.1 Flash。
 
-每版保留稳定学习分支与固定标签：`milestone/v1` + `v1`，新增的 `milestone/v1.1` + `v1.1`，以及 `milestone/v2` + `v2`。`git switch milestone/v1.1` 可直接学习早期多轮交互。使用 `git switch milestone/v1` 回到第一版，或 `git switch --detach v1` 精确查看标签；想动手修改时从标签另开自己的分支，例如 `git switch -c my-v1-exercise v1`。main 的文件保持最新可运行实现，并保留每轮提交历史；每个通过验证的小迭代都合入并推送 main。旧版本通过学习分支和标签查看，根目录保持一个 Cargo 工程。详细约定见 [Git 工作流](docs/git-workflow.md)。
+学习分支和标签作为固定书签；想动手修改时从标签另开自己的分支，例如 `git switch -c my-v1-exercise v1.1`。main 保持最新可运行实现，每个通过验证的小迭代都合入并推送；已完成的临时开发分支随后清理，教学提交与里程碑继续保留。
