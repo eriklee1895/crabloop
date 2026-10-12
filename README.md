@@ -2,6 +2,8 @@
 
 A small coding-agent harness that grows step by step in Rust.
 
+> 当前学习约束：v1 目标约 300 行，全部生产 Rust 必须少于 400 行。此分支现有 571 行，尚待收敛；详见[教学边界](docs/v1-scope.md)。
+
 用 Rust 从零实现一个小型 coding agent，通过读取代码、修改文件、运行测试和处理反馈，练习 agent harness 的核心机制。
 
 这是 **v1 学习分支（milestone/v1）**：四工具循环已经包含多轮终端对话和 `-p` 单次任务，完整实现为 **571 行代码 / 581 物理行**。原始 314 行闭环保留在 `step-05-v1` 和历史 `v1` 标签，便于单独学习核心。后续主线继续增加上下文压缩、配置和其他能力。

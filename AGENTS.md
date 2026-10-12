@@ -4,7 +4,7 @@
 
 CrabLoop is a small coding-agent harness built from scratch in Rust for hands-on learning.
 
-- v1: approximately 300 lines of core Rust, with read_file, write_file, edit_file, and bash.
+- v1: target about 300 lines, HARD cap below 400 total production Rust code lines. Teach the hand-written model/tool/feedback/stop loop with four tools.
 - v2: approximately 500 lines total, adding context management and summary compaction.
 - v3: approximately 1,000 lines total, adding ~/.crabloop, TOML configuration, provider presets/Custom, credentials, and model catalog discovery/cache. Minimal Skills is optional if comfortably within scope.
 - v4: Skills and provider-independent web_fetch/web_search. v5: recoverable JSONL sessions and interruption handling under ~/.crabloop. See docs/roadmap.md; these stages are planned, not implemented.
@@ -12,11 +12,11 @@ CrabLoop is a small coding-agent harness built from scratch in Rust for hands-on
 - Use the OpenAI native Responses API and a hand-written agent loop.
 - Grow the same implementation through small, explainable steps. Preserve runnable milestones with v1 and v2 Git tags.
 
-Line counts are flexible scope guides: the user explicitly accepts v1 at 350–360 lines. Do not code-golf or reject correct extra output fields just to meet an arbitrary shape. Line counts cover all production Rust under src/. Tests, documentation, fixtures, and development scripts are separate. Keep normal formatting and necessary error handling; do not move implementation elsewhere to reduce the count.
+The user tightened v1 scope on 2026-10-12: <400 is mandatory, superseding earlier expansion for interactivity. Count all production src/**/*.rs with scripts/count-lines.py after normal rustfmt; report physical lines too. Tests/docs/fixtures/dev scripts are separate. Reduce features, never hide code, code-golf, outsource the loop, or drop necessary error handling. See docs/v1-scope.md.
 
 ## Current state and layout
 
-This is the consolidated milestone/v1 learning branch, including early terminal interaction. Historical v1 and step-05-v1 tags retain the original 314 code lines / 319 physical lines. This branch has 571 code lines / 581 physical lines across all src/**/*.rs, including the CLI and terminal interface. The larger count is reported honestly; no runtime code is hidden outside src/. v2 context projection, compression, journals and AGENTS.md loading are absent here.
+This is the consolidated milestone/v1 learning branch, including early terminal interaction. Historical v1 and step-05-v1 tags retain the original 314 code lines / 319 physical lines. This branch has 571 code lines / 581 physical lines across all src/**/*.rs, including the CLI and terminal interface. This exceeds the newly required <400 cap and is pending scope reduction, not an accepted completed v1. No runtime code is hidden outside src/. v2 context projection, compression, journals and AGENTS.md loading are absent here.
 
 The root Cargo package contains the hand-written Responses loop and four bounded tools. `Session` owns the client and full in-memory Responses history across user turns, including final answers and call/result associations. `run(Config)` remains the one-shot wrapper. Context is bounded by serialized request bytes (default 131,072; CRABLOOP_CONTEXT_BYTES overrides it, minimum 4,096); v1 stops at the limit without compaction. Histories disappear on exit. `/new` clears only the conversation, retaining files. Protocol/transport errors and interruptions poison the session until `/new`, without automatic tool replay.
 
@@ -31,7 +31,7 @@ Read docs/design.md and docs/plan.md as the frozen v1 → v2 design; the interac
 ## How to develop
 
 - Keep AGENTS.md current throughout implementation, as requested by the user. Update it when repository state, interfaces, commands, or durable decisions change. Put detailed history and evidence in docs/devlog/ rather than accumulating a session transcript here.
-- Keep this v1 branch focused on early interaction. Continue v2 and later features on the main development line; do not add them here.
+- Keep v1 focused on the smallest readable loop. Reduce the existing 571-line scope before declaring it complete; richer interaction/configuration belongs later. v1/v2 stay non-streaming; basic SSE moves to v3.
 
 - Work in small increments, each with an observable behavior, an appropriate check, and a short explanation of what it teaches.
 - Keep the current milestone focused. Introduce abstractions when a concrete need appears.
