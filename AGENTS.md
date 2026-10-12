@@ -8,11 +8,12 @@ CrabLoop is a small coding-agent harness built from scratch in Rust for hands-on
 - v2: approximately 500 lines total, adding context management and summary compaction.
 - v3: approximately 1,000 lines total: basic SSE, ~/.crabloop, TOML, credentials, provider presets/Custom, and model catalog/cache. Minimal Skills is optional within scope.
 - After v3: a separate opt-in telemetry topic using lifecycle observers and Rust OpenTelemetry/OTLP to Langfuse v4. Share event IDs with TUI/journal; export failure must not stop the agent. See docs/roadmap.md.
-- Planned v4: Skills, Tavily Search/Firecrawl Scrape, TOML config menu, selective .env import and visible sources. v5: recoverable JSONL sessions and interruption handling under ~/.crabloop.
-- v1/v2 stay non-streaming. v6: output rendering, slash-command UI, then layout/focus; keep step/budget and tool outcomes visible. v7: memory. v8: optional Rig comparison; mainline has no Rig prerequisite. Keep product polish out of v1.
+- Planned v4: Skills, Tavily Search/Firecrawl Scrape, todo_write, TOML config menu and selective .env import with visible sources. v5: ~/.crabloop JSONL/Todo recovery, ask_user_question, pending answers and interruption handling.
+- v1/v2 stay non-streaming. v6: output, slash-command and Todo/question UI, then layout/focus; show step/budget and tool outcomes. v7: memory. v8: optional Rig comparison; mainline has no Rig prerequisite. Keep polish out of v1.
 - Acceptance includes both coding repairs and general local agentic tasks such as reading source documents and producing a verifiable structured report.
 - Use the OpenAI native Responses API and a hand-written agent loop.
 - Grow the same implementation through small, explainable steps. Preserve runnable milestones with v1 and v2 Git tags.
+- Study llm-space's tool contracts and UI/state boundaries; fixed references are in docs/roadmap.md.
 
 2026-10-12 v1 rule: <400 is mandatory. After normal rustfmt, count all production src/**/*.rs with scripts/count-lines.py and report physical lines. Tests/docs/fixtures/dev scripts are separate. Reduce scope; never hide code, code-golf, outsource the loop or omit necessary errors. See docs/v1-scope.md.
 
@@ -45,7 +46,7 @@ The user's latest instructions take precedence over those documents.
 - Work in small increments, each with an observable behavior, an appropriate check, and a short explanation of what it teaches.
 - Keep the current milestone focused. Introduce abstractions when a concrete need appears.
 - Prefer concrete functions and small types. Use standard Rust and basic HTTP/JSON/async libraries.
-- Maintain one implementation. For every completed version (v1 through v5 and future v6/v7), preserve a milestone/vN learning branch and immutable snapshot tags; same-version usability fixes may advance its branch. Use step commits/tags for chapter progression; continue new work on a development branch.
+- Maintain one implementation. Each completed version keeps one milestone/vN learning branch and immutable tags; same-version usability fixes may advance that branch. Use step commits/tags for chapters; continue new work on codex/*.
 - Write tutorials and explanations in Chinese, with Rust identifiers and protocol names in their original form.
 - Tutorials explain a reproducible learning path. Development records capture actual decisions, changes, failures, verification results, and relevant commits.
 
@@ -67,7 +68,7 @@ Read [the writing guide](docs/writing-guide.md) before writing or revising a cha
 - edit_file requires a non-empty old_text with exactly one match; failed match/size validation leaves the file unchanged. File writes currently use ordinary filesystem writes, without atomic rollback.
 - Return recoverable tool errors to the model with the original call_id.
 - Preserve replayable Responses output items and their call/result associations.
-- Treat model completion and independently verified task success as separate observations.
+- Treat model/Todo completion and independently verified task success as separate observations.
 - In v2, keep execution records separate from the model's current input; commit compacted history only after validating the candidate.
 
 ## Verification and Git

@@ -37,8 +37,8 @@ cargo run
 | v2 | 约 500 行 Rust，上下文管理与压缩 | 每轮模型看到什么，历史怎样被选择和整理？ |
 | v3 | 约 1000 行 Rust，基础 SSE、home、TOML、provider 与模型目录 | 怎样配置一次，持续使用和切换模型？ |
 | v3 后：可观测性专题 | 配置开关、observer、Rust OpenTelemetry → Langfuse v4 | 每个 step 看到了什么，工具反馈与压缩怎样影响下一轮？ |
-| v4 | Skills、web_fetch、web_search | 怎样复用方法，完成联网资料任务？ |
-| v5 | JSONL 会话保存与恢复 | 中断之后如何接着做？ |
+| v4 | Skills、联网工具、todo_write、配置菜单 | 怎样复用方法、查资料，并跟踪长任务进度？ |
+| v5 | JSONL 恢复、Todo 恢复、ask_user_question | 怎样恢复进度，并等待用户回答后继续？ |
 | v6（建议） | 输出渲染 → slash command 交互 → 完整布局 | 怎样看清 step、工具反馈与停止，并通过键盘控制输入？ |
 | v7（建议） | 跨会话 memory | 哪些经验值得保存、召回、修正与遗忘？ |
 | v8（选修，可跳过） | Rig 后端对照，是否采用由实验决定 | 哪些具体重复工作适合交给第三方 Rust 库？ |
@@ -46,6 +46,8 @@ cargo run
 基础多轮终端界面已提前实现，默认启动即可聊天，`-p` 执行一次任务。v3 先学习基础 SSE，再完成个人配置和模型目录；随后单独验收可观测性专题，正式的 Skills 与联网实践安排在 v4。现有主版本编号保持；具体安排见[后续路线](docs/roadmap.md)。
 
 可观测性专题计划通过显式 telemetry 开关，把模型、工具、压缩和停止事件关联到 Langfuse。遥测默认关闭，本地 JSONL 保留执行记录。v6 分步增加 Markdown、think 与工具详情、slash 候选菜单和完整布局；step 的含义和计数边界会在教程中解释。观测与丰富 TUI 尚待实现，Langfuse 账号和实际入库尚未验证。Rig 保持选修，v1–v7 主线可独立完成。
+
+后续常用工具按状态机制逐步加入：v4 用 todo_write 维护当前任务的计划；v5 恢复 Todo，并用 ask_user_question 保存待答问题、接收回答和继续原任务；v6 完善列表与问答界面。step 显示循环轮次，Todo 显示计划进度，完成项仍需实际验证。llm-space 的工具契约与交互作为学习参考，固定源码入口与验收边界见[路线图](docs/roadmap.md)。这些工具尚未实现，v1–v3 保持最小四工具范围。
 
 模型接入使用 **OpenAI 原生 Responses API**。v1 提供四个工具：
 
