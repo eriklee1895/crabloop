@@ -7,7 +7,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 PATCHES = ROOT / 'tutorial/v1/patches'
-STAGES = ['00-probe', '01-responses', '02-file-tools', '03-bash', '04-agent-loop', '05-v1', '06-readable']
+STAGES = ['00-probe', '01-responses', '02-file-tools', '03-bash', '04-agent-loop', '05-v1', '06-v1-entry']
 
 with tempfile.TemporaryDirectory(prefix='crabloop-lessons-') as directory:
     workspace = Path(directory)
@@ -16,12 +16,20 @@ with tempfile.TemporaryDirectory(prefix='crabloop-lessons-') as directory:
         patch = PATCHES / f'{stage}.patch'
         subprocess.run(['git', 'apply', '--check', str(patch)], cwd=workspace, check=True)
         subprocess.run(['git', 'apply', str(patch)], cwd=workspace, check=True)
-        if patch.stem == '05-v1':
-            for source in (workspace / 'src').glob('*.rs'):
-                relative = source.relative_to(workspace).as_posix()
-                original = subprocess.check_output(['git', 'show', f'v1:{relative}'], cwd=ROOT)
+        reference = {'05-v1': 'v1', '06-v1-entry': 'milestone/v1'}.get(stage)
+        if reference:
+            expected = set(subprocess.check_output(
+                ['git', 'ls-tree', '-r', '--name-only', reference, 'src'], cwd=ROOT,
+                text=True).splitlines())
+            actual = {source.relative_to(workspace).as_posix()
+                      for source in (workspace / 'src').rglob('*.rs')}
+            if actual != expected:
+                raise SystemExit(f'{reference} source file set differs')
+            for relative in sorted(actual):
+                original = subprocess.check_output(['git', 'show', f'{reference}:{relative}'], cwd=ROOT)
+                source = workspace / relative
                 if source.read_bytes() != original:
-                    raise SystemExit(f'v1 source differs: {relative}')
+                    raise SystemExit(f'{reference} source differs: {relative}')
         command = ['cargo', 'check' if patch.stem == '00-probe' else 'test', '--locked', '--offline']
         result = subprocess.run(command, cwd=workspace, capture_output=True, text=True)
         if result.returncode:
@@ -33,7 +41,8 @@ with tempfile.TemporaryDirectory(prefix='crabloop-lessons-') as directory:
     result = subprocess.run(['cargo', 'fmt', '--check'], cwd=workspace, capture_output=True, text=True)
     if result.returncode:
         raise SystemExit(result.stdout + result.stderr)
-    for source in sorted((workspace / 'src').glob('*.rs')):
+    subprocess.run(['python3', 'scripts/count-lines.py', '--max', '399'], cwd=workspace, check=True)
+    for source in sorted((workspace / 'src').rglob('*.rs')):
         lines = source.read_text().splitlines()
         print(json.dumps({'source': source.relative_to(workspace).as_posix(), 'physical': len(lines),
                           'code': sum(bool(line.strip()) and not line.lstrip().startswith('//') for line in lines)}))

@@ -19,7 +19,7 @@ CrabLoop is a small coding-agent harness built from scratch in Rust for hands-on
 
 ## Current state and layout
 
-Seven patches rebuild historical v1; see tutorial/v1/patches/README.md. Keep Chinese tutorials with code. Cargo/src/tests live at root.
+The only v1 learning code is milestone/v1. Seven patches end at that same implementation; see tutorial/v1/patches/README.md. Historical tags retain evidence, not alternative learning entries. Keep Chinese tutorials with code. Cargo/src/tests live at root.
 
 Historical tags: v1/step-05-v1 314 code / 319 physical; v2 504/511. Main is 813/825. Current milestone/v1 is 398/403: direct run(Config), cwd, fixed budget, no Session/TUI. v1 checks: 40 Rust + 4 Python, live repair and PTY passed. Main checks: 61 Rust + 6 Python, fmt/clippy passed. Historical evidence stays separate. The mixed commentary/final display limitation is in evidence/v2/review.md.
 
