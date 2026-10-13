@@ -2,7 +2,7 @@
 
 用 Rust 从零写一个能读文件、修改代码、运行测试，再根据真实反馈继续行动的 mini agent。
 
-这是 **milestone/v1 的最小教学实现**：398 代码行 / 403 物理行，统计包含全部 src/**/*.rs。目标约 300 行、硬上限 <400 代码行；保持正常 rustfmt，没有把运行逻辑移出 src。原始 314 行快照仍在 v1 / step-05-v1 标签。
+这是 **milestone/v1 的最小教学实现**：398 代码行 / 403 物理行，统计包含全部 src/**/*.rs。目标约 300 行、硬上限 <400 代码行；保持正常 rustfmt，没有把运行逻辑移出 src。v1 学习统一使用这一份代码：src/cli.rs 为 75 代码行，其余实现合计 323 行。历史标签仅保存步骤与验收来源。
 
 ## 先运行一个任务
 
@@ -47,7 +47,7 @@ cd /path/to/project
 
 ## 阅读与验证
 
-从[教程入口](tutorial/README.md)进入 00–05 的最小循环学习。原始标签、已有验收和开发记录保留原来的含义；当前分支已通过 40 项 Rust、4 项 Python 回归，真实 DeepSeek 修复和独立验证也通过。范围见[教学边界](docs/v1-scope.md)，本次删减见[收敛记录](docs/devlog/08-v1-reduction.md)。
+从[教程入口](tutorial/README.md)进入 00–05 的最小循环学习；[七个增量](tutorial/v1/patches/README.md)从空目录重建后，全部 src 文件与当前分支一致。阅读和动手都以同一份 v1 为终点。已有验收和开发记录保留原来的含义；当前分支已通过 40 项 Rust、4 项 Python 回归，真实 DeepSeek 修复和独立验证也通过。范围见[教学边界](docs/v1-scope.md)，本次删减见[收敛记录](docs/devlog/08-v1-reduction.md)。
 
 ```bash
 python3 scripts/count-lines.py --max 399

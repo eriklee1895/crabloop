@@ -4,6 +4,8 @@
 
 从 step-03-bash 开始，在 src/lib.rs 增加 run 函数，让它持有这一次任务的历史。src/main.rs 随之变成一个很薄的入口：读取配置，调用 run，打印最后的报告。
 
+本章的[完整增量](patches/04-agent-loop.patch)以 step-03-bash 为起点，包含所有导入、类型、函数和测试变化。建议先读正文与 diff，再修改自己的练习目录；直接应用补丁的命令见[增量入口](patches/README.md)。
+
 ## 历史由谁持有
 
 先创建 HTTP 客户端和工具 schemas，再用原始用户任务建立 input：
@@ -59,4 +61,4 @@ for call in reply.calls {
 
 运行 cargo test --locked --test loop，再运行完整的 cargo test --locked。此时你应该能从 input 的第一次创建，一直追到某个明确的结束原因，解释每次模型究竟看到了什么。
 
-对应代码书签：step-04-loop。源码见 [lib.rs](../../src/lib.rs)，验证见[开发记录](../../docs/devlog/04-agent-loop.md)。
+对应代码书签：step-04-loop。源码见 [lib.rs（本章固定版本）](https://github.com/eriklee1895/crabloop/blob/step-04-loop/src/lib.rs)，验证见[开发记录](../../docs/devlog/04-agent-loop.md)。

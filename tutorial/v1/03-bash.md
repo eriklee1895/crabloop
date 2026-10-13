@@ -4,6 +4,8 @@
 
 从 step-02-file-tools 开始，在 schemas 中加入 bash，参数只有 command。然后在 execute_inner 解析参数后增加一个分支，把命令交给单独的异步函数。文件工具和 Bash 仍通过同一个 execute 入口返回结果。
 
+本章的[完整增量](patches/03-bash.patch)以 step-02-file-tools 为起点，包含所有导入、类型、函数和测试变化。建议先读正文与 diff，再修改自己的练习目录；直接应用补丁的命令见[增量入口](patches/README.md)。
+
 ## 启动只是开始
 
 我们明确启动 bash -c，并把工作目录交给 current_dir：
@@ -45,4 +47,4 @@ stdin 关闭，避免一个等待输入的命令一直等着终端。stdout 与 
 
 运行 cargo test --locked --test tools bash_。通过这些实验之后，四个工具都能被独立调用。下一章只剩一个关键连接：把执行结果放进模型的下一轮输入，让它根据反馈继续提出动作。
 
-对应代码书签：step-03-bash。实现见 [tools.rs](../../src/tools.rs)，实验记录见[开发记录](../../docs/devlog/03-bash.md)。
+对应代码书签：step-03-bash。实现见 [tools.rs（本章固定版本）](https://github.com/eriklee1895/crabloop/blob/step-03-bash/src/tools.rs)，实验记录见[开发记录](../../docs/devlog/03-bash.md)。
