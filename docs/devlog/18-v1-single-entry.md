@@ -14,11 +14,13 @@ v1 统一以 milestone/v1 为完整学习代码。直接阅读与从空目录逐
 - [x] 改动最后增量和导航，新增全部 src 文件集合及内容的一致性检查。
 - [x] 回放七个增量，阶段 Rust 测试依次为 9、17、22、28、29、40；最终全部 src 与 milestone/v1 一致，格式与 <400 行门禁通过。
 - [x] main 的 fmt、clippy 通过；全量重跑 61 项 Rust 通过，6 项 Python 通过。
-- [ ] 同步 milestone/v1 的学习说明与重建材料，保持生产源码不变。
-- [ ] 验证后提交并推送 main 与 milestone/v1，保留历史标签。
+- [x] 同步 milestone/v1 的学习说明与重建材料，保持生产源码不变。
+提交与发布由 main、milestone/v1 的 Git 引用记录；历史标签保持不变。
 
 首次回放到最后增量时发现 .env.example 和 scripts/run-live.py 未包含在先前教学步骤中，直接从历史标签生成的 diff 把它们当成已有文件而应用失败。改为以实际 05 练习文件集生成最后增量，把缺失文件完整加入。
 
-main 首次全量测试中，bash_bounds_pipe_wait_after_parent_exit 的 100ms 超时用例观察到 exit_code=null，断言要求 0；该项单独重跑通过。并发构建期间的调度延迟是可能原因，尚未确定；未修改生产代码或放宽断言。
+milestone/v1 同步后 fmt、clippy、4 项 Python 与行数门禁通过；`cargo test --locked -- --test-threads=1` 的 40 项 Rust 全通过。生产源码、Cargo 配置和测试文件均未修改。
+
+main 首次全量测试中，bash_bounds_pipe_wait_after_parent_exit 的 100ms 超时用例观察到 exit_code=null，断言要求 0；该项单独重跑通过。并发构建期间的调度延迟是可能原因，尚未确定；v1 的首次并行全量测试也出现相同退出码断言失败，以及直接子进程用例未在超时前输出 started；串行全量运行均通过。未修改生产代码或放宽断言。
 
 本次只统一教学路径，不修改 Rust 运行行为，也不新增真实模型验证结论。
