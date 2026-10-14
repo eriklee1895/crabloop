@@ -42,6 +42,7 @@ pub fn schemas() -> Vec<Value> {
     })
     .collect()
 }
+
 pub fn clip_utf8(text: &str, max_bytes: usize) -> (String, bool) {
     let mut end = text.len().min(max_bytes);
     while !text.is_char_boundary(end) {
@@ -49,11 +50,13 @@ pub fn clip_utf8(text: &str, max_bytes: usize) -> (String, bool) {
     }
     (text[..end].into(), end < text.len())
 }
+
 pub async fn execute(call: &ToolCall, workspace: &Path, limits: &Limits) -> Value {
     execute_inner(call, workspace, limits)
         .await
         .unwrap_or_else(|error| json!({"ok":false, "error":format!("{error:#}")}))
 }
+
 async fn execute_inner(call: &ToolCall, workspace: &Path, limits: &Limits) -> Result<Value> {
     let args: Value = serde_json::from_str(&call.arguments)?;
     let arg = |key: &str| args[key].as_str().with_context(|| format!("{key} must be a string"));
@@ -114,6 +117,7 @@ async fn drain(
         truncated |= take < n;
     }
 }
+
 async fn bash(command: &str, workspace: &Path, limits: &Limits) -> Result<Value> {
     let mut child = tokio::process::Command::new("bash")
         .args(["-c", command])

@@ -11,6 +11,7 @@ pub struct ToolCall {
     pub name: String,
     pub arguments: String,
 }
+
 #[derive(Debug)]
 pub struct ModelReply {
     pub raw: Value,
@@ -21,6 +22,7 @@ pub struct ModelReply {
     pub is_final: bool,
     pub usage: Option<Value>,
 }
+
 pub fn request(config: &Config, instructions: &str, input: &[Value], tools: &[Value]) -> Value {
     json!({
         "model": config.model,
@@ -32,6 +34,7 @@ pub fn request(config: &Config, instructions: &str, input: &[Value], tools: &[Va
         "max_output_tokens": config.limits.max_output_tokens
     })
 }
+
 pub async fn respond(client: &Client, config: &Config, body: Value) -> Result<ModelReply> {
     let raw: Value = client
         .post(&config.endpoint)
