@@ -56,6 +56,7 @@ Read [the writing guide](docs/writing-guide.md) before writing or revising a cha
 - Let observations and failures motivate the next change. Preserve the distinction between expected output and output actually observed.
 - Use the chapter requirements as an editorial check, not a rigid sequence of repeated headings.
 - Calibrate the voice with a short representative passage before writing many chapters.
+- Chapter 04 is the prose and diagram pilot; gather user feedback on this sample before extending the editorial rewrite to other chapters.
 
 ## Core contracts
 
