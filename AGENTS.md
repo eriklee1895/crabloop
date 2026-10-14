@@ -11,7 +11,7 @@ v2-v3: learn Agent fundamentals in small, readable code; defer reliability harde
 - v3: approximately 1,000 lines total: basic SSE, ~/.crabloop, TOML, credentials, provider presets/Custom, model catalog/cache, and context display. Minimal Skills is optional within scope.
 - After v3: a separate opt-in telemetry topic using lifecycle observers and Rust OpenTelemetry/OTLP to Langfuse v4. Share event IDs with TUI/journal; export failure must not stop the agent. See docs/roadmap.md.
 - Planned v4: Skills, Tavily Search/Firecrawl Scrape, todo_write, TOML config menu and selective .env import with visible sources. v5: ~/.crabloop JSONL/Todo recovery, ask_user_question, pending answers and interruption handling.
-- v1/v2 stay non-streaming. v6: output, slash-command and Todo/question UI, then layout/focus; show step/context and tool outcomes. v7: memory. v8: optional Rig comparison; mainline has no Rig prerequisite. Keep polish out of v1.
+- v1/v2 stay non-streaming. v6: role/content styles, Markdown, slash/Todo/question UI, then layout; show step/context/tools. v7: memory. v8: optional Rig comparison; mainline has no Rig prerequisite. Keep polish out of v1.
 - Acceptance includes both coding repairs and general local agentic tasks such as reading source documents and producing a verifiable structured report.
 - Use the OpenAI native Responses API and a hand-written agent loop.
 - Grow the same implementation through small, explainable steps. Preserve runnable milestones with v1 and v2 Git tags.

@@ -45,7 +45,7 @@ cargo run
 
 基础多轮终端界面已提前实现，默认启动即可聊天，`-p` 执行一次任务。v3 先学习基础 SSE，再完成个人配置和模型目录；随后单独验收可观测性专题，正式的 Skills 与联网实践安排在 v4。现有主版本编号保持；具体安排见[后续路线](docs/roadmap.md)。
 
-可观测性专题计划通过显式 telemetry 开关，把模型、工具、压缩和停止事件关联到 Langfuse。遥测默认关闭，本地 JSONL 保留执行记录。v6 分步增加 Markdown、think 与工具详情、slash 候选菜单和完整布局；step 的含义和计数边界会在教程中解释。观测与丰富 TUI 尚待实现，Langfuse 账号和实际入库尚未验证。Rig 保持选修，v1–v7 主线可独立完成。
+可观测性专题计划通过显式 telemetry 开关，把模型、工具、压缩和停止事件关联到 Langfuse。遥测默认关闭，本地 JSONL 保留执行记录。v6 先区分 You/CrabLoop、Progress、可读推理与工具结果，再增加 Markdown、详情展开、slash 候选菜单和完整布局；step 的含义和计数边界会在教程中解释。观测与丰富 TUI 尚待实现，Langfuse 账号和实际入库尚未验证。Rig 保持选修，v1–v7 主线可独立完成。
 
 后续常用工具按状态机制逐步加入：v4 用 todo_write 维护当前任务的计划；v5 恢复 Todo，并用 ask_user_question 保存待答问题、接收回答和继续原任务；v6 完善列表与问答界面。step 显示循环轮次，Todo 显示计划进度，完成项仍需实际验证。llm-space 的工具契约与交互作为学习参考，固定源码入口与验收边界见[路线图](docs/roadmap.md)。这些工具尚未实现，v1–v3 保持最小四工具范围。
 
