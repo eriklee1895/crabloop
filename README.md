@@ -1,8 +1,12 @@
 # CrabLoop 🦀
 
+[![CI](https://github.com/eriklee1895/crabloop/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/eriklee1895/crabloop/actions/workflows/ci.yml) [![Rust](https://img.shields.io/badge/built_with-Rust-d66b45?logo=rust&logoColor=white)](Cargo.toml) [![v1 under 400 lines](https://img.shields.io/badge/v1-%3C400_lines-299d91)](https://github.com/eriklee1895/crabloop/tree/milestone/v1) [![中文教程](https://img.shields.io/badge/教程-中文-299d91)](tutorial/README.md)
+
 A small coding-agent harness that grows step by step in Rust.
 
 用 Rust 从零实现一个小型 coding agent，通过读取代码、修改文件、运行测试和处理反馈，练习 agent harness 的核心机制。
+
+[开始学习](tutorial/README.md) · [快速运行](#运行与版本切换) · [路线图](docs/roadmap.md) · [需求 Todo](docs/todo.md)
 
 ![CrabLoop 两轮真实交互：创建文件，再接着修改](docs/assets/crabloop-chat.gif)
 

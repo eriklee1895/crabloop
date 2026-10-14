@@ -21,7 +21,7 @@ v2-v3: learn Agent fundamentals in small, readable code; defer reliability harde
 
 ## Current state and layout
 
-V1 learning code is milestone/v1; seven patches reproduce it. Historical tags retain evidence. Chinese tutorials accompany root Cargo/src/tests. Main-only debugging guide: docs/debugging.md.
+V1 learning code is milestone/v1; seven patches reproduce it. Historical tags retain evidence. Chinese tutorials accompany root Cargo/src/tests. Debugging: docs/debugging.md.
 
 Historical v1/step-05-v1: 314/319; v2: 504/511. V1 GA: 397/402, 43 Rust + 4 Python, live repair/report and PTY passed; see evidence/v1/ga-review.md. Main: 837/849, 65 Rust + 6 Python, fmt/clippy passed. Counts=code/physical; preserve historical evidence.
 
@@ -75,7 +75,7 @@ Read [the writing guide](docs/writing-guide.md) before writing or revising a cha
 
 ## Verification and Git
 
-Once the Cargo package exists, use cargo fmt --check, cargo clippy --locked --all-targets -- -D warnings, and cargo test --locked as the baseline checks. Add focused verification for the behavior changed.
+Baseline: cargo fmt --check, cargo clippy --locked --all-targets -- -D warnings, cargo test --locked. Add focused checks for changed behavior. GitHub CI runs these plus Python tests on main push/PR; no model keys.
 
 Distinguish deterministic protocol tests, real local tool execution, and live-model runs. Report only what the actual evidence establishes.
 
