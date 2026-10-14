@@ -5,9 +5,9 @@
 - [crabloop-banner.png](crabloop-banner.png)：README 首屏，标题 CrabLoop，文案为 “A small agent harness, built step by step in Rust.”。
 - [crabloop-mascot.png](crabloop-mascot.png)：透明背景独立吉祥物。
 
-素材使用内置 imagegen 生成，Banner 采用用户选定的 T2 探索稿；独立吉祥物以该 Banner 为输入提取。标题是图像中的字形设计，未绑定具体字体文件，不宣称精确使用某个字体家族。以后若需要可编辑排版，再明确字体与其来源。
+素材使用内置 imagegen 生成，Banner 采用用户选定的 T2 探索稿，并经用户明确授权以本地图像工具裁除上下留白；独立吉祥物以该 Banner 为输入提取。标题是图像中的字形设计，未绑定具体字体文件，不宣称精确使用某个字体家族。以后若需要可编辑排版，再明确字体与其来源。
 
-两份文件均为 PNG。README 中居中显示，桌面宽度 640px；窄屏随容器缩小。展示时保持宽高比；保留青绿钳子、珊瑚蟹身和微笑，不添加循环箭头或 API/provider 文案。历史探索稿保留在本地预览目录，不作为额外的公开学习入口。
+两份文件均为 PNG。Banner 为 2172 × 543（4:1），从原始 2172 × 724 PNG 顶部裁去 90px、底部裁去 91px，保留区域的像素不变。README 按正文宽度显示，与徽章和正文左边界对齐；窄屏随容器缩小。展示时保持宽高比；保留青绿钳子、珊瑚蟹身和微笑，不添加循环箭头或 API/provider 文案。历史探索稿保留在本地预览目录，不作为额外的公开学习入口。
 
 ## 最终 Banner 提示词
 
