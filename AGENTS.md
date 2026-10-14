@@ -50,6 +50,7 @@ The user's latest instructions take precedence over those documents.
 - Prefer concrete functions and small types. Use standard Rust and basic HTTP/JSON/async libraries.
 - Maintain one implementation. Each completed version keeps one milestone/vN learning branch and immutable tags; same-version usability fixes may advance that branch. Use step commits/tags for chapters; continue new work on codex/*.
 - Write tutorials and explanations in Chinese, with Rust identifiers and protocol names in their original form.
+- Keep README concise; put detailed plans, counts and evidence in docs.
 - Tutorials explain a reproducible learning path. Development records capture actual decisions, changes, failures, verification results, and relevant commits.
 
 ## Tutorial voice and progression
@@ -79,7 +80,7 @@ Baseline: cargo fmt --check, cargo clippy --locked --all-targets -- -D warnings,
 
 Distinguish deterministic protocol tests, real local tool execution, and live-model runs. Report only what the actual evidence establishes.
 
-Commit Cargo.lock. Verify, merge and push each iteration to main; preserve teaching commits. Keep main, milestone/* and immutable v*/step-* tags. Develop on short-lived codex/* branches; remove them after commit-retention checks. No routine history rewriting. Run scripts/count-lines.py --max 399 on v1. Keep one learning branch per major stage; see docs/git-workflow.md.
+Commit Cargo.lock. Verify, merge and push each iteration to main; preserve teaching commits. Keep main, milestone/* and immutable v*/step-* tags. Develop on short-lived codex/* branches; remove them after commit-retention checks. No routine history rewriting. Line counts are optional reports, not gates. Keep one learning branch per major stage; see docs/git-workflow.md.
 
 Use rustfmt (100 columns, small heuristics Max); expand protocol JSON for teaching. Separate items and logical phases with blank lines. Count all src/**/*.rs; retain historical counts. Never hide runtime code in scripts or docs.
 
