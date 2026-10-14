@@ -1,4 +1,5 @@
 import os
+import json
 from pathlib import Path
 import runpy
 import shutil
@@ -32,7 +33,10 @@ class LiveDriverScopeTest(unittest.TestCase):
                 self.assertEqual(result.exception.code, 1)
                 self.assertEqual(popen.call_args.args[0], [str(root / 'target/debug/crabloop')])
                 self.assertEqual(popen.call_args.kwargs['stdin'], subprocess.PIPE)
-                self.assertEqual(popen.call_args.kwargs['env']['CRABLOOP_TRACE_TOOLS'], '1')
+                self.assertNotIn('CRABLOOP_TRACE_TOOLS', popen.call_args.kwargs['env'])
+                record = json.loads(next((root / 'evidence/v1').glob('*.json')).read_text())
+                for field in ('tool_events', 'failed_test_seen', 'passed_test_seen'):
+                    self.assertNotIn(field, record)
                 process.communicate.assert_called_once()
                 sent = process.communicate.call_args.kwargs
                 self.assertEqual(sent['timeout'], 300)

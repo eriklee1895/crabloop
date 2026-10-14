@@ -282,22 +282,3 @@ fn tool_display_is_readable_bounded_and_preserves_model_feedback() {
     assert_eq!(result["content"], contents);
     assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "Done");
 }
-
-#[test]
-fn explicit_tool_trace_retains_machine_readable_results() {
-    let dir = TempDir::new();
-    fs::write(dir.path().join("lib.rs"), "A").unwrap();
-    fs::write(dir.path().join("tests.rs"), "B").unwrap();
-    let server = StubResponses::start(vec![fixture("two_calls"), fixture("text")]);
-    let output = task_output(configured(&dir, &server).env("CRABLOOP_TRACE_TOOLS", "1"), "inspect");
-    let stderr = String::from_utf8_lossy(&output.stderr);
-    let traces: Vec<serde_json::Value> = stderr
-        .lines()
-        .filter_map(|line| line.strip_prefix("tool "))
-        .map(|line| serde_json::from_str(line).unwrap())
-        .collect();
-    assert!(output.status.success(), "{stderr}");
-    assert_eq!(traces.len(), 2);
-    assert_eq!(traces[0]["call_id"], "call_1");
-    assert_eq!(traces[0]["result"]["content"], "A");
-}

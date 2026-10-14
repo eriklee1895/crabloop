@@ -4,9 +4,9 @@
 
 这是 **milestone/v1 的最小教学实现**：用 **300+ lines** 理解模型、工具、反馈与停止组成的 agent loop。
 
-## 先运行一个任务
+## Quick Start
 
-需要 Rust 1.94.0 和 Bash。在当前目录的 .env 配置 DEEPSEEK_API_KEY，然后：
+在当前目录的 `.env` 中配置 `DEEPSEEK_API_KEY`，然后运行：
 
 ```bash
 cargo run
@@ -40,7 +40,7 @@ printf '%s\n' "读取项目说明并检查测试" | "$crabloop_bin"
 
 默认使用 DeepSeek，配置从启动目录的 `.env` 和进程环境读取，进程环境优先。OpenAI 或兼容端点的配置见 [.env.example](.env.example)。不要提交凭证。
 
-运行时会显示工具名称、命令或路径、执行状态和输出预览。需要完整 JSON 调试轨迹时，设置 `CRABLOOP_TRACE_TOOLS=1`。
+运行时会显示工具名称、命令或路径、执行状态和输出预览。
 
 ## 从哪里读核心
 

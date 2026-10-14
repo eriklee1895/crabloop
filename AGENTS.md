@@ -12,13 +12,13 @@ CrabLoop is a small coding-agent harness built from scratch in Rust for hands-on
 - Use the OpenAI native Responses API and a hand-written agent loop.
 - Grow the same implementation through small, explainable steps. Preserve runnable milestones with v1 and v2 Git tags.
 
-The user removed the v1 line-count hard gate on 2026-10-14, superseding the 2026-10-12 mandatory <400 limit. Keep the implementation small and readable; scripts/count-lines.py is an optional size report, not an acceptance gate. Never hide code, code-golf, outsource the loop, or drop necessary error handling to meet a number. See docs/v1-scope.md.
+2026-10-14: v1 line counts are guidance, not a gate. Keep code small/readable; count-lines.py is optional. Do not hide runtime code, code-golf, outsource the loop, or drop errors to meet a number. See docs/v1-scope.md.
 
 ## Current state and layout
 
 The only v1 learning code is milestone/v1. Seven tutorial patches end at the same complete src tree; scripts/check-lessons.py verifies it. Historical tags preserve steps and evidence, not alternative learning entries.
 
-The milestone/v1 implementation has been reduced to 399 code lines / 460 physical lines under the established counting rule. Default tool display shows name, argument, status and a 240-byte preview; CRABLOOP_TRACE_TOOLS enables JSON traces. Original v1 / step-05-v1 tags retain 314/319. Production Rust lives in five files; run(Config) directly owns history and the serial model/tool loop. No Session, Progress, terminal editor, cross-user-turn chat or SSE remains in v1.
+The milestone/v1 implementation has been reduced to 395 code lines / 456 physical lines under the established counting rule. Default tool display shows name, argument, status and a 240-byte preview. Original v1 / step-05-v1 tags retain 314/319. Production Rust lives in five files; run(Config) directly owns history and the serial model/tool loop. No Session, Progress, terminal editor, cross-user-turn chat or SSE remains in v1.
 
 Startup is a single task from stdin: cargo run shows a small crab banner and crab> prompt before reading one line in a terminal, or reads all piped stdin without the banner. All command-line arguments (including positional tasks, -p/--print and -h/--help) are rejected before input/configuration with an English error pointing to README.md. The workspace is cwd; change directories before invoking the binary. Empty input exits before configuration and without a model request. --chat and --workspace are not supported here. The request budget is fixed at 4,194,304 bytes (4 MiB); max_output_tokens is 131,072; other limits and errors remain intact.
 
@@ -28,7 +28,7 @@ CLI Help remains planned in docs/cli-help-plan.md. Code strings/comments are Eng
 
 GA evidence: evidence/v1/ga-review.md.
 
-Offline baseline: 44 Rust + 5 Python tests, fmt/clippy. Live repair/report and PTY results are historical evidence in evidence/v1/ga-review.md. No chat functionality remains in v1.
+Offline baseline: 43 Rust + 5 Python tests, fmt/clippy. Live repair/report and PTY results are historical evidence in evidence/v1/ga-review.md. No chat functionality remains in v1.
 
 Read docs/v1-scope.md and docs/v1-reduction-plan.md for this accepted reduction; docs/design.md and docs/plan.md preserve the original learning sequence. Tutorial 06-conversation is a later interaction experiment preserved through its historical commit, not a current v1 capability.
 

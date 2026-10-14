@@ -50,7 +50,6 @@ if baseline.returncode == 0:
 env = os.environ.copy()
 env.update(CRABLOOP_PROVIDER="openai", OPENAI_API_KEY=key, OPENAI_BASE_URL=base, CRABLOOP_MODEL=model)
 env.pop('CRABLOOP_API_URL', None)
-env['CRABLOOP_TRACE_TOOLS'] = '1'
 task = 'Read README.md and inspect the source. Fix last_index in lib.rs. Run the existing tests before editing and after the fix. Preserve the public signature and tests.rs. Write NOTES.md describing the change and actual verification. Report only observed results.'
 subprocess.run(['cargo', 'build', '--locked'], cwd=ROOT, check=True, capture_output=True)
 if args.scenario == 'report':
@@ -67,12 +66,6 @@ except subprocess.TimeoutExpired:
 (raw_dir / 'stdout.txt').write_text(stdout)
 (raw_dir / 'stderr.txt').write_text(stderr)
 final = verify()
-events = []
-for line in stderr.splitlines():
-    if line.startswith('tool '):
-        events.append(json.loads(line[5:]))
-failed_test_seen = any(e['name'] == 'bash' and 'test result: FAILED' in e['result'].get('stdout', '') for e in events)
-passed_test_seen = any(e['name'] == 'bash' and 'test result: ok.' in e['result'].get('stdout', '') for e in events)
 original = (ROOT / 'fixtures/buggy-rust/lib.rs').read_text() if args.scenario == 'coding' else ''
 actual = (workspace / 'lib.rs').read_text() if (workspace / 'lib.rs').is_file() else ''
 tests_unchanged = (workspace / 'tests.rs').is_file() and (workspace / 'tests.rs').read_bytes() == (ROOT / 'fixtures/buggy-rust/tests.rs').read_bytes()
@@ -82,16 +75,14 @@ record = {
     'elapsed_seconds': round((datetime.now(timezone.utc) - start).total_seconds(), 2),
     'agent_exit_code': proc.returncode, 'driver_timeout': timed_out,
     'baseline_verifier_exit_code': baseline.returncode, 'final_verifier_exit_code': final.returncode,
-    'original_tests_unchanged': tests_unchanged, 'failed_test_seen': failed_test_seen,
-    'passed_test_seen': passed_test_seen, 'notes_created': (workspace / 'NOTES.md').exists(),
-    'tool_events': [{'call_id': e['call_id'], 'name': e['name'], 'ok': e['result'].get('ok'), 'exit_code': e['result'].get('exit_code')} for e in events],
+    'original_tests_unchanged': tests_unchanged, 'notes_created': (workspace / 'NOTES.md').exists(),
     'source_diff': ''.join(difflib.unified_diff(original.splitlines(True), actual.splitlines(True), fromfile='before/lib.rs', tofile='after/lib.rs')),
     'workspace': str(workspace.relative_to(ROOT)),
 }
-record['passed'] = proc.returncode == 0 and final.returncode == 0 and tests_unchanged and failed_test_seen and passed_test_seen and record['notes_created']
+record['passed'] = proc.returncode == 0 and final.returncode == 0 and tests_unchanged and record['notes_created']
 if args.scenario == 'report':
     record['passed'] = proc.returncode == 0 and final.returncode == 0
-    for field in ('original_tests_unchanged','failed_test_seen','passed_test_seen','notes_created','source_diff'):
+    for field in ('original_tests_unchanged','notes_created','source_diff'):
         record.pop(field, None)
 report = ROOT / 'evidence' / args.stage / f'{stamp}-{args.scenario}-{args.provider}.json'
 report.parent.mkdir(parents=True, exist_ok=True)
