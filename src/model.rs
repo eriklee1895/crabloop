@@ -16,6 +16,7 @@ pub struct ModelReply {
     pub raw: Value,
     pub output: Vec<Value>,
     pub calls: Vec<ToolCall>,
+    pub commentary: Vec<String>,
     pub text: String,
     pub is_final: bool,
     pub usage: Option<Value>,
@@ -45,6 +46,7 @@ pub async fn respond(client: &Client, config: &Config, body: Value) -> Result<Mo
     let output = raw["output"].as_array().context("missing response output")?.clone();
     let mut ids = HashSet::new();
     let mut calls = Vec::new();
+    let mut commentary = Vec::new();
     let mut text = String::new();
     let mut final_text = String::new();
     for item in &output {
@@ -57,19 +59,31 @@ pub async fn respond(client: &Client, config: &Config, body: Value) -> Result<Mo
             calls.push(call);
         }
         if item["type"] == "message" && item["role"] == "assistant" {
+            let mut message_text = String::new();
             for content in item["content"].as_array().context("missing message content")? {
                 if content["type"] == "output_text" {
                     let part = content["text"].as_str().context("invalid output text")?;
-                    text.push_str(part);
-                    if item["phase"].is_null() || item["phase"] == "final_answer" {
-                        final_text.push_str(part);
-                    }
+                    message_text.push_str(part);
                 }
+            }
+            text.push_str(&message_text);
+            if item["phase"].is_null() || item["phase"] == "final_answer" {
+                final_text.push_str(&message_text);
+            } else if item["phase"] == "commentary" && !message_text.trim().is_empty() {
+                commentary.push(message_text);
             }
         }
     }
     ensure!(!calls.is_empty() || !text.trim().is_empty(), "empty response output");
     let is_final = !final_text.trim().is_empty();
     let text = if is_final { final_text } else { text };
-    Ok(ModelReply { output, calls, text, is_final, usage: raw.get("usage").cloned(), raw })
+    Ok(ModelReply {
+        output,
+        calls,
+        commentary,
+        text,
+        is_final,
+        usage: raw.get("usage").cloned(),
+        raw,
+    })
 }

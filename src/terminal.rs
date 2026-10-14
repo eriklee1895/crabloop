@@ -77,7 +77,8 @@ pub async fn chat(config: Config) -> Result<()> {
 
 fn progress(event: Progress<'_>) {
     match event {
-        Progress::Model(step) => eprintln!("  · thinking (step {step})…"),
+        Progress::Model(step) => eprintln!("  · step {step} · 处理中…"),
+        Progress::Commentary(text) => eprintln!("\n过程\n{text}\n"),
         Progress::ToolStart(call) => {
             let args: serde_json::Value = serde_json::from_str(&call.arguments).unwrap_or_default();
             let detail = args["path"].as_str().or_else(|| args["command"].as_str()).unwrap_or("");

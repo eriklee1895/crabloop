@@ -1,0 +1,26 @@
+CrabLoop · openai/test-model · <workspace>
+
+🦀 CrabLoop · a small Rust agent
+Type a task to begin. Up/Down: input history.
+/new: fresh conversation · /exit or Ctrl-D: quit · Ctrl-C: cancel
+
+crab> 写入记录
+  · step 1 · 处理中…
+
+过程
+我先写入记录。
+
+  → write_file  note.txt
+    ✓ done
+  · step 2 · 处理中…
+
+过程
+记录已经写入。
+
+
+CrabLoop
+最终完成。
+  Final · 2 steps · 0.0s
+
+/exit
+crab> Bye.

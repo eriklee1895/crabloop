@@ -1,0 +1,20 @@
+{
+  "date": "2026-10-14",
+  "kind": "local_stub_pty",
+  "commentary_once": true,
+  "commentary_tool_final_order": true,
+  "tool_file_verified": true,
+  "http_requests": 2,
+  "passed": true,
+  "transcript": "evidence/interactive/commentary-pty.txt",
+  "source_sha256": {
+    "src/cli.rs": "15efd7b1dc0eaed7c896c283e4d4ffe618a7f13d30f0a7a8ce5d02a5bb95f170",
+    "src/context.rs": "33ba6eb92c1251c2fc2d6d1504425ccd869d1da4e5bc2a1bf69b21e42bd0700d",
+    "src/journal.rs": "97528f8f09b4afd0078ac4fa53cfd2f6670fe2e1c50e090ee6f1e75c76de77d4",
+    "src/lib.rs": "72ea537ef7cb8af14abd738dca4034053321bd46c8cf06b3511da8ceb38d392b",
+    "src/main.rs": "045d680472d277ca6543731b825c32d98a23120ea4d8e357fe3561b6eb866a84",
+    "src/model.rs": "3f5dc109d7b8f649d13719c587a381033708202a77a6587f861b6f601db763f2",
+    "src/terminal.rs": "eeba1b5871bfd79a02df2cb6675eb7ba639897cea3828ca41b1900fd03d65193",
+    "src/tools.rs": "75a3095d425b00f2436c28924b1d0e1abdb6258e1de2992ad85f42cc63ecfb5d"
+  }
+}
