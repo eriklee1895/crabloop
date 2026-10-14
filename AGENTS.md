@@ -18,7 +18,7 @@ The user tightened v1 scope on 2026-10-12: <400 is mandatory, superseding earlie
 
 The only v1 learning code is milestone/v1. Seven tutorial patches end at the same complete src tree; scripts/check-lessons.py verifies it. Historical tags preserve steps and evidence, not alternative learning entries.
 
-The milestone/v1 implementation has been reduced to 388 code lines / 402 physical lines under the established counting rule. The old 571-line interaction expansion remains in Git history and main. Original v1 / step-05-v1 tags retain 314/319. Production Rust lives in five files; run(Config) directly owns history and the serial model/tool loop. No Session, Progress, terminal editor, cross-user-turn chat or SSE remains in v1.
+The milestone/v1 implementation has been reduced to 388 code lines / 449 physical lines under the established counting rule. The old 571-line interaction expansion remains in Git history and main. Original v1 / step-05-v1 tags retain 314/319. Production Rust lives in five files; run(Config) directly owns history and the serial model/tool loop. No Session, Progress, terminal editor, cross-user-turn chat or SSE remains in v1.
 
 Startup is a single task from stdin: cargo run prompts for one line in a terminal or reads all piped stdin. All command-line arguments (including positional tasks, -p/--print and -h/--help) are rejected before input/configuration with an English error pointing to README.md. The workspace is cwd; change directories before invoking the binary. Empty input exits before configuration and without a model request. --chat and --workspace are not supported here. The request budget is fixed at 131,072 bytes; other limits and errors remain intact.
 
@@ -73,6 +73,6 @@ Distinguish deterministic protocol tests, real local tool execution, and live-mo
 
 Commit Cargo.lock. The user authorizes verified increments to be committed and pushed, with main holding the latest validated tree. The user requested one v1 branch: milestone/v1 is the reduced single-task teaching core. Keep main and milestone/v2 separately, and preserve historical v1/v2 and step tags. Do not create another interaction-version branch/tag or merge this older backend over main.
 
-Formatting uses rustfmt with max_width = 100 and use_small_heuristics = Max; expand protocol JSON for teaching clarity. Count all src/**/*.rs under this same public style for every milestone; never hide runtime code in scripts or documentation.
+Separate top-level items and logical phases within functions with one blank line; keep related statements together. Blank lines do not count toward the code-line budget. Formatting uses rustfmt with max_width = 100 and use_small_heuristics = Max; expand protocol JSON for teaching clarity. Count all src/**/*.rs under this same public style for every milestone; never hide runtime code in scripts or documentation.
 
 Keep credentials, local environment files, generated workspaces, and raw session logs out of Git. Publish only deliberately selected and sanitized learning evidence.

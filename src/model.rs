@@ -42,12 +42,15 @@ pub async fn respond(client: &Client, config: &Config, body: Value) -> Result<Mo
         .error_for_status()?
         .json()
         .await?;
+
     ensure!(raw["status"] == "completed", "not completed: {}", raw["incomplete_details"]);
     let output = raw["output"].as_array().context("missing response output")?.clone();
+
     let mut ids = HashSet::new();
     let mut calls = Vec::new();
     let mut text = String::new();
     let mut final_text = String::new();
+
     for item in &output {
         if item["type"] == "function_call" {
             let call: ToolCall = serde_json::from_value(item.clone())?;
@@ -57,6 +60,7 @@ pub async fn respond(client: &Client, config: &Config, body: Value) -> Result<Mo
             );
             calls.push(call);
         }
+
         if item["type"] == "message" && item["role"] == "assistant" {
             for content in item["content"].as_array().context("missing message content")? {
                 if content["type"] == "output_text" {
@@ -69,8 +73,10 @@ pub async fn respond(client: &Client, config: &Config, body: Value) -> Result<Mo
             }
         }
     }
+
     ensure!(!calls.is_empty() || !text.trim().is_empty(), "empty response output");
     let is_final = !final_text.trim().is_empty();
     let text = if is_final { final_text } else { text };
+
     Ok(ModelReply { output, calls, text, is_final })
 }
