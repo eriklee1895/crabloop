@@ -112,7 +112,7 @@ for call in reply.calls {
 
 ## 在 v1 停一下，再看下一步
 
-v1 统一以 `milestone/v1` 为学习终点，全部生产 Rust 为 388 代码行、449 物理行。其中单任务输入与配置的 CLI 为 62 代码行，其余实现合计 326 行。run 持有 reqwest::Client 和任务历史，model::request/respond 接收借用的 Config；工具返回 JSON，loop 负责包装 function_call_output。
+v1 统一以 `milestone/v1` 为学习终点，全部生产 Rust 为 389 代码行、450 物理行。其中单任务输入与配置的 CLI 为 63 代码行，其余实现合计 326 行。run 持有 reqwest::Client 和任务历史，model::request/respond 接收借用的 Config；工具返回 JSON，loop 负责包装 function_call_output。
 
 格式统一为 100 列、rustfmt 的 Max 小表达式排版。约 300 行约束核心范围，全部生产 Rust 严格 <400；保持可读排版，超预算时减少功能。
 

@@ -85,7 +85,8 @@ fn arguments_are_rejected_before_reading_stdin_or_configuration() {
         let error = String::from_utf8_lossy(&output.stderr);
         assert!(error.contains("v1 takes no arguments"), "{error}");
         assert!(error.contains("README.md"), "{error}");
-        assert!(!error.contains("Task ("), "{error}");
+        assert!(!error.contains("crab>"), "{error}");
+        assert!(!error.contains("🦀"), "{error}");
     }
     assert!(server.requests().is_empty());
 }
@@ -172,6 +173,9 @@ fn stdin_runs_once_and_keeps_stdout_plain() {
     let output = task_output(&mut configured(&dir, &server), "hello");
     assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
     assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "Done");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(!stderr.contains("crab>"), "{stderr}");
+    assert!(!stderr.contains("🦀"), "{stderr}");
     assert_eq!(server.requests().len(), 1);
 }
 #[test]

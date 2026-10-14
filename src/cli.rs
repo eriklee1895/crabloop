@@ -16,7 +16,8 @@ pub fn load(args: &[String]) -> Result<Option<Config>> {
     let mut input = stdin.lock().take(limits.request_bytes as u64 + 1);
     let mut task = String::new();
     if stdin.is_terminal() {
-        eprint!("Task (Ctrl-D to exit)> ");
+        eprintln!("🦀 CrabLoop · a small Rust agent\nEnter one task. Ctrl-D to exit.\n");
+        eprint!("crab> ");
         input.read_line(&mut task)?;
     } else {
         input.read_to_string(&mut task)?;
