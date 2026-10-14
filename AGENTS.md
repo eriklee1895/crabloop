@@ -30,7 +30,7 @@ GA evidence: evidence/v1/ga-review.md.
 
 Offline baseline: 44 Rust + 6 Python tests, fmt/clippy. Live repair/report and PTY results are historical evidence in evidence/v1/ga-review.md. Only in-process chat is retained.
 
-Read docs/v1-scope.md and docs/v1-reduction-plan.md for this accepted reduction; docs/design.md and docs/plan.md preserve the original learning sequence. Tutorial 06-conversation is a later interaction experiment preserved through its historical commit, not a current v1 capability.
+Read docs/v1-scope.md and docs/v1-reduction-plan.md for this accepted reduction; docs/design.md and docs/plan.md preserve the original learning sequence. Tutorial 00-06 follows the staged loop through the current in-process chat; chapter 06 explains main/read_task/run_turn, not the historical Session/rustyline experiment.
 
 ## How to develop
 
@@ -56,7 +56,7 @@ Read [the writing guide](docs/writing-guide.md) before writing or revising a cha
 - Let observations and failures motivate the next change. Preserve the distinction between expected output and output actually observed.
 - Use the chapter requirements as an editorial check, not a rigid sequence of repeated headings.
 - Calibrate the voice with a short representative passage before writing many chapters.
-- Chapter 04 is the prose and diagram pilot; gather user feedback on this sample before extending the editorial rewrite to other chapters.
+- The user approved chapter 04 as the prose/diagram model. Apply its concrete experiment, data-flow diagrams and observable failure/recovery approach across the v1 tutorial; keep stage interfaces explicit.
 
 ## Core contracts
 
@@ -73,7 +73,7 @@ Once the Cargo package exists, use cargo fmt --check, cargo clippy --locked --al
 
 Distinguish deterministic protocol tests, real local tool execution, and live-model runs. Report only what the actual evidence establishes.
 
-Commit Cargo.lock. The user authorizes verified increments to be committed and pushed, with main holding the latest validated tree. The user requested one v1 branch: milestone/v1 is the reduced single-task teaching core. Keep main and milestone/v2 separately, and preserve historical v1/v2 and step tags. Do not create another interaction-version branch/tag or merge this older backend over main.
+Commit Cargo.lock. The user authorizes verified increments to be committed and pushed, with main holding the latest validated tree. The user requested one v1 branch: milestone/v1 is the small teaching core with in-process terminal chat. Keep main and milestone/v2 separately, and preserve historical v1/v2 and step tags. Do not create another interaction-version branch/tag or merge this older backend over main.
 
 Separate top-level items and logical phases within functions with one blank line; keep related statements together. Blank lines do not count toward the code-line budget. Formatting uses rustfmt with max_width = 100 and use_small_heuristics = Max; expand protocol JSON for teaching clarity. Count all src/**/*.rs under this same public style for every milestone; never hide runtime code in scripts or documentation.
 
