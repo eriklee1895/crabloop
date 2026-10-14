@@ -63,34 +63,12 @@ index 699bdda..aa107c2 100644
  serde_json = "=1.0.152"
  tokio = { version = "=1.53.2", features = ["macros", "rt-multi-thread", "process", "io-util", "time"] }
 +dotenvy = "=0.15.7"
-diff --git a/scripts/count-lines.py b/scripts/count-lines.py
-index 059369e..238aced 100644
---- a/scripts/count-lines.py
-+++ b/scripts/count-lines.py
-@@ -2,6 +2,10 @@
- """Count every Rust source under src; comments/blank lines have an explicit rule."""
- from pathlib import Path
- import json
-+import argparse
-+parser = argparse.ArgumentParser(description=__doc__)
-+parser.add_argument("--max", type=int, help="fail when code lines exceed this number")
-+args = parser.parse_args()
- root = Path(__file__).resolve().parents[1]
- files = []
- for path in sorted((root / "src").rglob("*.rs")):
-@@ -9,3 +13,6 @@ for path in sorted((root / "src").rglob("*.rs")):
-     code = sum(bool(line.strip()) and not line.lstrip().startswith("//") for line in lines)
-     files.append({"path": str(path.relative_to(root)), "physical": len(lines), "code": code})
- print(json.dumps({"rule": "all src/**/*.rs; nonblank and non-standalone // comment lines; block comments count", "files": files, "physical": sum(f["physical"] for f in files), "code": sum(f["code"] for f in files)}, indent=2))
-+
-+if args.max is not None and sum(f["code"] for f in files) > args.max:
-+    raise SystemExit(1)
 diff --git a/scripts/run-live.py b/scripts/run-live.py
 new file mode 100644
-index 0000000..8ed7666
+index 0000000..0d6a69f
 --- /dev/null
 +++ b/scripts/run-live.py
-@@ -0,0 +1,99 @@
+@@ -0,0 +1,100 @@
 +#!/usr/bin/env python3
 +"""Run one controlled live repair. Credentials and raw logs stay local."""
 +import argparse
@@ -143,6 +121,7 @@ index 0000000..8ed7666
 +env = os.environ.copy()
 +env.update(CRABLOOP_PROVIDER="openai", OPENAI_API_KEY=key, OPENAI_BASE_URL=base, CRABLOOP_MODEL=model)
 +env.pop('CRABLOOP_API_URL', None)
++env['CRABLOOP_TRACE_TOOLS'] = '1'
 +task = 'Read README.md and inspect the source. Fix last_index in lib.rs. Run the existing tests before editing and after the fix. Preserve the public signature and tests.rs. Write NOTES.md describing the change and actual verification. Report only observed results.'
 +subprocess.run(['cargo', 'build', '--locked'], cwd=ROOT, check=True, capture_output=True)
 +if args.scenario == 'report':
@@ -281,7 +260,7 @@ index 0000000..2aac215
 +    }))
 +}
 diff --git a/src/lib.rs b/src/lib.rs
-index 526f03c..4d9ff4b 100644
+index 526f03c..cd48dce 100644
 --- a/src/lib.rs
 +++ b/src/lib.rs
 @@ -1,6 +1,9 @@
@@ -319,7 +298,7 @@ index 526f03c..4d9ff4b 100644
  pub struct Config {
      pub workspace: PathBuf,
      pub task: String,
-@@ -35,79 +40,60 @@ pub struct Config {
+@@ -35,79 +40,70 @@ pub struct Config {
      pub limits: Limits,
  }
  
@@ -398,13 +377,23 @@ index 526f03c..4d9ff4b 100644
          }
 +
          for call in reply.calls {
++            let args: serde_json::Value = serde_json::from_str(&call.arguments).unwrap_or_default();
++            let detail = args["path"].as_str().or(args["command"].as_str()).unwrap_or("");
++            eprintln!("  → {} · {}", call.name, tools::clip_utf8(detail, 100).0);
              let result = tools::execute(&call, &config.workspace, &config.limits).await;
 -            eprintln!(
 -                "tool {}",
 -                json!({"call_id":call.call_id, "name":call.name, "result":result})
 -            );
 -            input.push(json!({"type":"function_call_output", "call_id":call.call_id, "output":result.to_string()}));
-+            eprintln!("tool {}", json!({"call_id":call.call_id,"name":call.name,"result":result}));
++            let status = if result["ok"] == true { "done" } else { "failed" };
++            let previews = ["error", "stderr", "content", "stdout"].map(|key| result[key].as_str());
++            let preview = previews.into_iter().flatten().find(|s| !s.is_empty()).unwrap_or("");
++            eprintln!("    {status} · preview (≤240 B):\n{}", tools::clip_utf8(preview, 240).0);
++            if std::env::var_os("CRABLOOP_TRACE_TOOLS").is_some() {
++                let event = json!({"call_id":call.call_id,"name":call.name,"result":result});
++                eprintln!("tool {event}");
++            }
 +
 +            input.push(json!({
 +                "type": "function_call_output",
@@ -706,10 +695,10 @@ index 42e58aa..7024de5 100644
  }
 diff --git a/tests/cli.rs b/tests/cli.rs
 new file mode 100644
-index 0000000..0a558e9
+index 0000000..2cf3891
 --- /dev/null
 +++ b/tests/cli.rs
-@@ -0,0 +1,252 @@
+@@ -0,0 +1,303 @@
 +mod common;
 +use common::{StubResponses, TempDir, fixture, task_output};
 +use std::{
@@ -962,6 +951,57 @@ index 0000000..0a558e9
 +    assert_eq!(body["ok"], false);
 +    assert!(body["error"].as_str().unwrap().contains("regular file"));
 +}
++
++#[test]
++fn tool_display_is_readable_bounded_and_preserves_model_feedback() {
++    let dir = TempDir::new();
++    let contents = format!("alpha\nbeta\n{}", "x".repeat(500));
++    fs::write(dir.path().join("notes.md"), &contents).unwrap();
++    let server = StubResponses::start(vec![
++        serde_json::json!({"status":"completed","output":[
++            {"type":"function_call","call_id":"read","name":"read_file","arguments":"{\"path\":\"notes.md\"}"},
++            {"type":"function_call","call_id":"missing","name":"read_file","arguments":"{\"path\":\"missing.md\"}"},
++            {"type":"function_call","call_id":"bad_command","name":"bash","arguments":serde_json::json!({"command":"printf 'warning\n' >&2; exit 7"}).to_string()}
++        ]}),
++        fixture("text"),
++    ]);
++    let output = task_output(&mut configured(&dir, &server), "inspect");
++    let stderr = String::from_utf8_lossy(&output.stderr);
++    assert!(output.status.success(), "{stderr}");
++    assert!(stderr.contains("read_file · notes.md"), "{stderr}");
++    assert!(stderr.contains("done"), "{stderr}");
++    assert!(stderr.contains("alpha\nbeta"), "{stderr}");
++    assert!(stderr.contains("failed"), "{stderr}");
++    assert!(stderr.contains("No such file"), "{stderr}");
++    assert!(stderr.contains("bash · printf"), "{stderr}");
++    assert!(stderr.contains("warning"), "{stderr}");
++    assert!(!stderr.contains("tool {"), "{stderr}");
++    assert!(!stderr.contains(&"x".repeat(300)), "{stderr}");
++    let requests = server.requests();
++    let result: serde_json::Value =
++        serde_json::from_str(requests[1]["input"][4]["output"].as_str().unwrap()).unwrap();
++    assert_eq!(result["content"], contents);
++    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "Done");
++}
++
++#[test]
++fn explicit_tool_trace_retains_machine_readable_results() {
++    let dir = TempDir::new();
++    fs::write(dir.path().join("lib.rs"), "A").unwrap();
++    fs::write(dir.path().join("tests.rs"), "B").unwrap();
++    let server = StubResponses::start(vec![fixture("two_calls"), fixture("text")]);
++    let output = task_output(configured(&dir, &server).env("CRABLOOP_TRACE_TOOLS", "1"), "inspect");
++    let stderr = String::from_utf8_lossy(&output.stderr);
++    let traces: Vec<serde_json::Value> = stderr
++        .lines()
++        .filter_map(|line| line.strip_prefix("tool "))
++        .map(|line| serde_json::from_str(line).unwrap())
++        .collect();
++    assert!(output.status.success(), "{stderr}");
++    assert_eq!(traces.len(), 2);
++    assert_eq!(traces[0]["call_id"], "call_1");
++    assert_eq!(traces[0]["result"]["content"], "A");
++}
 diff --git a/tests/common/mod.rs b/tests/common/mod.rs
 index 714a094..6e20a31 100644
 --- a/tests/common/mod.rs
@@ -1036,10 +1076,10 @@ index 714a094..6e20a31 100644
      }
 diff --git a/tests/live_driver_test.py b/tests/live_driver_test.py
 new file mode 100644
-index 0000000..9026e5f
+index 0000000..fc92eae
 --- /dev/null
 +++ b/tests/live_driver_test.py
-@@ -0,0 +1,51 @@
+@@ -0,0 +1,52 @@
 +import os
 +from pathlib import Path
 +import runpy
@@ -1074,6 +1114,7 @@ index 0000000..9026e5f
 +                self.assertEqual(result.exception.code, 1)
 +                self.assertEqual(popen.call_args.args[0], [str(root / 'target/debug/crabloop')])
 +                self.assertEqual(popen.call_args.kwargs['stdin'], subprocess.PIPE)
++                self.assertEqual(popen.call_args.kwargs['env']['CRABLOOP_TRACE_TOOLS'], '1')
 +                process.communicate.assert_called_once()
 +                sent = process.communicate.call_args.kwargs
 +                self.assertEqual(sent['timeout'], 300)

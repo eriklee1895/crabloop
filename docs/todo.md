@@ -59,3 +59,5 @@
 - [x] **REQ-030：v1 stdin-only 入口与终端提示。** 清除未提交旧文件带回的 Help、位置参数及 -p，恢复小螃蟹欢迎信息和 `crab>`。389 代码行 / 450 物理行，42 Rust + 5 Python、PTY 与七步重建通过；学习分支提交 `9424df4`。main 同步教程补丁、当前数字和记录。[实施与验证](devlog/28-v1-stdin-banner.md)
 
 - [x] **REQ-031：调大默认预算。** main 与当前 v1 的请求 JSON 预算为 4 MiB；main 输出上限为 32,768 tokens，v1 按用户要求为 131,072（128K）。main 摘要正文上限为 16 KiB。仅调整默认值，保留历史标签、小预算实验和已有机制。[实施与验证](devlog/29-default-budgets.md)
+
+- [x] **REQ-032：v1 工具显示。** 默认名称、命令/路径、状态及 ≤240 B 文本预览；CRABLOOP_TRACE_TOOLS 显式保留 JSON 轨迹，模型反馈不变。399 代码行 / 460 物理行，44 Rust + 5 Python 与七步重建通过；实现 `5a063fc`。[实施与验证](devlog/30-v1-tool-display.md)
