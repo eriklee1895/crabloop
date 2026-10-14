@@ -5,7 +5,7 @@ use std::{
     io::{self, BufRead, IsTerminal, Read},
 };
 
-const HELP: &str = "usage: crabloop [-p TASK]\n无参数：在当前目录输入一个任务；-p/--print：单次任务。\n读取当前目录 .env；DEEPSEEK_API_KEY 默认使用 deepseek-flash。\nCRABLOOP_PROVIDER=openai 使用 OPENAI_API_KEY / OPENAI_BASE_URL / CRABLOOP_MODEL。";
+const HELP: &str = "usage: crabloop [-p TASK]\nWithout arguments: enter a task for the current directory; -p/--print: run one task.\nReads .env from the current directory; DEEPSEEK_API_KEY defaults to deepseek-flash.\nCRABLOOP_PROVIDER=openai uses OPENAI_API_KEY / OPENAI_BASE_URL / CRABLOOP_MODEL.";
 pub fn load(args: &[String]) -> Result<Option<Config>> {
     if args.len() == 2 && matches!(args[1].as_str(), "-h" | "--help") {
         println!("{HELP}");
@@ -18,7 +18,7 @@ pub fn load(args: &[String]) -> Result<Option<Config>> {
             let mut input = stdin.lock().take(limits.request_bytes as u64 + 1);
             let mut text = String::new();
             if stdin.is_terminal() {
-                eprint!("任务（Ctrl-D 退出）> ");
+                eprint!("Task (Ctrl-D to exit)> ");
                 input.read_line(&mut text)?;
             } else {
                 input.read_to_string(&mut text)?;

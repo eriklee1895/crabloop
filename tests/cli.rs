@@ -30,19 +30,27 @@ fn no_arguments_reads_a_task_from_stdin_in_current_directory() {
         .stderr(Stdio::piped())
         .spawn()
         .unwrap();
-    child.stdin.take().unwrap().write_all("请检查这个目录\n并说明结果\n".as_bytes()).unwrap();
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(b"Inspect this directory\nand summarize the result\n")
+        .unwrap();
     let output = child.wait_with_output().unwrap();
     assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
-    assert_eq!(server.requests()[0]["input"][0]["content"], "请检查这个目录\n并说明结果");
+    assert_eq!(
+        server.requests()[0]["input"][0]["content"],
+        "Inspect this directory\nand summarize the result"
+    );
     assert_eq!(server.requests().len(), 1);
 }
 #[test]
 fn task_argument_defaults_to_current_workspace() {
     let dir = TempDir::new();
     let server = StubResponses::start(vec![fixture("text")]);
-    let output = configured(&dir, &server).arg("检查 README").output().unwrap();
+    let output = configured(&dir, &server).arg("Inspect README").output().unwrap();
     assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
-    assert_eq!(server.requests()[0]["input"][0]["content"], "检查 README");
+    assert_eq!(server.requests()[0]["input"][0]["content"], "Inspect README");
 }
 #[test]
 fn help_needs_no_credentials_and_eof_does_not_call_model() {
