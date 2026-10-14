@@ -8,6 +8,6 @@ README 增加 CI、Rust、v1 <400 行、中文教程四枚徽章与简短导航�
 
 .github/workflows/ci.yml 在 main push、PR 与手动触发时运行单个 Ubuntu 24.04 job。使用固定 SHA 的官方 checkout v7，依照 rust-toolchain.toml 加载工具链，执行 fmt、clippy、Rust 与 Python 离线测试。无模型凭证、不发真实 LLM 请求、不增加 release 流程。
 
-本地同组命令通过：65 项 Rust、6 项 Python，fmt/clippy 无错误。独立只读审查未发现需修改问题；GitHub 托管运行结果待首次推送后核对。
+本地同组命令通过：65 项 Rust、6 项 Python，fmt/clippy 无错误。独立只读审查未发现需修改问题；GitHub 托管的 [首次 push CI](https://github.com/eriklee1895/crabloop/actions/runs/38520501082) 已通过，源码提交为 0cab0db，Linux job 用时 1 分 6 秒。
 
 REQ-021 记录 version 子命令与 --version/-V 的最小行为，包版本不等同教学阶段。REQ-022 留待出现二进制分发需要时再规划自动 Release。生产 Rust 与 milestone 分支未修改。
