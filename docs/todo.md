@@ -43,7 +43,7 @@
 
 - [ ] **REQ-021 · 待排期，小改动：版本命令。** 支持 `crabloop version`、`--version` / `-V`，stdout 单行输出 `crabloop <Cargo package version>` 并以 0 退出；版本来自 CARGO_PKG_VERSION，无需 API key，不加载模型配置、不创建会话或发请求。包版本与 v1/v2 教学阶段分开解释；首版不增加 Git SHA/build.rs。将 version 保留为命令，任务文本仍可用 `-p "version"` 显式传入。验收无凭证、无模型请求及三个入口输出一致。
 - [ ] **REQ-022 · 待排期：自动 Release。** 有二进制分发需要时再确定发行版本命名、平台和发布流程；历史教学 tag 不自动批量发布，不增加额外 v1-ga 入口。
-- [ ] **REQ-023 · 进行中，独立外观改动：GitHub 首页。** 一行徽章与导航；吉祥物和 Banner 已生成七种 Banner 风格候选，等待选定。取消循环箭头装饰，最终只将选定素材接入 README。
+- [x] **REQ-023 · 已完成，独立外观改动：GitHub 首页。** 徽章与导航、T2 现代等宽字形 Banner、微笑像素蟹；深海军蓝／珊瑚橙／青绿配色，独立吉祥物提供透明 PNG。[素材与提示词](assets/README.md) · [实施记录](devlog/28-branding-t2.md)
 - [x] **REQ-024 · 已完成，独立工程改动：基础 CI。** main push / PR / 手动触发，单 Linux job 跑 fmt、clippy、Rust 与 Python 离线测试；不接模型密钥，不自动发布。实现：`0cab0db`；[首次 GitHub CI 通过](https://github.com/eriklee1895/crabloop/actions/runs/38520501082)。
 
 - [ ] **REQ-027 · 待排期，独立 CLI Help 迭代。** 参考用户提供的 Cargo/Codex 截图，设计用途、Usage、分组、对齐、高亮与多色；窄终端和无颜色输出仍清晰；帮助无需凭证、模型配置或会话，不请求模型；参数与帮助来自同一份声明。v1 不承担该功能，不必等完整 TUI。[设计](cli-help-plan.md)
