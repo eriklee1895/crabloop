@@ -29,7 +29,7 @@ Preferred model: DeepSeek V4.1 Flash (deepseek-flash); fallback: gpt-6-luna thro
 
 `src/cli.rs` reads only cwd .env as data with dotenvy; process values win. Prefer DEEPSEEK_API_KEY/deepseek-flash absent explicit generic config; CRABLOOP_PROVIDER=deepseek/openai overrides. Generic mode uses OPENAI_API_KEY/OPENAI_BASE_URL/CRABLOOP_MODEL; CRABLOOP_API_URL overrides the endpoint. Keep provider keys paired. SSE/home/TOML/catalog and telemetry remain planned; Langfuse ingestion is unverified. Original v1/v2 keep their old CLI.
 
-Chapters: tutorial/v1/ and tutorial/v2/. Records: docs/devlog/. Keep one root implementation; commits/tags identify chapter code.
+Chapters: tutorial/v1/ (00-06, illustrated; 05b is historical) and tutorial/v2/. V1 chapters target milestone/v1; main keeps Session/context. Records: docs/devlog/. Keep one root implementation; commits/tags identify chapter code.
 
 Read the relevant design and task before implementation:
 

@@ -43,7 +43,7 @@ cargo run -- -p "检查 README，说明这个项目能做什么"
 | [milestone/v2](https://github.com/eriklee1895/crabloop/tree/milestone/v2) | 上下文管理与摘要压缩 | 按 v2 教程指定的基线和命令运行 |
 | main | 当前完整实现：四工具、多轮对话与上下文压缩 | `cargo run` 聊天，`-p` 单次执行 |
 
-从[中文教程](tutorial/README.md)进入 00–05 的最小循环学习，再阅读 [06–09 上下文管理](tutorial/v2/06-context-projection.md)。也可以用[七个代码增量](tutorial/v1/patches/README.md)从空目录重建 v1；[完整交互](tutorial/v1/05b-interactive.md)作为选读。
+从[中文教程](tutorial/README.md)进入 v1 的 00–06 章，学习最小循环与连续对话，再阅读 [v2 的 context 管理与 compaction](tutorial/v2/06-context-projection.md)。也可以用[七个代码增量](tutorial/v1/patches/README.md)从空目录重建 v1。
 
 后续版本计划加入 TOML 配置、流式输出、Skills、联网工具和会话恢复，安排见[路线图](docs/roadmap.md)。这些能力尚未实现。
 
