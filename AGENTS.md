@@ -20,15 +20,15 @@ The only v1 learning code is milestone/v1. Seven tutorial patches end at the sam
 
 The milestone/v1 implementation has been reduced to 389 code lines / 450 physical lines under the established counting rule. The old 571-line interaction expansion remains in Git history and main. Original v1 / step-05-v1 tags retain 314/319. Production Rust lives in five files; run(Config) directly owns history and the serial model/tool loop. No Session, Progress, terminal editor, cross-user-turn chat or SSE remains in v1.
 
-Startup is a single task from stdin: cargo run shows a small crab banner and crab> prompt before reading one line in a terminal, or reads all piped stdin without the banner. All command-line arguments (including positional tasks, -p/--print and -h/--help) are rejected before input/configuration with an English error pointing to README.md. The workspace is cwd; change directories before invoking the binary. Empty input exits before configuration and without a model request. --chat and --workspace are not supported here. The request budget is fixed at 131,072 bytes; other limits and errors remain intact.
+Startup is a single task from stdin: cargo run shows a small crab banner and crab> prompt before reading one line in a terminal, or reads all piped stdin without the banner. All command-line arguments (including positional tasks, -p/--print and -h/--help) are rejected before input/configuration with an English error pointing to README.md. The workspace is cwd; change directories before invoking the binary. Empty input exits before configuration and without a model request. --chat and --workspace are not supported here. The request budget is fixed at 4,194,304 bytes (4 MiB); max_output_tokens is 131,072; other limits and errors remain intact.
 
 Only the startup directory's .env is read as data; process environment wins. CRABLOOP_PROVIDER defaults to deepseek (DEEPSEEK_API_KEY, deepseek-flash). Explicit openai uses OPENAI_API_KEY, OPENAI_BASE_URL (default https://api.openai.com/v1) and default gpt-6-luna. CRABLOOP_MODEL and full CRABLOOP_API_URL override the selected profile. No model-name, hostname or key-presence inference. The live test driver explicitly selects openai while supplying the chosen provider's matching key/base/model; it runs the binary from the fixture directory. Never execute or print .env contents.
 
-Professional CLI Help is a later independent increment: docs/cli-help-plan.md. Keep code strings/comments in English; user/model content and Chinese tutorials retain their language.
+CLI Help remains planned in docs/cli-help-plan.md. Code strings/comments are English; tutorials are Chinese.
 
-GA review and evidence: evidence/v1/ga-review.md. Four tools and the five-file flat layout are final for v1; prioritize clarity and avoid scope expansion.
+GA evidence: evidence/v1/ga-review.md. Preserve the four tools and five-file layout.
 
-Current offline verification: 42 Rust and 5 Python tests; fmt/clippy and scripts/count-lines.py --max 399 passed. Historical DeepSeek live repair passed (9 tool calls, independent verifier green). This stdin-only change has no new live-model evidence. Review cleanup also rejects unsupported live-driver v2/context flags and clarifies the historical chapter checkout. Historical live evidence remains distinct. Tests for removed chat functionality remain on main; v1 retains core protocol, bounded tools, feedback/error loops and single-task CLI coverage.
+Offline baseline: 42 Rust + 5 Python tests, fmt/clippy and <400 line check. Live repair/report and PTY results are historical evidence in evidence/v1/ga-review.md. No chat functionality remains in v1.
 
 Read docs/v1-scope.md and docs/v1-reduction-plan.md for this accepted reduction; docs/design.md and docs/plan.md preserve the original learning sequence. Tutorial 06-conversation is a later interaction experiment preserved through its historical commit, not a current v1 capability.
 

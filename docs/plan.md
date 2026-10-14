@@ -19,9 +19,9 @@
 - 模型接入使用 OpenAI 原生 Responses API。公开工具名固定为 read_file、write_file、edit_file、bash。
 - 每次请求由客户端显式发送 input；store 为 false，不传 previous_response_id 或 conversation。
 - Rust 1.94.0，edition 2024；依赖按设计说明固定精确版本，提交 Cargo.lock 后使用 locked 构建。
-- 主模型轮数 16；HTTP 超时 60 秒；Bash 超时 30 秒；max_output_tokens 为 2,048。
+- 主模型轮数 16；HTTP 超时 60 秒；Bash 超时 30 秒；max_output_tokens 为 131,072。
 - 文件上限 65,536 字节，read_file 输出上限 8,192 字节，Bash stdout/stderr 各捕获最多 4,096 原始字节。
-- v1 请求上限 131,072 字节；v2 默认 49,152 字节、触发阈值 36,864 字节、保留最近 2 组，摘要上限 min(4,096，hard/8)。
+- 当前 v1 请求上限为 4 MiB，输出上限为 131,072 tokens；历史 v1/v2 标签保留原预算。历史 v2 默认 49,152 字节、触发阈值 36,864 字节、保留最近 2 组，摘要上限 min(4,096，hard/8)。
 - v2 的 CRABLOOP_CONTEXT_BYTES 最小 4,096；根目录 AGENTS.md 上限 8,192 UTF-8 字节。
 - v1 目标约 300 行，350–360 也可接受；v2 目标约 500 行，允许合理浮动；全部 src/**/*.rs 纳入计数，保持正常 cargo fmt，不牺牲必要错误处理。
 - 先完成 v1 并保留 tag，再扩展 v2；不在两版中添加设计说明列出的选修能力。
@@ -233,7 +233,7 @@ assert_eq!(summary_request["tools"], serde_json::json!([]));
 - [ ] Step 1：构造含早期测试失败、未完成修改、最新两个调用组的固定 history；把 faithful_summary 与故意写成“测试通过”的 misleading_summary 分别送入实验。
 - [ ] Step 2：写 context_comparison_preserves_protocol 与 misleading_summary_fails_semantic_verifier；独立断言早期测试仍为 failed、未运行测试仍为 not_run、剩余任务仍 pending。预期：误导摘要可满足五段结构，却必须被事实核验判为失败。
 - [ ] Step 3：运行 cargo test --locked --test context --test compaction；保存三方案的输入 bytes、调用/结果关联检查和事实核验表，不把 fake summary 结果当成模型压缩质量。
-- [ ] Step 4：真实模型实验先以 CRABLOOP_CONTEXT_BYTES=8,192 起步，测量固定输入、最近两组和摘要预留的大小；必要时按 16,384 → 32,768 → 49,152 校准，选择候选输入装得下且完整历史能触发整理的预算。使用多轮任务触发至少一次压缩，记录摘要请求、前后输入、usage、最终差异和测试结果。若仍装不下，记录明确停止，不删除半组“凑成功”。
+- [ ] Step 4：真实模型实验先以 CRABLOOP_CONTEXT_BYTES=8,192 起步，测量固定输入、最近两组和摘要预留的大小；必要时按 16,384 → 131,072 → 49,152 校准，选择候选输入装得下且完整历史能触发整理的预算。使用多轮任务触发至少一次压缩，记录摘要请求、前后输入、usage、最终差异和测试结果。若仍装不下，记录明确停止，不删除半组“凑成功”。
 - [ ] Step 5：复核五类信息：任务约束、修改文件、测试结果、剩余工作、不确定事项。对照至少一次无压缩运行；费用/时延只记录实测，不预设压缩更便宜。
 - [ ] Step 6：把一次损失案例与修正建议写入 08，保留原始证据；本地提交 test: verify context projection and compaction behavior。
 

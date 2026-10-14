@@ -67,4 +67,6 @@ cargo clippy --locked --all-targets -- -D warnings
 cargo test --locked
 ```
 
+默认请求 JSON 预算为 4 MiB，模型输出上限 max_output_tokens 为 131,072 tokens。请求字节数不是模型的 token 窗口；这些默认值先为仓库分析留出余量，v1 仍不增加 tokenizer、配置菜单或摘要压缩。
+
 行数门禁超标会返回非零退出码。文件大小、工具输出、请求预算和 Bash 超时仍有限制；v1 不提供 OS sandbox、原子写入回滚或完整进程树清理。模型调用失败明确结束，不自动重放工具。

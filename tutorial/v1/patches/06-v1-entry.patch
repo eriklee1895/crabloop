@@ -281,7 +281,7 @@ index 0000000..2aac215
 +    }))
 +}
 diff --git a/src/lib.rs b/src/lib.rs
-index 526f03c..224382f 100644
+index 526f03c..4d9ff4b 100644
 --- a/src/lib.rs
 +++ b/src/lib.rs
 @@ -1,6 +1,9 @@
@@ -294,7 +294,7 @@ index 526f03c..224382f 100644
  #[derive(Clone)]
  pub struct Limits {
      pub max_turns: usize,
-@@ -12,6 +15,7 @@ pub struct Limits {
+@@ -12,20 +15,22 @@ pub struct Limits {
      pub stream_bytes: usize,
      pub max_output_tokens: u32,
  }
@@ -302,7 +302,16 @@ index 526f03c..224382f 100644
  impl Default for Limits {
      fn default() -> Self {
          Self {
-@@ -26,6 +30,7 @@ impl Default for Limits {
+             max_turns: 16,
+             http_timeout: Duration::from_secs(60),
+             bash_timeout: Duration::from_secs(30),
+-            request_bytes: 131072,
++            request_bytes: 4 * 1024 * 1024,
+             file_bytes: 65536,
+             read_output_bytes: 8192,
+             stream_bytes: 4096,
+-            max_output_tokens: 2048,
++            max_output_tokens: 131072,
          }
      }
  }
