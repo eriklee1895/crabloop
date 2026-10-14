@@ -2,7 +2,7 @@
 
 ## Project goal
 
-CrabLoop is a small coding-agent harness built from scratch in Rust for hands-on learning.
+CrabLoop is a mini coding agent Harness built from scratch in Rust for hands-on learning. Keep this scope; do not reframe it as a Workbench.
 
 v2-v3: learn Agent fundamentals in small, readable code; defer reliability hardening. Preserve core contracts. See docs/roadmap.md.
 
@@ -16,8 +16,6 @@ v2-v3: learn Agent fundamentals in small, readable code; defer reliability harde
 - Use the OpenAI native Responses API and a hand-written agent loop.
 - Grow the same implementation through small, explainable steps. Preserve runnable milestones with v1 and v2 Git tags.
 - Study llm-space's tool contracts and UI/state boundaries; fixed references are in docs/roadmap.md.
-
-2026-10-14 v1 guide: size is a teaching reference, not a hard gate. Count all src/**/*.rs after rustfmt and report physical lines. Keep runtime code visible and readable; never code-golf or omit necessary errors. See docs/v1-scope.md.
 
 ## Current state and layout
 
@@ -49,7 +47,7 @@ The user's latest instructions take precedence over those documents.
 - Keep the current milestone focused. Introduce abstractions when a concrete need appears.
 - Prefer concrete functions and small types. Use standard Rust and basic HTTP/JSON/async libraries.
 - Maintain one implementation. Each completed version keeps one milestone/vN learning branch and immutable tags; same-version usability fixes may advance that branch. Use step commits/tags for chapters; continue new work on codex/*.
-- Write tutorials and explanations in Chinese, with Rust identifiers and protocol names in their original form.
+- Use concise Chinese prose; keep industry terms in English (Harness, context, compaction, provider, session). Focus on the main information; put development history in devlog.
 - Keep README concise; put detailed plans, counts and evidence in docs.
 - Tutorials explain a reproducible learning path. Development records capture actual decisions, changes, failures, verification results, and relevant commits.
 

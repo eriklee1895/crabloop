@@ -2,8 +2,6 @@
 
 v1 的学习代码统一为 `milestone/v1`。直接阅读该分支，或从空目录顺序应用这里的七个增量，最后得到同一份实现。章节正文负责解释为什么这样写，补丁保存每一步实际增加、删除和替换的内容。
 
-这些是教学材料。应用后的练习工程位于你自己的目录，CrabLoop 的正式实现仍只有仓库根目录这一份。
-
 | 补丁 | 起点 → 终点 | 主要变化 | 检查 |
 |---|---|---|---|
 | [00-probe.patch](00-probe.patch) | 空目录 → 一次 HTTP 往返 | Cargo 工程、固定锁文件、main.rs 探针 | cargo check --locked |
@@ -12,7 +10,7 @@ v1 的学习代码统一为 `milestone/v1`。直接阅读该分支，或从空�
 | [03-bash.patch](03-bash.patch) | step-02 → step-03-bash | Bash、双管道采集、超时及对应实验 | cargo test --locked --test tools |
 | [04-agent-loop.patch](04-agent-loop.patch) | step-03 → step-04-loop | 历史所有者、串行行动循环与停止 | cargo test --locked --test loop |
 | [05-v1.patch](05-v1.patch) | step-04 → 综合任务的中间步骤 | 修复 fixture、独立 verifier、简化接口 | cargo test --locked |
-| [06-v1-entry.patch](06-v1-entry.patch) | 综合任务 → milestone/v1 | 展开协议结构、cwd 工作区、stdin 单任务输入和 .env 配置 | cargo test --locked；cargo fmt --check |
+| [06-v1-entry.patch](06-v1-entry.patch) | 综合任务 → milestone/v1 | 展开协议结构、cwd、stdin 连续对话和 .env 配置 | cargo test --locked；cargo fmt --check |
 
 00 的 diff 包含 Cargo.lock，因此较长；先关注 Cargo.toml 和 src/main.rs。01 的完整增量包含正文里只解释了关键部分的 src/lib.rs、src/model.rs、src/main.rs 和 tests/。这样可以看到 Config 从哪里来，以及入口怎样接上协议层。
 
@@ -42,7 +40,7 @@ cargo test --locked --test protocol
 
 后面的章节用相同方式应用 02、03、04、05，按表中命令检查。补丁是顺序增量，不能直接把 04 应用到空目录。如果已经手工修改了代码，先读 diff 并合并自己的改动；不要覆盖练习成果来强行通过 patch 检查。
 
-05 是综合任务的中间步骤。继续应用 06，完成当前 v1 的入口和协议排版，得到与 `milestone/v1` 逐字一致的全部 src 文件：436 代码行、495 物理行。其中 CLI 为 75 代码行，其他实现合计 361 行。阅读和练习都以这个终点为准。
+05 加入综合任务；06 完成当前入口。全部应用后，src 与 `milestone/v1` 逐字一致：main 持有历史，run_turn 处理当前任务，终端可连续提问，管道输入单次退出。
 
 ## 验证整条路线
 
@@ -58,7 +56,3 @@ python3 scripts/check-lessons.py
 正文里的旧接口属于各自步骤。去掉 ModelClient/ToolResult 的变化见 05 补丁及第 05 章的迁移表；06 接上当前 v1 的简洁启动。历史标签和开发记录保留当时的证据，学习时无需选择另一份 v1。
 
 修改 v1 的贡献者可以在提交候选分支后执行 `python3 scripts/check-lessons.py --v1-ref HEAD`，先验证重建终点与该提交一致，再推进 milestone/v1；默认命令仍校验正式学习分支。
-
-2026-10-14 默认预算增量在最后一个补丁中将请求预算提高到 4 MiB、max_output_tokens 提高到 131,072；前面的历史步骤与 v1 标签继续保留当时的数值。
-
-当前 06 补丁还保留最小连续对话：main 持有同一 Vec<Value>，run_turn 借用它运行当前任务；终端回答后读取下一次输入，管道仍单次退出。无需 Session 类型或输入编辑器。

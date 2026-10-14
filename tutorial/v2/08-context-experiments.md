@@ -1,6 +1,6 @@
 # 08：更短的输入，保住了哪些事实
 
-摘要请求能成功返回以后，很容易只盯着 bytes 下降。先留住这个冲动，拿同一段历史做三次选择，看看每次究竟少了什么。
+compaction 缩短输入后，关键事实还在吗？用同一份历史比较三种输入。
 
 ## 把三个方案放在同一份记录上
 
@@ -22,7 +22,7 @@ cargo test --locked --test context context_comparison -- --nocapture
 
 原任务和固定指令在三个方案里都保留。第三种方案使用人工 fixture 摘要；它证明输入组织可以做到什么，不代表真实模型一定能写出同样准确的摘要。[机器记录](../../evidence/v2/context-comparison.json) 给它标明了这个身份。
 
-接着运行 `cargo test --locked --test compaction misleading_summary`。这次摘要把失败与未运行都写成通过，栏目齐全，大小合格。prepare 会接受它，但独立事实核验失败。这个测试没有发明一个能自动判断任意中文摘要真假的判官；它只核对我们事先植入的三项事实，用来暴露“结构合格”与“内容可信”的距离。
+接着运行 `cargo test --locked --test compaction misleading_summary`。摘要把失败与未运行写成通过，栏目和大小仍合格；prepare 接受了它，独立事实核验却失败。这个测试核对预设的三项事实，说明结构检查无法保证摘要内容正确。
 
 ## 让真实模型遇到小预算
 
