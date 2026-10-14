@@ -67,3 +67,5 @@
 - [x] **REQ-035：吉祥物 GIF。** 透明背景、微笑、眨眼与单钳轻挥，256px、3.2 秒循环，明显挥钳并配合轻起伏；归档生成提示词、十张源帧、时间安排和重建脚本。[动图与源文件](assets/mascot-animation/README.md) · [记录](devlog/32-mascot-animation.md)
 
 - [x] **REQ-034：v1 成功工具不回显正文。** 保留名称、命令/路径和 done；失败显示最多 160 字节的单行诊断，包含 Bash 退出码/超时状态。模型反馈不裁剪，不新增显示开关。43 Rust + 5 Python、串行七步重建和 release 检查通过；实现 `2cf6e9f`。[实施与验证](devlog/32-v1-quiet-tool-results.md)
+
+- [x] **REQ-035：v1 最小连续对话。** 终端回答后继续 crab>，进程内保留用户、完整模型 output 和工具结果，Ctrl-D 退出；管道保持单任务。只增加输入循环和共享 Vec<Value>，无编辑器、持久化或恢复。44 Rust + 6 Python（含 PTY）、七步重建及 release PTY 检查通过；实现 `714379c`。[实施与验证](devlog/33-v1-simple-chat.md)

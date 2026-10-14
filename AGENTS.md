@@ -21,7 +21,7 @@ v2-v3: learn Agent fundamentals in small, readable code; defer reliability harde
 
 ## Current state and layout
 
-V1: milestone/v1, 406/467; stdin-only, crab banner/crab>, no args. Tool name/status; no success output or trace option. Help: docs/cli-help-plan.md. Debug: docs/debugging.md. Brand: docs/assets/README.md.
+V1: milestone/v1, 436/495; terminal chat with shared history, piped single task, crab banner/crab>, no args. Tool name/status; no success output or trace option. Help: docs/cli-help-plan.md. Debug: docs/debugging.md. Brand: docs/assets/README.md.
 
 Historical v1: 314/319; v2: 504/511. V1 GA: 397/402, 43 Rust + 4 Python with live repair/report and PTY; evidence/v1/ga-review.md. Main: 853/878, 65 Rust + 6 Python. Counts=code/physical; preserve historical evidence.
 
