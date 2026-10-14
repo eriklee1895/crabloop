@@ -46,7 +46,7 @@ with tempfile.TemporaryDirectory(prefix='crabloop-lessons-') as directory:
     if result.returncode:
         raise SystemExit(result.stdout + result.stderr)
     subprocess.run(['python3', '-m', 'unittest', 'discover', '-s', 'tests', '-p', '*_test.py'], cwd=workspace, check=True)
-    subprocess.run(['python3', 'scripts/count-lines.py', '--max', '399'], cwd=workspace, check=True)
+    subprocess.run(['python3', 'scripts/count-lines.py'], cwd=workspace, check=True)
     for source in sorted((workspace / 'src').rglob('*.rs')):
         lines = source.read_text().splitlines()
         print(json.dumps({'source': source.relative_to(workspace).as_posix(), 'physical': len(lines),
