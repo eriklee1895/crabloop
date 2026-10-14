@@ -4,6 +4,8 @@
 
 CrabLoop is a small coding-agent harness built from scratch in Rust for hands-on learning.
 
+v2-v3: learn Agent fundamentals in small, readable code; defer reliability hardening. Preserve core contracts. See docs/roadmap.md.
+
 - v1: target about 300 lines, HARD cap below 400 total production Rust code lines. Teach the hand-written model/tool/feedback/stop loop with four tools.
 - v2: approximately 500 lines total, adding context management and summary compaction.
 - v3: approximately 1,000 lines total: basic SSE, ~/.crabloop, TOML, credentials, provider presets/Custom, and model catalog/cache. Minimal Skills is optional within scope.
@@ -21,7 +23,7 @@ CrabLoop is a small coding-agent harness built from scratch in Rust for hands-on
 
 V1 learning code is milestone/v1; seven patches reproduce it. Historical tags retain evidence. Chinese tutorials accompany root Cargo/src/tests. Main-only debugging guide: docs/debugging.md.
 
-Historical tags retain v1/step-05-v1 314/319 and v2 504/511. V1 GA (milestone/v1) is 397 code / 402 physical: four tools, direct run(Config), cwd and fixed budgets. GA checks: 43 Rust + 4 Python, live repair/report and PTY passed. Main is 837/849; 65 Rust + 6 Python and fmt/clippy passed. See evidence/v1/ga-review.md. Historical evidence stays separate.
+Historical v1/step-05-v1: 314/319; v2: 504/511. V1 GA: 397/402, 43 Rust + 4 Python, live repair/report and PTY passed; see evidence/v1/ga-review.md. Main: 837/849, 65 Rust + 6 Python, fmt/clippy passed. Counts=code/physical; preserve historical evidence.
 
 Preferred model: DeepSeek V4.1 Flash (deepseek-flash); fallback: gpt-6-luna through TeamoRouter. Both passed v1 tasks. DeepSeek passed v2 with five compactions; Luna v2 is untested. Summaries use reasoning.effort=none and at least 4,096 output tokens; main requests use provider defaults. Request limit: 49,152 bytes; CRABLOOP_CONTEXT_BYTES overrides it (min 4,096). Root AGENTS.md is pinned and must stay below 8,192 bytes. Distinguish offline, live and semantic evidence.
 
