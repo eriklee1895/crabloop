@@ -42,7 +42,7 @@ The user's latest instructions take precedence over those documents.
 
 ## How to develop
 
-- Keep AGENTS.md current when state, interfaces, commands or durable decisions change. Put detailed history and evidence in docs/devlog/.
+- Keep AGENTS.md current. Track requirements/status in docs/todo.md, design in docs/roadmap.md, and history/evidence in docs/devlog/.
 - Continue the approved plan without asking again between tasks. Maintain its progress ledger and resume from completed commits after compaction.
 
 - Work in small increments, each with an observable behavior, an appropriate check, and a short explanation of what it teaches.
