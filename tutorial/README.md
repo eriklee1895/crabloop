@@ -38,4 +38,4 @@ v1 的学习代码只有 `milestone/v1`。直接阅读时切到该分支；从�
 
 完成 v1 后，先读 [06 上下文投影](v2/06-context-projection.md)、[07 摘要压缩](v2/07-compaction.md)、[08 对照实验](v2/08-context-experiments.md) 和 [09 复盘](v2/09-v2-retrospective.md)，使用每章指定的历史基线。
 
-当前 milestone/v1 为 397 行单任务核心，任务内部会多轮请求模型并执行工具。用户连续聊天属于另一层交互：[05b 接着问下一句](v1/05b-interactive.md)留作后续选读，使用提交 9c5cb11 展示其独立增量；main 仍提供这项体验。版本关系见[Git 工作流](../docs/git-workflow.md)。
+当前 milestone/v1 为 388 行 stdin 单任务核心，任务内部会多轮请求模型并执行工具。用户连续聊天属于另一层交互：[05b 接着问下一句](v1/05b-interactive.md)留作后续选读，使用提交 9c5cb11 展示其独立增量；main 仍提供这项体验。版本关系见[Git 工作流](../docs/git-workflow.md)。

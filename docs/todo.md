@@ -46,6 +46,10 @@
 - [ ] **REQ-023 · 进行中，独立外观改动：GitHub 首页。** 一行徽章与导航；吉祥物和 Banner 已生成七种 Banner 风格候选，等待选定。取消循环箭头装饰，最终只将选定素材接入 README。
 - [x] **REQ-024 · 已完成，独立工程改动：基础 CI。** main push / PR / 手动触发，单 Linux job 跑 fmt、clippy、Rust 与 Python 离线测试；不接模型密钥，不自动发布。实现：`0cab0db`；[首次 GitHub CI 通过](https://github.com/eriklee1895/crabloop/actions/runs/38520501082)。
 
+- [ ] **REQ-027 · 待排期，独立 CLI Help 迭代。** 参考用户提供的 Cargo/Codex 截图，设计用途、Usage、分组、对齐、高亮与多色；窄终端和无颜色输出仍清晰；帮助无需凭证、模型配置或会话，不请求模型；参数与帮助来自同一份声明。v1 不承担该功能，不必等完整 TUI。[设计](cli-help-plan.md)
+
 ## 已完成的独立改动
 
 - [x] **REQ-025：CrabLoop 身份与工作方式。** 系统提示词以 `You are CrabLoop 🦀` 开头，明确本地代码与资料任务、跟随用户语言、如实验证和完成后停止；问候与自我介绍直接回答。保持短段落，不加 header/XML；仅修改 main。[实施与验证](devlog/24-crabloop-identity.md)
+
+- [x] **REQ-028：v1 收敛为 stdin 单任务入口。** 删除任务参数与完整 Help，README/.env.example 提供配置说明，保留明确错误。同步脚本、教程和七步重建；388 代码行 / 402 物理行，42 Rust + 5 Python 通过。实现 `97723d8`，学习分支 `388edc2`；main 运行入口保留。[实施与验证](devlog/26-v1-stdin-cli.md)

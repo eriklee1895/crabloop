@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Replay the published v1 teaching patches in a disposable workspace, without API calls."""
 from pathlib import Path
+import argparse
 import json
 import subprocess
 import tempfile
@@ -8,6 +9,9 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 PATCHES = ROOT / 'tutorial/v1/patches'
 STAGES = ['00-probe', '01-responses', '02-file-tools', '03-bash', '04-agent-loop', '05-v1', '06-v1-entry']
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--v1-ref', default='milestone/v1', help='Git ref for the final v1 source tree')
+args = parser.parse_args()
 
 with tempfile.TemporaryDirectory(prefix='crabloop-lessons-') as directory:
     workspace = Path(directory)
@@ -16,7 +20,7 @@ with tempfile.TemporaryDirectory(prefix='crabloop-lessons-') as directory:
         patch = PATCHES / f'{stage}.patch'
         subprocess.run(['git', 'apply', '--check', str(patch)], cwd=workspace, check=True)
         subprocess.run(['git', 'apply', str(patch)], cwd=workspace, check=True)
-        reference = {'05-v1': 'v1', '06-v1-entry': 'milestone/v1'}.get(stage)
+        reference = {'05-v1': 'v1', '06-v1-entry': args.v1_ref}.get(stage)
         if reference:
             expected = set(subprocess.check_output(
                 ['git', 'ls-tree', '-r', '--name-only', reference, 'src'], cwd=ROOT,
@@ -41,6 +45,7 @@ with tempfile.TemporaryDirectory(prefix='crabloop-lessons-') as directory:
     result = subprocess.run(['cargo', 'fmt', '--check'], cwd=workspace, capture_output=True, text=True)
     if result.returncode:
         raise SystemExit(result.stdout + result.stderr)
+    subprocess.run(['python3', '-m', 'unittest', 'discover', '-s', 'tests', '-p', '*_test.py'], cwd=workspace, check=True)
     subprocess.run(['python3', 'scripts/count-lines.py', '--max', '399'], cwd=workspace, check=True)
     for source in sorted((workspace / 'src').rglob('*.rs')):
         lines = source.read_text().splitlines()

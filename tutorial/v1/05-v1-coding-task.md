@@ -35,14 +35,14 @@ rustc --edition=2024 --test tests.rs -o checks
 
 当前 v1 从启动目录读取 .env，也接受进程环境。本章从练习副本启动二进制，密钥可通过进程环境提供；使用 DeepSeek 时设置 DEEPSEEK_API_KEY，沿用第 01 章的 OPENAI_API_KEY 等变量时，先执行 `export CRABLOOP_PROVIDER=openai`。若使用 .env，应放在相应练习副本目录，格式见练习工程的 .env.example。
 
-v1 把当前目录作为工作区。先在练习工程构建，再从待修复副本启动同一个二进制；括号里的目录切换在结束后自动返回：
+v1 把当前目录作为工作区，任务统一从 stdin 读入。直接启动时输入一行任务；这里用管道提交完整任务，便于复现实验。参数和配置说明放在 README 与 .env.example，入口代码集中展示读取任务和准备 Config 的过程。先在练习工程构建，再从待修复副本启动同一个二进制；括号里的目录切换在结束后自动返回：
 
 ```bash
 cargo build --locked
 crabloop_bin="$PWD/target/debug/crabloop"
 (
   cd playground/my-first-repair
-  "$crabloop_bin" -p "阅读 README.md，修复 last_index。先运行原有测试，再修改，再测试。保留函数签名和 tests.rs，写 NOTES.md 记录实际验证。"
+  printf '%s\n' "阅读 README.md，修复 last_index。先运行原有测试，再修改，再测试。保留函数签名和 tests.rs，写 NOTES.md 记录实际验证。" | "$crabloop_bin"
 )
 ```
 
@@ -70,7 +70,7 @@ cargo build --locked
 crabloop_bin="$PWD/target/debug/crabloop"
 (
   cd playground/my-first-report
-  "$crabloop_bin" -p "按 README.md 阅读全部 inbox 文档，生成 report.json 和带来源的 SUMMARY.md，保留原始资料，核对事实后结束。"
+  printf '%s\n' "按 README.md 阅读全部 inbox 文档，生成 report.json 和带来源的 SUMMARY.md，保留原始资料，核对事实后结束。" | "$crabloop_bin"
 )
 python3 scripts/verify-report.py playground/my-first-report
 ```
@@ -108,11 +108,11 @@ for call in reply.calls {
 
 源码顶层的导入、函数签名以及测试调用一起在 05 diff 中更新。05 中间步骤有 29 项 Rust 测试，第 01–04 章保留当时的写法，迁移从这里明确发生。
 
-本章开头接着应用的 [06-v1-entry.patch](patches/06-v1-entry.patch)展开 schema、请求字段和工具结果，再把启动职责集中到 src/cli.rs：工作区固定为 cwd，支持单任务输入和 .env 数据读取。最终测试集为 43 项 Rust；再运行 `cargo fmt --check` 和 `python3 scripts/count-lines.py --max 399`，检查格式与完整生产代码规模。
+本章开头接着应用的 [06-v1-entry.patch](patches/06-v1-entry.patch)展开 schema、请求字段和工具结果，再把启动职责集中到 src/cli.rs：工作区固定为 cwd，支持单任务输入和 .env 数据读取。最终测试集为 42 项 Rust；再运行 `cargo fmt --check` 和 `python3 scripts/count-lines.py --max 399`，检查格式与完整生产代码规模。
 
 ## 在 v1 停一下，再看下一步
 
-v1 统一以 `milestone/v1` 为学习终点，全部生产 Rust 为 397 代码行、402 物理行。其中单任务输入与配置的 CLI 为 71 代码行，其余实现合计 326 行。run 持有 reqwest::Client 和任务历史，model::request/respond 接收借用的 Config；工具返回 JSON，loop 负责包装 function_call_output。
+v1 统一以 `milestone/v1` 为学习终点，全部生产 Rust 为 388 代码行、402 物理行。其中单任务输入与配置的 CLI 为 62 代码行，其余实现合计 326 行。run 持有 reqwest::Client 和任务历史，model::request/respond 接收借用的 Config；工具返回 JSON，loop 负责包装 function_call_output。
 
 格式统一为 100 列、rustfmt 的 Max 小表达式排版。约 300 行约束核心范围，全部生产 Rust 严格 <400；保持可读排版，超预算时减少功能。
 
