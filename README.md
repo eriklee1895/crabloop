@@ -1,6 +1,6 @@
 # CrabLoop 🦀
 
-用 Rust 从零写一个能读文件、修改代码、运行测试，再根据真实反馈继续行动的 mini agent。
+用 Rust 从零写一个能读文件、修改代码、运行测试，再根据真实反馈继续行动的 mini coding agent。
 
 v1 用 **300+ lines** 演示一个完整的 agent loop。
 

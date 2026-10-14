@@ -4,6 +4,8 @@
 
 CrabLoop is a small coding-agent harness built from scratch in Rust for hands-on learning.
 
+Keep the project focused on a mini coding agent and its Harness; do not reframe it as a Workbench.
+
 - v1: target about 300 lines, with size used as a teaching guideline rather than a hard gate. Teach the hand-written model/tool/feedback/stop loop with four tools.
 - v2: approximately 500 lines total, adding context management and summary compaction.
 - v3: approximately 1,000 lines total, adding ~/.crabloop, TOML configuration, provider presets/Custom, credentials, and model catalog discovery/cache. Minimal Skills is optional if comfortably within scope.
@@ -42,6 +44,7 @@ Read docs/v1-scope.md and docs/v1-reduction-plan.md for this accepted reduction;
 - Prefer concrete functions and small types. Use standard Rust and basic HTTP/JSON/async libraries.
 - Maintain one implementation. Use Git commits and milestone tags to show its evolution.
 - Write tutorials and explanations in Chinese, with Rust identifiers and protocol names in their original form.
+- Prefer English industry names and technical terms (Harness, coding agent, context, compaction, provider, tool calling, session); explain them in Chinese when needed rather than inventing translated labels.
 - Keep the v1 README concise: use "300+ lines" for size, retain startup and learning entrypoints, and omit verification reports, budget parameters and development history. Detailed contributor information belongs in dedicated documents.
 - Tutorials explain a reproducible learning path. Development records capture actual decisions, changes, failures, verification results, and relevant commits.
 
@@ -50,6 +53,7 @@ Read docs/v1-scope.md and docs/v1-reduction-plan.md for this accepted reduction;
 Read [the writing guide](docs/writing-guide.md) before writing or revising a chapter.
 
 - Use patient, connected Chinese prose. Lead the reader from an empty project through small runnable changes.
+- Keep prose concise and focused on the main information. Keep roadmap goals and scope separate from development decisions and verification details.
 - Start with a concrete situation and explain why the next mechanism is needed.
 - Introduce Rust details and harness concepts when the reader encounters them in the code.
 - Explain each code increment, its file location, how to run it, and what the result means.

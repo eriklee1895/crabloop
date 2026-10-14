@@ -10,9 +10,7 @@
 
 **Tech Stack:** Rust 1.94.0 / edition 2024；reqwest 0.13.5、tokio 1.53.2、serde 1.0.229、serde_json 1.0.152、anyhow 1.0.104；Bash；原生 Responses function calling。
 
-**Spec:** [CrabLoop 设计说明](design.md)。先阅读该说明；本文里的新增文件和命令均是待实施的安排。
-
-**Execution:** 用户于 2026-10-11 授权设置 goal 并开始实施。由助手在本会话顺序构建参考实现、教程与开发记录；每个可验收增量同步 AGENTS.md 和进度。主用 DeepSeek V4.1 Flash，备选 gpt-6-luna。用户已授权每个通过验证的阶段提交并推送 GitHub。后续 v3–v5、配置/模型目录、Skills/联网和 sessions 补充见[路线图](roadmap.md)。
+**Spec:** [设计说明](design.md)。本文保留原 v1/v2 的实施顺序和阶段接口；当前状态见 [AGENTS.md](../AGENTS.md)，后续安排见 [roadmap](roadmap.md)。
 
 ## Global Constraints
 
@@ -23,7 +21,7 @@
 - 文件上限 65,536 字节，read_file 输出上限 8,192 字节，Bash stdout/stderr 各捕获最多 4,096 原始字节。
 - 当前 v1 请求上限为 4 MiB，输出上限为 131,072 tokens；历史 v1/v2 标签保留原预算。历史 v2 默认 49,152 字节、触发阈值 36,864 字节、保留最近 2 组，摘要上限 min(4,096，hard/8)。
 - v2 的 CRABLOOP_CONTEXT_BYTES 最小 4,096；根目录 AGENTS.md 上限 8,192 UTF-8 字节。
-- v1 目标约 300 行，350–360 也可接受；v2 目标约 500 行，允许合理浮动；全部 src/**/*.rs 纳入计数，保持正常 cargo fmt，不牺牲必要错误处理。
+- 规模参考：v1 约 300 行，v2 约 500 行；源码使用正常 rustfmt 排版。
 - 先完成 v1 并保留 tag，再扩展 v2；不在两版中添加设计说明列出的选修能力。
 
 ## Review Focus
@@ -258,5 +256,3 @@ assert_eq!(summary_request["tools"], serde_json::json!([]));
 | 真实模型证据 | 新副本修复任务；外部 verifier 通过 | 至少一次成功压缩后继续任务；外部 verifier 通过 |
 | 学习者解释 | 模型看到了什么，为什么继续 | 当前输入为何这样选择，哪些信息被整理或丢失 |
 | 版本保留 | v1 tag，差异与真实运行材料 | v2 tag，压缩对照与真实运行材料 |
-
-本计划已获执行授权。助手顺序完成各阶段的参考实现和教学材料；学习者随后可按对应提交逐章亲手重建。实施中持续更新 AGENTS.md，局部设计修正写入开发记录，并保持上述版本边界与证据标准。

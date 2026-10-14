@@ -1,26 +1,24 @@
-# CrabLoop：从一轮行动，长到自己的工作台
+# CrabLoop：从零构建 mini coding agent Harness
 
-更新：2026-10-14。当前 v1 已收敛为 389 行 stdin 单任务核心，[最小循环教学边界](v1-scope.md)优先于早期交互扩充；v3–v5 是后续规划，本文中的配置和命令尚未实现。
+更新：2026-10-14。v1 已支持最小连续对话，v2 学习 context 管理与 compaction；v3–v5 是后续规划。当前实现见 [v1 scope](v1-scope.md)。
 
-最值得保留的是逐步生长的节奏。先看见模型调用一次工具，再看见历史变长，最后才遇到“每次都要设置环境”“换模型不方便”“明天怎样接着做”。每版解决一个能亲手观察的问题。
+目标是亲手构建 mini coding agent 的 Harness，逐步学习 agent loop、context 管理、配置、Skills 与 session 恢复。
 
 ## 五个版本的主线
 
 | 版本 | 范围预算 | 核心问题 | 内容与一个代表任务 |
 |---|---:|---|---|
 | v1 | 目标约 300 行，规模仅作参考 | 模型怎样行动并依据反馈调整？ | Responses + read_file/write_file/edit_file/bash；修复函数，再做一次多文件资料整理 |
-| v2 | 约 500 行，允许合理浮动 | 历史变长后，下一轮看到什么？ | 根 AGENTS.md、完整交互组、输入预算、摘要、JSONL 运行记录；小预算下完成任务 |
-| v3 | 约 1000 行，优先保持可读 | 怎样成为不用反复配置的个人 CLI？ | 基础 SSE、`~/.crabloop`、TOML、凭证、provider 预置/Custom、模型目录与缓存；按独立增量学习 |
-| v4 | 先按功能估算，不预设硬上限 | 怎样复用工作方法，并查阅外部资料？ | Skills 最小支持、web_fetch、web_search；查官方资料，保存带来源的比较报告 |
-| v5 | 先按功能估算，不预设硬上限 | 进程退出后，怎样知道做到哪里并继续？ | JSONL sessions、list/show/resume、压缩状态重建、取消与未完成操作；中断后核对并继续 |
-
-行数用于提醒我们收住范围，统计全部 src/**/*.rs，测试、教程与开发脚本单独记录。不会为了从 360 降到 300 而压缩难读的代码，也不会因为模型多输出一个正确的统计字段就判失败。验收看任务事实、工具结果和程序的关键边界。
+| v2 | 约 500 行 | 历史变长后，下一轮看到什么？ | 根 AGENTS.md、完整交互组、输入预算、摘要、JSONL 运行记录；小预算下完成任务 |
+| v3 | 约 1000 行 | 怎样成为不用反复配置的个人 CLI？ | 基础 SSE、`~/.crabloop`、TOML、凭证、provider 预置/Custom、模型目录与缓存；按独立增量学习 |
+| v4 | 按功能估算 | 怎样复用工作方法，并查阅外部资料？ | Skills 最小支持、web_fetch、web_search；查官方资料，保存带来源的比较报告 |
+| v5 | 按功能估算 | 进程退出后，怎样知道做到哪里并继续？ | JSONL sessions、list/show/resume、压缩状态重建、取消与未完成操作；中断后核对并继续 |
 
 v3 若完成配置与目录后仍有余量，可以提前加入最小 Skills：只列名称/简介、按需读 SKILL.md。它是候选项，不阻塞 v3；完整讲解与联网实践归 v4。v1/v2 保持非流式，基础 SSE 放在 v3 单独讲解；复杂 TUI、MCP 和插件市场留后续。
 
-## v3：先给程序一个家
+## v3：配置与 model catalog
 
-程序代码仍是仓库根目录的一个 Cargo 工程。用户数据放在自己的 home，默认布局如下；目录随对应版本出现，不提前创建空功能。
+Cargo 工程保留在仓库根目录，用户配置放在 `~/.crabloop/`：
 
 ```text
 ~/.crabloop/
@@ -66,7 +64,7 @@ credentials.toml 按 provider/profile 保存 API Key；目录在 Unix 下使用 
 
 建议拆成三个可运行增量：先加载 TOML 并沿用已有 Config；再加三个预置与 Custom；最后实现 `crabloop models --provider deepseek` 和 `--refresh`。不要同时引入菜单、自动选模型和自动切换 provider。
 
-## 模型目录：发现、补充、选择
+## Model catalog：发现与缓存
 
 截至本次核查，三个目标 provider 都有官方 Responses 与 OpenAI 风格模型目录：
 
@@ -92,21 +90,19 @@ credentials.toml 按 provider/profile 保存 API Key；目录在 Unix 下使用 
 
 ## v4：工具负责取资料，Skills 负责组织工作
 
-web_fetch 与 web_search 值得做，它们让通用任务不再只围绕本地文件。但可以等行动循环、上下文和配置都清楚以后再引入。
-
 先做 `web_fetch(url)`：拿到已知 URL，返回正文、最终 URL、内容类型和截断信息；限定 HTTP(S)、超时、下载量、重定向次数。首次实现支持文本与 HTML 正文，不做浏览器、登录或 PDF。这样能复用现有的 reqwest，并亲手看到网页怎样占用上下文。
 
 再做 `web_search(query)`：只接一个独立搜索服务，返回标题、URL、摘要和来源时间（有才返回）。搜索 Key 与模型 Key 分开配置。不把 OpenAI 服务端内置 web_search 当成跨 provider 的共同能力；它可以成为后续对照实验。
 
 Skills 是另一层：例如“技术方案调研”说明先搜索官方资料、逐页读取、比较差异、记录不确定项，再用 write_file 输出报告。它复用 web_search/web_fetch/bash/read_file，不凭一段 SKILL.md 自动获得联网能力。
 
-如果只为了完成某个任务，Skill 调用既有 CLI 当然可行；但这个项目要学习 harness，亲手实现两个小型网络工具更容易观察参数、失败、输出限额和上下文增长。建议采用“核心有稳定的网络工具，Skill 教模型怎样组合使用”。外部网页与 Skill 文档进入明确的数据/指令位置，网页内容不能修改全局配置或授权。
+Harness 提供 web_search/web_fetch，Skills 说明如何组合工具完成任务。网页内容作为数据处理，不能修改全局配置或授权。
 
 Skills 最小范围：从约定目录发现 SKILL.md 的 name/description，目录摘要加入模型可见信息，需要时再加载正文与明确引用的文件。先手工安装、只读加载；不做远程自动安装、插件运行时、OAuth 或 MCP。跨工作区 skill 路径用显式 loader 处理，不扩大 read_file 的现有路径契约。
 
 代表任务：比较两个库的官方 API，生成含原始 URL 的 Markdown 表格。验证来源能对应结论，不要求固定措辞或固定调用顺序。
 
-## v5：保存的是可解释的会话
+## v5：session 持久化与恢复
 
 JSONL 适合这个教学版本：每行一个事件，能追加、能逐行查看，也便于解释中断留下的痕迹。先做单进程、单写入者，不引入数据库和分支树。
 
@@ -116,10 +112,10 @@ JSONL 适合这个教学版本：每行一个事件，能追加、能逐行查�
 
 v2 的 `.crabloop/run-*.jsonl` 只用于观察一次运行，已经可以教“完整记录与模型输入不同”。v5 才赋予日志稳定 session 身份、版本和恢复语义，并移到 home 下；早期日志不承诺自动迁移为可恢复会话。
 
-## 教程与提交继续沿用同一条路
+## 教程与 Git
 
-仓库继续使用 `tutorial/v1/` 到 `tutorial/v5/` 组织教学，`docs/devlog/` 留下真实经过，`docs/` 放设计、路线与证据解释。每版新增文件时再建相应目录。每个可验证增量提交并推送，里程碑打 tag；阶段文档明确哪些已实现，哪些仍是计划。
+`tutorial/vN/` 保存教程，`docs/devlog/` 保存开发记录；各阶段保留 milestone 分支与历史 tags。
 
 ## 专业 CLI Help：后续独立迭代
 
-v1 删除任务参数和完整 Help，启动与环境变量由 README、.env.example 说明。后续命令行功能增多时独立设计 Usage、分组、对齐、高亮与多色，并支持窄终端和无颜色输出。查看帮助不依赖凭证或模型配置，不创建会话、不请求模型；参数解析与帮助描述保持同源。无需等待完整 TUI，具体阶段与实现库待该增量开始时确定。见[设计与验收边界](cli-help-plan.md)。
+v1 的启动与环境变量见 README 和 .env.example。后续 CLI Help 独立迭代，覆盖 Usage、参数分组、示例、窄终端与无颜色输出；查看帮助无需凭证或模型请求。见[设计与验收](cli-help-plan.md)。
