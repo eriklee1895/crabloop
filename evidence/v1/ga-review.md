@@ -4,7 +4,7 @@
 
 ## 结论与范围
 
-运行代码的独立复审通过。保留原生 Responses、手写模型—工具—反馈循环、read_file/write_file/edit_file/bash 四工具、单任务入口及明确预算与错误。没有引入新框架、抽象层、额外工具或另一份 v1 实现。
+最终审查通过，可以作为教学 v1 GA 定稿。运行代码的独立复审、格式、回归、真实任务及教学重建检查均已完成。保留原生 Responses、手写模型—工具—反馈循环、read_file/write_file/edit_file/bash 四工具、单任务入口及明确预算与错误。没有引入新框架、抽象层、额外工具或另一份 v1 实现。
 
 五个平铺文件的职责合理：main.rs 接线与退出；cli.rs 读取任务和配置；lib.rs 持有历史、公共类型、循环与停止；model.rs 处理 HTTP 和 Responses；tools.rs 定义并执行四工具及有限输出采集。当前规模下无需再拆目录或文件。
 
@@ -41,9 +41,11 @@ CLI 之外的实现为 326 代码行。相对审查基线，总代码减少 1 �
 | Python 验收工具回归 | 4 项通过 |
 | 行数门禁 | 397 <400，通过 |
 | 本地 PTY | 中文单任务、无凭证 EOF 通过，正常任务只发一次本地 HTTP 请求 |
-| 教学增量重放 | 发布前核对七步重建与 GA 源码一致 |
+| 教学增量重放 | 七步通过；末步 43 项 Rust、fmt、行数门禁通过，全部 src 与 GA 源码一致 |
 | DeepSeek 真实修复 | 17.74 秒，原测试先失败后通过、tests.rs 未改、独立 verifier 通过 |
 | DeepSeek 真实资料任务 | 13.25 秒，结构化报告独立 verifier 通过 |
+
+教学重放使用 `RUST_TEST_THREADS=1 python3 scripts/check-lessons.py`，各测试阶段为 9、17、22、28、29、43 项；历史步骤保持原样，最后一步接到 GA 实现。
 
 本次选择后的证据：[修复任务](20261014T031057603442Z-coding-deepseek.json)、[资料任务](20261014T031158677214Z-report-deepseek.json)、[PTY](ga-terminal.json)。三个记录的五份生产源码哈希均与最终实现核对。live 记录中的 source_commit 是运行时已有的基线提交；当时修复尚未提交，实际运行代码由 source_sha256 标识。时延是单次观察，不是性能基准。
 
