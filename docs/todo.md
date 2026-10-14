@@ -14,6 +14,7 @@
 
 以下是计划目标，不表示已经开始实施；v6–v7 延续路线图中的建议排期。
 
+- [ ] **REQ-027 · v3 第一个小迭代：clap 与 CLI Help。** 先接管 main 已有参数，保持正常运行语义；统一声明、帮助、版本信息与错误提示。标准 --help/-h、--version/-V 无凭证、无模型请求；暂不新增尚未实现的子命令。配置、模型目录、SSE 和终端渲染分开推进，v1 不引入 clap。[设计](cli-help-plan.md)
 - [ ] **REQ-001 · v3：基础 SSE。** 文本增量可见，完整响应确认后再执行工具，区分显示状态与协议历史。[设计](roadmap.md#v3基础流式与个人配置)
 - [ ] **REQ-002 · v3：个人配置。** ~/.crabloop、TOML、独立凭证、provider presets/Custom 与明确配置来源。[设计](roadmap.md#v3基础流式与个人配置)
 - [ ] **REQ-003 · v3：模型目录与缓存。** 发现、补充和选择模型，区分元信息来源。[设计](roadmap.md#模型目录发现补充选择)
@@ -41,12 +42,11 @@
 - [ ] **REQ-019 · 待排期：Bash 实时输出。** 需要执行层提供 stdout/stderr 增量事件；与现有工具开始/结束和结果预览分开实现。[边界](roadmap.md#v6-建议从基础流式长出完整终端界面)
 - [ ] **REQ-020 · 候选，待决定：生图工具。** generate_image 与产物文件管理单独评估，不以引入 Rig 为前提，不承诺进入主线。[来源](roadmap.md#v8-选修把手写实现与-rig-放在一起比较)
 
-- [ ] **REQ-021 · 待排期，小改动：版本命令。** 支持 `crabloop version`、`--version` / `-V`，stdout 单行输出 `crabloop <Cargo package version>` 并以 0 退出；版本来自 CARGO_PKG_VERSION，无需 API key，不加载模型配置、不创建会话或发请求。包版本与 v1/v2 教学阶段分开解释；首版不增加 Git SHA/build.rs。将 version 保留为命令，任务文本仍可用 `-p "version"` 显式传入。验收无凭证、无模型请求及三个入口输出一致。
+- [ ] **REQ-021 · 待排期，小改动：版本命令。** 支持 `crabloop version`、`--version` / `-V`，stdout 单行输出 `crabloop <Cargo package version>` 并以 0 退出；版本来自 CARGO_PKG_VERSION，无需 API key，不加载模型配置、不创建会话或发请求。包版本与 v1/v2 教学阶段分开解释；首版不增加 Git SHA/build.rs。标准版本 flags 与 REQ-027 共用同一声明；本条的 version 子命令独立排期。将 version 保留为命令，任务文本仍可用 `-p "version"` 显式传入。验收无凭证、无模型请求及三个入口输出一致。
 - [ ] **REQ-022 · 待排期：自动 Release。** 有二进制分发需要时再确定发行版本命名、平台和发布流程；历史教学 tag 不自动批量发布，不增加额外 v1-ga 入口。
 - [x] **REQ-023 · 已完成，独立外观改动：GitHub 首页。** 徽章与导航、T2 现代等宽字形 Banner、微笑像素蟹；深海军蓝／珊瑚橙／青绿配色，独立吉祥物提供透明 PNG。[素材与提示词](assets/README.md) · [实施记录](devlog/28-branding-t2.md)
 - [x] **REQ-024 · 已完成，独立工程改动：基础 CI。** main push / PR / 手动触发，单 Linux job 跑 fmt、clippy、Rust 与 Python 离线测试；不接模型密钥，不自动发布。实现：`0cab0db`；[首次 GitHub CI 通过](https://github.com/eriklee1895/crabloop/actions/runs/38520501082)。
 
-- [ ] **REQ-027 · 待排期，独立 CLI Help 迭代。** 参考用户提供的 Cargo/Codex 截图，设计用途、Usage、分组、对齐、高亮与多色；窄终端和无颜色输出仍清晰；帮助无需凭证、模型配置或会话，不请求模型；参数与帮助来自同一份声明。v1 不承担该功能，不必等完整 TUI。[设计](cli-help-plan.md)
 
 ## 已完成的独立改动
 

@@ -8,7 +8,7 @@ v2-v3: learn Agent fundamentals in small, readable code; defer reliability harde
 
 - v1: target about 300 lines, HARD cap below 400 total production Rust code lines. Teach the hand-written model/tool/feedback/stop loop with four tools.
 - v2: approximately 500 lines total, adding context management and summary compaction.
-- v3: approximately 1,000 lines total: basic SSE, ~/.crabloop, TOML, credentials, provider presets/Custom, model catalog/cache, and runtime/context display. Minimal Skills is optional within scope.
+- v3: ~1,000 lines: clap/Help first; then basic SSE, ~/.crabloop TOML/credentials, provider presets/Custom, model catalog/cache and runtime/context display. Minimal Skills optional within scope.
 - After v3: a separate opt-in telemetry topic using lifecycle observers and Rust OpenTelemetry/OTLP to Langfuse v4. Share event IDs with TUI/journal; export failure must not stop the agent. See docs/roadmap.md.
 - Planned v4: Skills, Tavily Search/Firecrawl Scrape, todo_write, TOML config menu and selective .env import with visible sources. v5: ~/.crabloop JSONL/Todo recovery, ask_user_question, pending answers and interruption handling.
 - v1/v2 stay non-streaming. v6: role/content styles, Markdown, slash/Todo/question UI, then layout; show step/context/tools. v7: memory. v8: optional Rig comparison; mainline has no Rig prerequisite. Keep polish out of v1.
@@ -21,7 +21,7 @@ v2-v3: learn Agent fundamentals in small, readable code; defer reliability harde
 
 ## Current state and layout
 
-V1: milestone/v1, 389/450; stdin-only, crab banner/crab>, no args. Seven patches reproduce it. CLI Help planned: docs/cli-help-plan.md. Debugging: docs/debugging.md. Brand: docs/assets/README.md.
+V1: milestone/v1, 389/450; stdin-only, crab banner/crab>, no args. Seven patches reproduce it. V3 clap/Help plan: docs/cli-help-plan.md. Debugging: docs/debugging.md. Brand: docs/assets/README.md.
 
 Historical v1: 314/319; v2: 504/511. V1 GA: 397/402, 43 Rust + 4 Python with live repair/report and PTY; evidence/v1/ga-review.md. Main: 853/878, 65 Rust + 6 Python. Counts=code/physical; preserve historical evidence.
 
