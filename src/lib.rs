@@ -16,6 +16,7 @@ pub struct Limits {
     pub stream_bytes: usize,
     pub max_output_tokens: u32,
 }
+
 impl Default for Limits {
     fn default() -> Self {
         Self {
@@ -30,6 +31,7 @@ impl Default for Limits {
         }
     }
 }
+
 #[derive(Clone)]
 pub struct Config {
     pub workspace: PathBuf,
