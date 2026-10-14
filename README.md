@@ -49,7 +49,7 @@ v1 的定稿提交为 `83a4e83`；日常阅读统一使用 `milestone/v1`。[GA 
 
 ## 阅读与验证
 
-从[教程入口](tutorial/README.md)进入 00–05 的最小循环学习；[七个增量](tutorial/v1/patches/README.md)从空目录重建后，全部 src 文件与当前分支一致。阅读和动手都以同一份 v1 为终点。已有验收和开发记录保留原来的含义；当前入口通过 42 项 Rust、5 项 Python 离线回归；此前的真实 DeepSeek 修复和独立验证保留为历史证据，本次入口删减未重跑真实模型。范围见[教学边界](docs/v1-scope.md)，本次删减见[收敛记录](docs/devlog/08-v1-reduction.md)。
+从[教程入口](tutorial/README.md)进入 00–05 的最小循环学习；[七个增量](tutorial/v1/patches/README.md)从空目录重建后，全部 src 文件与当前分支一致。阅读和动手都以同一份 v1 为终点。已有验收和开发记录保留原来的含义；当前入口通过 42 项 Rust、5 项 Python 离线回归；此前的真实 DeepSeek 修复和独立验证保留为历史证据，本次入口删减未重跑真实模型。范围见[教学边界](docs/v1-scope.md)，本次入口删减见[实施记录](docs/devlog/26-v1-stdin-cli.md)。
 
 ```bash
 python3 scripts/count-lines.py --max 399
