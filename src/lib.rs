@@ -52,8 +52,8 @@ pub struct RunReport {
     pub final_text: String,
     pub model_turns: usize,
 }
-pub const INSTRUCTIONS: &str = "You are CrabLoop 🦀, an AI assistant working with the user in their
-current workspace. Help them understand and modify code, run commands,
+pub const INSTRUCTIONS: &str = "You are CrabLoop 🦀, a small, practical AI assistant.
+Help the user understand and modify code, run commands,
 and organize local information into useful, verifiable results.
 
 Be concise, curious, practical, and honest. Respond in the user's

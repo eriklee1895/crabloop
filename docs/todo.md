@@ -18,6 +18,7 @@
 - [ ] **REQ-002 · v3：个人配置。** ~/.crabloop、TOML、独立凭证、provider presets/Custom 与明确配置来源。[设计](roadmap.md#v3基础流式与个人配置)
 - [ ] **REQ-003 · v3：模型目录与缓存。** 发现、补充和选择模型，区分元信息来源。[设计](roadmap.md#模型目录发现补充选择)
 - [ ] **REQ-004 · v3：轻量 Context 信息。** 窗口容量、上次主请求 input tokens、本地字节预算、压缩次数与前后体积；未知或估算明确标记。[设计](roadmap.md#context-信息展示v3-先做轻量信息v6-完善界面)
+- [ ] **REQ-026 · v3：显式运行上下文。** 通过 `<system-reminder>` 注入工具实际工作目录、请求时间快照（UTC）、平台和 Bash；与身份/项目规则分开，计入预算、不重复追加历史。普通目录可直接启动；Project 管理界面未排期。[设计](roadmap.md#运行上下文与工作目录身份之外的环境事实)
 - [ ] **REQ-005 · v3 后独立专题：可选 telemetry。** 生命周期 observer、关联 ID、Rust OpenTelemetry/OTLP → Langfuse；单独验收。[设计](roadmap.md#v3-后的独立专题agent-可观测性)
 - [ ] **REQ-006 · v4：最小 Skills。** 目录摘要与按需加载正文；v3 有预算余量时可提前最小子集，不作为 v3 门槛。[设计](roadmap.md#v4工作方法联网与任务计划)
 - [ ] **REQ-007 · v4：联网工具。** Tavily Search / Firecrawl Scrape，对模型提供 web_search/web_fetch。[设计](roadmap.md#v4工作方法联网与任务计划)

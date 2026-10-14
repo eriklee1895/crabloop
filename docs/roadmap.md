@@ -81,6 +81,35 @@ credentials.toml 按 provider/profile 保存 API Key；目录在 Unix 下使用 
 
 建议拆成三个可运行增量：先加载 TOML 并沿用已有 Config；再加三个预置与 Custom；最后实现 `crabloop models --provider deepseek` 和 `--refresh`。v3 先完成文件配置与命令入口；v4 再补一个读写同一套文件的配置菜单，保持每一步清楚。自动选模型和自动切换 provider 另行评估。
 
+## 运行上下文与工作目录：身份之外的环境事实
+
+2026-10-14 补充设计，运行上下文列入 v3（REQ-026），尚未实现。基础身份只说明 CrabLoop 是谁、能做什么，不绑定某个项目或路径。当前 CLI 已默认使用启动目录，--workspace 可覆盖；工具由 Config.workspace 确定工作目录，但模型请求尚未显式注入该路径或当前时间。
+
+基础提示词保留普通短段落。运行时由 Harness 生成一个明确的 `<system-reminder>` 区块，放在模型请求的 instructions 中；项目 AGENTS.md 继续保持独立标记。标签用于区分来源和内容，不改变 API 消息角色或权限，也不把用户、文件或工具输出中的同名标签提升为可信指令。按用户选择统一使用 `<system-reminder>`，不以“所有模型已针对它训练”为前提；无需 XML parser 或通用提示词框架。
+
+最小字段：
+
+- `working_directory`：工具实际使用的绝对路径，来自解析后的 Config.workspace；指定 --workspace 时不能误填启动目录。这是执行基准，不表示 sandbox 或任意路径授权。
+- `current_time`：Harness 采样的 RFC 3339 时间，首版用 UTC 的 Z 后缀，明确为请求构造时的快照。需要用户当地日期时使用明确配置或询问，不从机器位置猜用户时区。
+- `platform` 与 `tool_shell`：运行主机平台和实际命令工具 Bash，避免把用户登录 shell 误认为工具 shell。
+
+示意数据，不是实际运行结果：
+
+```text
+<system-reminder>
+Runtime context supplied by CrabLoop for this request:
+{"working_directory":"/home/user/notes","current_time":"2026-10-14T06:00:00Z","platform":"linux","tool_shell":"bash"}
+</system-reminder>
+```
+
+每次主模型请求前刷新时间，采样一次并让预算检查与实际发送使用同一份上下文。作为当前请求的环境事实参与字节预算；不在历史中不断追加同一段环境信息，也不让旧摘要替代新时间。动态值使用一致的字符串编码，保证含换行或标签字符的路径不会破坏展示边界。时间格式化优先使用清楚的小实现或轻量库，不为省依赖手写日历算法；具体依赖在实施时决定。
+
+工作目录可以是代码仓库、资料文件夹或任意普通目录，不要求先注册 Project。在本计划中，workspace 表示本次会话的执行目录，Project 表示有项目约定或持久信息的逻辑归属；两者先使用同一目录标识即可，不急于引入 ProjectManager 或多根目录抽象。
+
+v3 先让模型知道环境；v5 沿现有 sessions 设计保存并恢复工作目录，目录不同不静默在新位置重放操作；v7 按项目目录隔离记忆。自动发现仓库根、命名项目列表、会话内切换工作目录和多根 workspace 均不视为已承诺功能，有具体需要再单独排期。一次 Bash 命令中的 cd 只影响该次子进程，不改变会话工作目录。
+
+验收用普通目录和 --workspace 覆盖两种启动方式，确认模型收到的目录与工具执行一致；用固定时钟样本检查时间刷新与预算口径，并检查不重复增长历史。不需要真实模型调用来证明字段已注入；模型能否正确利用环境信息另行观察。
+
 ## 模型目录：发现、补充、选择
 
 截至本次核查，三个目标 provider 都有官方 Responses 与 OpenAI 风格模型目录：
