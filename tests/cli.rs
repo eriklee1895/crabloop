@@ -252,7 +252,7 @@ fn write_file_rejects_fifo_without_blocking_the_run() {
 }
 
 #[test]
-fn tool_display_is_readable_bounded_and_preserves_model_feedback() {
+fn successful_tools_do_not_echo_output_and_failures_stay_brief() {
     let dir = TempDir::new();
     let contents = format!("alpha\nbeta\n{}", "x".repeat(500));
     fs::write(dir.path().join("notes.md"), &contents).unwrap();
@@ -260,7 +260,8 @@ fn tool_display_is_readable_bounded_and_preserves_model_feedback() {
         serde_json::json!({"status":"completed","output":[
             {"type":"function_call","call_id":"read","name":"read_file","arguments":"{\"path\":\"notes.md\"}"},
             {"type":"function_call","call_id":"missing","name":"read_file","arguments":"{\"path\":\"missing.md\"}"},
-            {"type":"function_call","call_id":"bad_command","name":"bash","arguments":serde_json::json!({"command":"printf 'warning\n' >&2; exit 7"}).to_string()}
+            {"type":"function_call","call_id":"bad_command","name":"bash","arguments":serde_json::json!({"command":"printf 'warning\n' >&2; exit 7"}).to_string()},
+            {"type":"function_call","call_id":"good_command","name":"bash","arguments":"{\"command\":\"cat notes.md\"}"}
         ]}),
         fixture("text"),
     ]);
@@ -269,16 +270,26 @@ fn tool_display_is_readable_bounded_and_preserves_model_feedback() {
     assert!(output.status.success(), "{stderr}");
     assert!(stderr.contains("read_file · notes.md"), "{stderr}");
     assert!(stderr.contains("done"), "{stderr}");
-    assert!(stderr.contains("alpha\nbeta"), "{stderr}");
+    assert!(!stderr.contains("alpha"), "{stderr}");
+    assert!(!stderr.contains("beta"), "{stderr}");
+    assert!(!stderr.contains("preview"), "{stderr}");
     assert!(stderr.contains("failed"), "{stderr}");
     assert!(stderr.contains("No such file"), "{stderr}");
     assert!(stderr.contains("bash · printf"), "{stderr}");
     assert!(stderr.contains("warning"), "{stderr}");
+    assert!(stderr.contains("exit=7"), "{stderr}");
+    assert!(
+        stderr
+            .lines()
+            .filter(|line| line.contains("failed"))
+            .all(|line| line.starts_with("    failed · ")),
+        "{stderr}"
+    );
     assert!(!stderr.contains("tool {"), "{stderr}");
     assert!(!stderr.contains(&"x".repeat(300)), "{stderr}");
     let requests = server.requests();
     let result: serde_json::Value =
-        serde_json::from_str(requests[1]["input"][4]["output"].as_str().unwrap()).unwrap();
+        serde_json::from_str(requests[1]["input"][5]["output"].as_str().unwrap()).unwrap();
     assert_eq!(result["content"], contents);
     assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "Done");
 }
