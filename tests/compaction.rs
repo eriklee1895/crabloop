@@ -185,7 +185,10 @@ async fn loop_compacts_and_continues_without_counting_summary_as_main_turn() {
         reply("finished"),
     ]);
     let mut cfg = test_config(dir.path(), stub.endpoint());
-    cfg.limits.request_bytes = 8192;
+    // Keep room for two fixture rounds plus a summary, independent of prompt wording.
+    let input = vec![json!({"role":"user","content":cfg.task})];
+    let base = request_bytes(&cfg, crabloop::INSTRUCTIONS, &input, &tools::schemas());
+    cfg.limits.request_bytes = (base + 4500) * 4 / 3;
     let report = crabloop::run(cfg).await.unwrap();
     assert_eq!(report.reason, crabloop::StopReason::Final);
     assert_eq!(report.model_turns, 4);

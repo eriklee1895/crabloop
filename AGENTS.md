@@ -23,7 +23,7 @@ v2-v3: learn Agent fundamentals in small, readable code; defer reliability harde
 
 V1 learning code is milestone/v1; seven patches reproduce it. Historical tags retain evidence. Chinese tutorials accompany root Cargo/src/tests. Debugging: docs/debugging.md.
 
-Historical v1/step-05-v1: 314/319; v2: 504/511. V1 GA: 397/402, 43 Rust + 4 Python, live repair/report and PTY passed; see evidence/v1/ga-review.md. Main: 837/849, 65 Rust + 6 Python, fmt/clippy passed. Counts=code/physical; preserve historical evidence.
+Historical v1/step-05-v1: 314/319; v2: 504/511. V1 GA: 397/402, 43 Rust + 4 Python, live repair/report and PTY passed; see evidence/v1/ga-review.md. Main: 853/869, 65 Rust + 6 Python, fmt/clippy passed. Counts=code/physical; preserve historical evidence.
 
 Preferred model: DeepSeek V4.1 Flash (deepseek-flash); fallback: gpt-6-luna through TeamoRouter. Both passed v1 tasks. DeepSeek passed v2 with five compactions; Luna v2 is untested. Summaries use reasoning.effort=none and at least 4,096 output tokens; main requests use provider defaults. Request limit: 49,152 bytes; CRABLOOP_CONTEXT_BYTES overrides it (min 4,096). Root AGENTS.md is pinned and must stay below 8,192 bytes. Distinguish offline, live and semantic evidence.
 

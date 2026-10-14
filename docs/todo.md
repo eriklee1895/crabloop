@@ -44,3 +44,7 @@
 - [ ] **REQ-022 · 待排期：自动 Release。** 有二进制分发需要时再确定发行版本命名、平台和发布流程；历史教学 tag 不自动批量发布，不增加额外 v1-ga 入口。
 - [ ] **REQ-023 · 进行中，独立外观改动：GitHub 首页。** 一行徽章与导航；吉祥物和 Banner 已生成七种 Banner 风格候选，等待选定。取消循环箭头装饰，最终只将选定素材接入 README。
 - [x] **REQ-024 · 已完成，独立工程改动：基础 CI。** main push / PR / 手动触发，单 Linux job 跑 fmt、clippy、Rust 与 Python 离线测试；不接模型密钥，不自动发布。实现：`0cab0db`；[首次 GitHub CI 通过](https://github.com/eriklee1895/crabloop/actions/runs/38520501082)。
+
+## 已完成的独立改动
+
+- [x] **REQ-025：CrabLoop 身份与工作方式。** 系统提示词以 `You are CrabLoop 🦀` 开头，明确本地代码与资料任务、跟随用户语言、如实验证和完成后停止；问候与自我介绍直接回答。保持短段落，不加 header/XML；仅修改 main。[实施与验证](devlog/24-crabloop-identity.md)
