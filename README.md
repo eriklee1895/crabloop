@@ -4,9 +4,9 @@
 
 这是 **milestone/v1 的最小教学实现**：用 **300+ lines** 理解模型、工具、反馈与停止组成的 agent loop。
 
-## 先运行一个任务
+## Quick Start
 
-需要 Rust 1.94.0 和 Bash。在当前目录的 .env 配置 DEEPSEEK_API_KEY，然后：
+在当前目录的 `.env` 中配置 `DEEPSEEK_API_KEY`，然后运行：
 
 ```bash
 cargo run
