@@ -5,7 +5,9 @@ use std::{
     io::{self, BufRead, IsTerminal, Read},
 };
 
-const HELP: &str = "usage: crabloop [-p TASK]\nWithout arguments: enter a task for the current directory; -p/--print: run one task.\nReads .env from the current directory; DEEPSEEK_API_KEY defaults to deepseek-flash.\nCRABLOOP_PROVIDER=openai uses OPENAI_API_KEY / OPENAI_BASE_URL / CRABLOOP_MODEL.";
+const HELP: &str = "usage: crabloop [-p TASK]\n\
+Without arguments: read a task from stdin; -p/--print TASK runs one task.\n\
+Reads .env from the current directory; DEEPSEEK_API_KEY defaults to deepseek-flash. Set CRABLOOP_PROVIDER=openai to use OPENAI_API_KEY / OPENAI_BASE_URL / CRABLOOP_MODEL.";
 pub fn load(args: &[String]) -> Result<Option<Config>> {
     if args.len() == 2 && matches!(args[1].as_str(), "-h" | "--help") {
         println!("{HELP}");
