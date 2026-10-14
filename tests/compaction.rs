@@ -69,7 +69,7 @@ async fn compaction_preserves_recent_two_rounds_and_fixed_context() {
         request_bytes(&cfg, &state.instructions, &after, &tools::schemas()) < policy.soft_bytes
     );
     assert_eq!(stub.requests()[0]["tools"], json!([]));
-    assert_eq!(stub.requests()[0]["max_output_tokens"], 4096);
+    assert_eq!(stub.requests()[0]["max_output_tokens"], 32768);
     assert_eq!(stub.requests()[0]["reasoning"]["effort"], "none");
     let request = &stub.requests()[0];
     assert_eq!(request["input"].as_array().unwrap().len(), 1);

@@ -15,7 +15,7 @@ impl ContextPolicy {
         Ok(Self {
             hard_bytes,
             soft_bytes: hard_bytes / 4 * 3,
-            summary_bytes: 4096.min(hard_bytes / 8),
+            summary_bytes: 16384.min(hard_bytes / 8),
             keep_rounds: 2,
         })
     }

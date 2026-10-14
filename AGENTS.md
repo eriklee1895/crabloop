@@ -23,9 +23,9 @@ v2-v3: learn Agent fundamentals in small, readable code; defer reliability harde
 
 V1: milestone/v1, 389/450; stdin-only, crab banner/crab>, no args. Seven patches reproduce it. CLI Help planned: docs/cli-help-plan.md. Debugging: docs/debugging.md. Brand: docs/assets/README.md.
 
-Historical v1/step-05-v1: 314/319; v2: 504/511. V1 GA: 397/402, 43 Rust + 4 Python, live repair/report and PTY passed; see evidence/v1/ga-review.md. Main: 853/869, 65 Rust + 6 Python, fmt/clippy passed. Counts=code/physical; preserve historical evidence.
+Historical v1: 314/319; v2: 504/511. V1 GA: 397/402, 43 Rust + 4 Python with live repair/report and PTY; evidence/v1/ga-review.md. Main: 853/878, 65 Rust + 6 Python. Counts=code/physical; preserve historical evidence.
 
-Preferred model: DeepSeek V4.1 Flash (deepseek-flash); fallback: gpt-6-luna through TeamoRouter. Both passed v1 tasks. DeepSeek passed v2 with five compactions; Luna v2 is untested. Summaries use reasoning.effort=none and at least 4,096 output tokens; main requests use provider defaults. Request limit: 49,152 bytes; CRABLOOP_CONTEXT_BYTES overrides it (min 4,096). Root AGENTS.md is pinned and must stay below 8,192 bytes. Distinguish offline, live and semantic evidence.
+Preferred model: DeepSeek V4.1 Flash (deepseek-flash); fallback: gpt-6-luna through TeamoRouter. Both passed v1 tasks. DeepSeek passed v2 with five compactions; Luna v2 is untested. Main requests allow 32,768 output tokens; v1 allows 131,072. Main summaries use reasoning.effort=none with a 16 KiB text cap. Main/v1 request limit: 4 MiB; CRABLOOP_CONTEXT_BYTES overrides main (min 4,096). Root AGENTS.md is pinned and must stay below 8,192 bytes. Distinguish offline, live and semantic evidence.
 
 `cargo run`: multi-turn chat in cwd; `-p/--print TASK`: one task. Positional tasks and piped stdin remain supported; `--chat` forces chat. Rustyline edits input/history; /new resets, /exit or Ctrl-D quits, Ctrl-C cancels. Session retains final answers/tool groups. After errors/interruption, inspect files and use /new; no automatic effect replay. Empty chat creates no journal/request. UI copy is English; model/user text keeps its language. Commentary precedes tools; -p sends it to stderr. Final answers stay separate.
 

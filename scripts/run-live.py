@@ -101,7 +101,7 @@ record['required_compaction'] = args.require_compaction
 if args.stage == 'v2':
     journals = sorted((workspace / '.crabloop').glob('run-*.jsonl'))
     journal_events = [json.loads(line) for path in journals for line in path.read_text().splitlines()]
-    record['context_bytes'] = int(env.get('CRABLOOP_CONTEXT_BYTES', '49152'))
+    record['context_bytes'] = int(env.get('CRABLOOP_CONTEXT_BYTES', '4194304'))
     record['compactions'] = [e['data'] for e in journal_events if e['kind'] == 'compaction']
     record['requests'] = [{'kind': e['kind'], 'bytes': len(json.dumps(e['data'], ensure_ascii=False, separators=(',', ':')).encode())} for e in journal_events if e['kind'] in ('request', 'summary_request')]
     record['usage'] = [{'kind': e['kind'], 'usage': e['data'].get('usage')} for e in journal_events if e['kind'] in ('response', 'summary_response')]

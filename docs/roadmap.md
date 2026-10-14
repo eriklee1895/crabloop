@@ -63,7 +63,7 @@ provider = "deepseek"
 model = "deepseek-flash"
 
 [context]
-max_request_bytes = 49152
+max_request_bytes = 4194304
 
 # 内置 provider 可省略 base_url；写出时表示明确覆盖。
 [providers.deepseek]

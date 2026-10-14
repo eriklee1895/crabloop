@@ -124,7 +124,7 @@ main 的 provider 选择按下表从上到下匹配：
 
 旧的任务位置参数仍可用。无参数管道输入作为一个完整任务；`--chat` 显式按行进行多轮对话。只读取启动目录的 .env，不向父目录搜索，也不执行文件里的命令。空会话退出不会创建日志或请求模型。当前界面使用 rustyline 编辑输入；每轮完整响应返回后，commentary 以 `Progress` 段落显示在本轮工具之前，最终答案单独显示；基础流式显示安排在 v3，完整屏幕布局留给 v6。
 
-单次模式的 stderr 保留过程说明、工具 JSON 轨迹和日志路径；交互模式显示工具进度。每个实际开始的会话写入工作区 .crabloop 的 JSONL，用于观察，不支持跨进程恢复。请求错误或中断后要先检查文件状态，再用 `/new`；这不会回滚已发生的修改。CRABLOOP_CONTEXT_BYTES 默认 49152，最小 4096。摘要请求要求模型支持 reasoning.effort=none；v2 主验收模型为 DeepSeek V4.1 Flash。
+单次模式的 stderr 保留过程说明、工具 JSON 轨迹和日志路径；交互模式显示工具进度。每个实际开始的会话写入工作区 .crabloop 的 JSONL，用于观察，不支持跨进程恢复。请求错误或中断后要先检查文件状态，再用 `/new`；这不会回滚已发生的修改。CRABLOOP_CONTEXT_BYTES 默认 4194304（4 MiB），最小 4096。main 的 max_output_tokens 为 32,768，摘要正文上限为 16 KiB；当前 milestone/v1 请求预算同为 4 MiB，max_output_tokens 为 131,072（128K）。请求字节预算不等于模型的 token 窗口，历史 v1/v2 标签保留原默认值。摘要请求要求模型支持 reasoning.effort=none；v2 主验收模型为 DeepSeek V4.1 Flash。
 
 学习分支展示该版当前实现，标签保存固定历史快照；想动手修改时从学习分支另开自己的分支，例如 `git switch -c my-v1-exercise milestone/v1`。main 保持最新可运行实现，每个通过验证的小迭代都合入并推送；已完成的临时开发分支随后清理，教学提交与里程碑继续保留。
 

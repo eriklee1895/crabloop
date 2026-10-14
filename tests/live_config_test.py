@@ -38,7 +38,7 @@ class LiveConfigTest(unittest.TestCase):
                     runpy.run_path(str(root / 'scripts/run-live.py'), run_name='__main__')
                 self.assertEqual(exit_status.exception.code, 0)
             passed_env = spawn.call_args.kwargs['env']
-            actual = int(passed_env.get('CRABLOOP_CONTEXT_BYTES', '49152'))
+            actual = int(passed_env.get('CRABLOOP_CONTEXT_BYTES', '4194304'))
             record = json.loads(next((root / 'evidence/v2').glob('*.json')).read_text())
             self.assertEqual(actual, expected)
             self.assertEqual(record['context_bytes'], actual)
@@ -50,4 +50,4 @@ class LiveConfigTest(unittest.TestCase):
         self.run_case(10240, 16384, 16384)
 
     def test_default_budget_is_recorded(self):
-        self.run_case(None, None, 49152)
+        self.run_case(None, None, 4194304)

@@ -75,10 +75,10 @@ fn journal_is_append_only_and_refuses_overwrite() {
 #[test]
 fn invalid_budget_is_rejected_and_defaults_are_derived() {
     assert!(ContextPolicy::new(4095).is_err());
-    let p = ContextPolicy::new(49152).unwrap();
+    let p = ContextPolicy::new(crabloop::Limits::default().request_bytes).unwrap();
     assert_eq!(
         (p.hard_bytes, p.soft_bytes, p.summary_bytes, p.keep_rounds),
-        (49152, 36864, 4096, 2)
+        (4 * 1024 * 1024, 3 * 1024 * 1024, 16384, 2)
     );
 }
 #[test]

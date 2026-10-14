@@ -19,9 +19,9 @@
 - 模型接入使用 OpenAI 原生 Responses API。公开工具名固定为 read_file、write_file、edit_file、bash。
 - 每次请求由客户端显式发送 input；store 为 false，不传 previous_response_id 或 conversation。
 - Rust 1.94.0，edition 2024；依赖按设计说明固定精确版本，提交 Cargo.lock 后使用 locked 构建。
-- 主模型轮数 16；HTTP 超时 60 秒；Bash 超时 30 秒；主调用 max_output_tokens 为 2,048，摘要至少 4,096，为推理与正文留出额度。
+- 主模型轮数 16；HTTP 超时 60 秒；Bash 超时 30 秒；main 主调用 max_output_tokens 为 32,768；当前 v1 为 131,072，摘要至少 4,096，为推理与正文留出额度。
 - 文件上限 65,536 字节，read_file 输出上限 8,192 字节，Bash stdout/stderr 各捕获最多 4,096 原始字节。
-- v1 请求上限 131,072 字节；v2 默认 49,152 字节、触发阈值 36,864 字节、保留最近 2 组，摘要上限 min(4,096，hard/8)。
+- main 与当前 v1 请求上限为 4 MiB；main 触发阈值为 3 MiB、保留最近 2 组，摘要上限 min(16,384，hard/8)。历史 v1/v2 标签保留原预算。
 - v2 的 CRABLOOP_CONTEXT_BYTES 最小 4,096；根目录 AGENTS.md 上限 8,192 UTF-8 字节。
 - v1 目标约 300 行，350–360 也可接受；v2 目标约 500 行，允许合理浮动；全部 src/**/*.rs 纳入计数，保持正常 cargo fmt，不牺牲必要错误处理。
 - 先完成 v1 并保留 tag，再扩展 v2；不在两版中添加设计说明列出的选修能力。

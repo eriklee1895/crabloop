@@ -18,6 +18,7 @@ async fn sends_stateless_responses_request() {
     assert!(reply.is_final);
     let sent = &server.requests()[0];
     assert_eq!(sent["store"], false);
+    assert_eq!(sent["max_output_tokens"], 32768);
     assert_eq!(sent["model"], "test-model");
     assert_eq!(sent["instructions"], "Inspect carefully");
     assert_eq!(sent["input"][0]["content"], "hello");

@@ -57,3 +57,5 @@
 - [x] **REQ-029：v1 源码空行整理。** 五个文件按顶层定义与函数内逻辑阶段分段，全部非空代码行不变。当时为 388 代码行 / 449 物理行；格式、clippy、42 Rust、5 Python 与七步重建一致性通过。源码 `88d675b`，学习分支 `b6bd16c`。[记录](devlog/27-v1-readable-spacing.md)
 
 - [x] **REQ-030：v1 stdin-only 入口与终端提示。** 清除未提交旧文件带回的 Help、位置参数及 -p，恢复小螃蟹欢迎信息和 `crab>`。389 代码行 / 450 物理行，42 Rust + 5 Python、PTY 与七步重建通过；学习分支提交 `9424df4`。main 同步教程补丁、当前数字和记录。[实施与验证](devlog/28-v1-stdin-banner.md)
+
+- [x] **REQ-031：调大默认预算。** main 与当前 v1 的请求 JSON 预算为 4 MiB；main 输出上限为 32,768 tokens，v1 按用户要求为 131,072（128K）。main 摘要正文上限为 16 KiB。仅调整默认值，保留历史标签、小预算实验和已有机制。[实施与验证](devlog/29-default-budgets.md)

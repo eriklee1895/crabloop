@@ -58,3 +58,5 @@ python3 scripts/check-lessons.py
 正文里的旧接口属于各自步骤。去掉 ModelClient/ToolResult 的变化见 05 补丁及第 05 章的迁移表；06 接上当前 v1 的简洁启动。历史标签和开发记录保留当时的证据，学习时无需选择另一份 v1。
 
 修改 v1 的贡献者可以在提交候选分支后执行 `python3 scripts/check-lessons.py --v1-ref HEAD`，先验证重建终点与该提交一致，再推进 milestone/v1；默认命令仍校验正式学习分支。
+
+2026-10-14 默认预算增量在最后一个补丁中将请求预算提高到 4 MiB、max_output_tokens 提高到 131,072；前面的历史步骤与 v1 标签继续保留当时的数值。

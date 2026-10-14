@@ -23,11 +23,11 @@ impl Default for Limits {
             max_turns: 16,
             http_timeout: Duration::from_secs(60),
             bash_timeout: Duration::from_secs(30),
-            request_bytes: 49152,
+            request_bytes: 4 * 1024 * 1024,
             file_bytes: 65536,
             read_output_bytes: 8192,
             stream_bytes: 4096,
-            max_output_tokens: 2048,
+            max_output_tokens: 32768,
         }
     }
 }
