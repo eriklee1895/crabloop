@@ -63,3 +63,5 @@
 - [x] **REQ-032：v1 工具显示。** 默认名称、命令/路径、状态及 ≤240 B 文本预览；模型反馈不变；最初保留的调试开关已按 REQ-033 删除。399 代码行 / 460 物理行，44 Rust + 5 Python 与七步重建通过；实现 `5a063fc`。[实施与验证](devlog/30-v1-tool-display.md)
 
 - [x] **REQ-033：精简 v1 工具显示。** 删除工具 JSON 轨迹开关及专用测试，验收脚本使用独立 verifier 和实际产物，不从预览推断内部调用。395 代码行 / 456 物理行，43 Rust + 5 Python、串行七步重建与本地 release 验证通过；实现 `d3bfaf4`。[实施与验证](devlog/31-v1-remove-trace.md)
+
+- [x] **REQ-034：吉祥物 GIF。** 透明背景、微笑、眨眼与单钳轻挥，256px、3.9 秒循环；归档生成提示词、六张源帧、时间安排和重建脚本。[动图与源文件](assets/mascot-animation/README.md) · [记录](devlog/32-mascot-animation.md)

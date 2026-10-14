@@ -1,0 +1,5 @@
+Use case: precise-object-edit.
+Edit target: the provided finalized pixel-art CrabLoop mascot.
+Create exactly ONE animation keyframe: the crab gently closes BOTH eyes in a friendly blink. Replace each open dark eye/white highlight with a short dark horizontal pixel eyelid, keeping the little smiling mouth exactly as is.
+Preserve everything outside the two eye regions EXACTLY: same coral-orange shell pixels, teal claws, arm and leg positions, highlights, scale, canvas dimensions, transparent padding, and true alpha transparency. No body movement, no waving yet, no new facial features, no new shadows. Do not redraw or re-center the character. All claws and feet fully visible.
+Output transparent PNG only, no text, no panel, no checkerboard background. This frame must align with the source so it can be used in a small GIF blink animation.
