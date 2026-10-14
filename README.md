@@ -18,7 +18,7 @@ cargo run
 crab> 读取 README.md，概括项目结构
 ```
 
-每次运行处理一个任务，完成后退出。任务也可以通过管道传入：
+终端里可以连续提问，同一进程会保留前面的对话；Ctrl-D 退出。管道输入仍作为一次任务处理，完成后退出：
 
 ```bash
 printf '%s\n' "检查当前目录" | cargo run --quiet
@@ -32,12 +32,12 @@ printf '%s\n' "检查当前目录" | cargo run --quiet
 
 ## 从哪里读核心
 
-从 [src/lib.rs](src/lib.rs) 的 `run` 函数开始，沿着“请求模型 → 执行工具 → 回传结果 → 继续或停止”阅读手写循环。模型交互使用 OpenAI Responses API。
+从 [src/lib.rs](src/lib.rs) 的 `run_turn` 函数开始，沿着“请求模型 → 执行工具 → 回传结果 → 继续或停止”阅读手写循环。模型交互使用 OpenAI Responses API。
 
 | 文件 | 职责 |
 |---|---|
-| [src/main.rs](src/main.rs) | 调用入口、显示最终答案和退出状态 |
-| [src/cli.rs](src/cli.rs) | 单次任务输入和最小配置 |
+| [src/main.rs](src/main.rs) | 持续输入、保留会话历史、显示回答和退出状态 |
+| [src/cli.rs](src/cli.rs) | stdin 读取和最小配置 |
 | [src/lib.rs](src/lib.rs) | 限制、停止原因与手写 agent loop |
 | [src/model.rs](src/model.rs) | Responses 请求和完整响应校验 |
 | [src/tools.rs](src/tools.rs) | `read_file`、`write_file`、`edit_file`、`bash` |

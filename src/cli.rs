@@ -12,21 +12,12 @@ pub fn load(args: &[String]) -> Result<Option<Config>> {
     );
 
     let limits = Limits::default();
-    let stdin = io::stdin();
-    let mut input = stdin.lock().take(limits.request_bytes as u64 + 1);
-    let mut task = String::new();
-    if stdin.is_terminal() {
-        eprintln!("🦀 CrabLoop · a small Rust agent\nEnter one task. Ctrl-D to exit.\n");
-        eprint!("crab> ");
-        input.read_line(&mut task)?;
-    } else {
-        input.read_to_string(&mut task)?;
+    if io::stdin().is_terminal() {
+        eprintln!("🦀 CrabLoop · a small Rust agent\nType a task. Ctrl-D to exit.\n");
     }
-
-    ensure!(task.len() <= limits.request_bytes, "task exceeds input budget");
-    if task.trim().is_empty() {
+    let Some(task) = read_task(limits.request_bytes)? else {
         return Ok(None);
-    }
+    };
 
     let workspace = std::env::current_dir()?;
     let local: HashMap<String, String> = match dotenvy::from_path_iter(".env") {
@@ -68,4 +59,25 @@ pub fn load(args: &[String]) -> Result<Option<Config>> {
         endpoint: get("CRABLOOP_API_URL")
             .unwrap_or_else(|| format!("{}/responses", base.trim_end_matches('/'))),
     }))
+}
+
+pub fn read_task(limit: usize) -> Result<Option<String>> {
+    let stdin = io::stdin();
+    loop {
+        let mut input = stdin.lock().take(limit as u64 + 1);
+        let mut task = String::new();
+        let bytes = if stdin.is_terminal() {
+            eprint!("crab> ");
+            input.read_line(&mut task)?
+        } else {
+            input.read_to_string(&mut task)?
+        };
+        ensure!(task.len() <= limit, "task exceeds input budget");
+        if bytes == 0 || (!stdin.is_terminal() && task.trim().is_empty()) {
+            return Ok(None);
+        }
+        if !task.trim().is_empty() {
+            return Ok(Some(task.trim().to_owned()));
+        }
+    }
 }

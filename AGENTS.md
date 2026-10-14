@@ -18,9 +18,9 @@ CrabLoop is a small coding-agent harness built from scratch in Rust for hands-on
 
 The only v1 learning code is milestone/v1. Seven tutorial patches end at the same complete src tree; scripts/check-lessons.py verifies it. Historical tags preserve steps and evidence, not alternative learning entries.
 
-The milestone/v1 implementation has 406 code lines / 467 physical lines under the established counting rule. Tool display shows name/argument/status; success output is hidden and failures have one brief reason. Original v1 / step-05-v1 tags retain 314/319. Production Rust lives in five files; run(Config) directly owns history and the serial model/tool loop. No Session, Progress, terminal editor, cross-user-turn chat or SSE remains in v1.
+The milestone/v1 implementation has 436 code lines / 495 physical lines under the established counting rule. Tool display shows name/argument/status; success output is hidden and failures have one brief reason. Original v1 / step-05-v1 tags retain 314/319. Production Rust lives in five files; main owns one Vec<Value> across user questions; run_turn borrows it for the model/tool loop. run(Config) remains a one-task wrapper. No Session, editor, persistence or SSE.
 
-Startup is a single task from stdin: cargo run shows a small crab banner and crab> prompt before reading one line in a terminal, or reads all piped stdin without the banner. All command-line arguments (including positional tasks, -p/--print and -h/--help) are rejected before input/configuration with an English error pointing to README.md. The workspace is cwd; change directories before invoking the binary. Empty input exits before configuration and without a model request. --chat and --workspace are not supported here. The request budget is fixed at 4,194,304 bytes (4 MiB); max_output_tokens is 131,072; other limits and errors remain intact.
+Terminal startup shows the crab banner and crab> prompt. After each answer, read another task and retain history until Ctrl-D; blank terminal lines are ignored. Piped stdin stays one task. Arguments are rejected before configuration; workspace is cwd. EOF/empty pipe needs no credentials or request. Errors, MaxTurns and ContextLimit end the process; no automatic recovery/replay. Limits: request 4 MiB, output 131,072 tokens; model/tool turns reset per question.
 
 Only the startup directory's .env is read as data; process environment wins. CRABLOOP_PROVIDER defaults to deepseek (DEEPSEEK_API_KEY, deepseek-flash). Explicit openai uses OPENAI_API_KEY, OPENAI_BASE_URL (default https://api.openai.com/v1) and default gpt-6-luna. CRABLOOP_MODEL and full CRABLOOP_API_URL override the selected profile. No model-name, hostname or key-presence inference. The live test driver explicitly selects openai while supplying the chosen provider's matching key/base/model; it runs the binary from the fixture directory. Never execute or print .env contents.
 
@@ -28,7 +28,7 @@ CLI Help remains planned in docs/cli-help-plan.md. Code strings/comments are Eng
 
 GA evidence: evidence/v1/ga-review.md.
 
-Offline baseline: 43 Rust + 5 Python tests, fmt/clippy. Live repair/report and PTY results are historical evidence in evidence/v1/ga-review.md. No chat functionality remains in v1.
+Offline baseline: 44 Rust + 6 Python tests, fmt/clippy. Live repair/report and PTY results are historical evidence in evidence/v1/ga-review.md. Only in-process chat is retained.
 
 Read docs/v1-scope.md and docs/v1-reduction-plan.md for this accepted reduction; docs/design.md and docs/plan.md preserve the original learning sequence. Tutorial 06-conversation is a later interaction experiment preserved through its historical commit, not a current v1 capability.
 

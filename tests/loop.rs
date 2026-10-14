@@ -154,3 +154,26 @@ async fn scripted_bugfix_loop_uses_all_tools_and_passes_external_verifier() {
         .unwrap();
     assert!(verified.status.success(), "{}", String::from_utf8_lossy(&verified.stderr));
 }
+
+#[tokio::test]
+async fn followup_replays_previous_answer_and_complete_tool_results() {
+    let dir = TempDir::new();
+    fs::write(dir.path().join("lib.rs"), "A").unwrap();
+    fs::write(dir.path().join("tests.rs"), "B").unwrap();
+    let server = StubResponses::start(vec![fixture("two_calls"), fixture("text"), fixture("text")]);
+    let config = test_config(dir.path(), server.endpoint());
+    let mut input = vec![json!({"role":"user","content":"Read the files"})];
+    let first = crabloop::run_turn(&config, &mut input).await.unwrap();
+    assert_eq!(first.model_turns, 2);
+    assert_eq!(first.reason, StopReason::Final);
+    input.push(json!({"role":"user","content":"Which files did you read?"}));
+    let expected = input.clone();
+    let second = crabloop::run_turn(&config, &mut input).await.unwrap();
+    assert_eq!(second.model_turns, 1);
+    assert_eq!(server.requests()[2]["input"], json!(expected));
+    assert_eq!(expected[5]["content"][0]["text"], "Done");
+    assert_eq!(expected[6]["content"], "Which files did you read?");
+    assert_eq!(expected[3]["call_id"], "call_1");
+    let result: Value = serde_json::from_str(expected[3]["output"].as_str().unwrap()).unwrap();
+    assert_eq!(result["content"], "A");
+}
