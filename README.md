@@ -35,7 +35,7 @@ cargo run
 |---|---:|---|
 | v1 | 目标约 300 行，硬上限 <400；当前 397 行 | 如何快速看懂模型—工具—反馈—停止的核心循环？ |
 | v2 | 约 500 行 Rust，上下文管理与压缩 | 每轮模型看到什么，历史怎样被选择和整理？ |
-| v3 | 约 1000 行 Rust，基础 SSE、home、TOML、provider 与模型目录 | 怎样配置一次，持续使用和切换模型？ |
+| v3 | 约 1000 行 Rust，基础 SSE、home、TOML、provider、模型目录与轻量 context 信息 | 怎样配置一次、切换模型，并看清上下文用量？ |
 | v3 后：可观测性专题 | 配置开关、observer、Rust OpenTelemetry → Langfuse v4 | 每个 step 看到了什么，工具反馈与压缩怎样影响下一轮？ |
 | v4 | Skills、联网工具、todo_write、配置菜单 | 怎样复用方法、查资料，并跟踪长任务进度？ |
 | v5 | JSONL 恢复、Todo 恢复、ask_user_question | 怎样恢复进度，并等待用户回答后继续？ |

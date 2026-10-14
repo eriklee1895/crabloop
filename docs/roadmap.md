@@ -12,7 +12,7 @@
 |---|---:|---|---|
 | v1 | 目标约 300 行，硬上限 <400；当前 397 行 | 怎样快速看懂一个完整 agent loop？ | 非流式 Responses、四工具、结果反馈、明确停止与必要限制；完成真实工具反馈闭环 |
 | v2 | 约 500 行，允许合理浮动 | 历史变长后，下一轮看到什么？ | 根 AGENTS.md、完整交互组、输入预算、摘要、JSONL 运行记录；小预算下完成任务 |
-| v3 | 约 1000 行，优先保持可读 | 怎样成为不用反复配置的个人 CLI？ | 基础 SSE、`~/.crabloop`、TOML、凭证、provider 预置/Custom、模型目录与缓存；分别学习流式显示和模型配置 |
+| v3 | 约 1000 行，优先保持可读 | 怎样成为不用反复配置的个人 CLI？ | 基础 SSE、`~/.crabloop`、TOML、凭证、provider 预置/Custom、模型目录与缓存；分别学习流式显示、模型配置与轻量 context 信息 |
 | v3 后：可观测性专题 | 单独估算增量，仍计入源码总量 | 每一步看到了什么，执行了什么，为什么继续或停止？ | 可选 telemetry、生命周期 observer、Rust OpenTelemetry → Langfuse v4；把终端轮次与模型、工具、压缩轨迹对应起来 |
 | v4 | 先按功能估算，不预设硬上限 | 怎样复用方法、查资料，并跟踪长任务进度？ | Skills、web_fetch、web_search、todo_write、CLI 配置菜单；维护计划，保存带来源的比较报告 |
 | v5 | 先按功能估算，不预设硬上限 | 怎样恢复进度，并在需要用户选择时等待和继续？ | JSONL sessions、list/show/resume、Todo 恢复、ask_user_question、取消与未完成操作；恢复已知状态和待答问题 |
@@ -102,6 +102,25 @@ credentials.toml 按 provider/profile 保存 API Key；目录在 Unix 下使用 
 - [Pi config.ts](https://github.com/earendil-works/pi/blob/216e672e7c9fc65682553394b74e483c0c9e47f7/packages/coding-agent/src/config.ts) 将 models.json、auth.json、settings.json 放在 `~/.pi/agent`；[models.ts](https://github.com/earendil-works/pi/blob/216e672e7c9fc65682553394b74e483c0c9e47f7/packages/ai/src/models.ts) 区分静态列表与动态刷新。该提交的 OpenAI/DeepSeek 工厂使用生成的静态目录，不能概括成“Pi 所有模型都实时拉取”。CrabLoop 借鉴配置、凭证、模型元信息分开管理。
 
 官方协议依据：[OpenAI models](https://developers.openai.com/api/reference/resources/models/methods/list)、[DeepSeek Responses](https://api-docs.deepseek.com/api/create-response/)、[DeepSeek models](https://api-docs.deepseek.com/api/list-models/)、[MiniMax Responses](https://platform.minimaxi.com/docs/api-reference/responses-create)、[MiniMax models](https://platform.minimaxi.com/docs/api-reference/models/openai/list-models)。这些是 2026-10-11 的核查结果，实施 v3 时再复核字段和端点。
+
+## Context 信息展示：v3 先做轻量信息，v6 完善界面
+
+2026-10-14 纳入计划：借鉴 Codex / Claude Code 让上下文用量可见的体验，帮助学习者判断上下文在怎样增长、压缩何时发生。先在 v3 的滚动终端显示简短信息；v6 再接到状态栏与 `/context` 详情。这属于上下文机制的可观察性，继续遵循少量清晰代码的原则。
+
+v3 结合模型目录与配置，先展示四类信息：
+
+| 信息 | 来源与口径 |
+|---|---|
+| Context window | 当前 provider/model 的已知窗口容量，单位 tokens；来源为明确的模型元数据、预置或手动配置，未知则显示 unknown |
+| Last input | 最近一次主模型请求的 API input_tokens；标明是上一请求的统计，不是当前待发送输入，也不累计整段会话的 usage |
+| Request budget | 当前待发送请求的序列化字节数 / 本地字节上限；沿用现有预算，独立标注单位，不冒充 token 窗口占用率 |
+| Compaction | 已发生的压缩次数、最近一次压缩前后字节数；压缩完成后按新输入更新显示 |
+
+窗口容量与同口径 token 用量都已知时，可以展示已用/剩余百分比，标明对应哪次请求；若是对待发送输入的简单估算，必须显示 `~` 或 estimated。窗口未知、统计未返回或依据不一致时不生成精确百分比。窗口容量、本地请求预算和输出额度分别标注，避免把本地字节限制误解为模型的 context window。
+
+沿用简单估算与已有 API usage，不为界面引入 tokenizer 或额外计量服务。首版只需一个简短文本输出，清楚展示模型窗口、上次输入、本地预算与压缩状态；不要求实时精确 token 计数。v6 的 `/context` 可进一步列出固定指令、用户任务、摘要与保留的工具交互组，并在常驻状态栏展示简要占用情况。
+
+验收关注普通学习场景：连续读取文件后用量增长；压缩后当前输入体积下降；切换模型时窗口来源随之更新；缺少容量或 usage 时诚实显示 unknown。用可控 fixture 验证显示口径，不扩展成复杂监控或可靠性系统。
 
 ## v3 后的独立专题：Agent 可观测性
 
@@ -239,7 +258,7 @@ v6 拆成三个可运行、独立验收的增量：
 
 | 增量 | 范围 | 需要观察的行为 |
 |---|---|---|
-| 输出渲染 | Markdown 标题、列表、引用、代码块；thinking 状态、可读推理内容；工具详情、当前 Todo 与待答状态 | 中文换行和终端宽度正确，任务进度与循环轮次容易区分；先在滚动终端中完成 |
+| 输出渲染 | Markdown 标题、列表、引用、代码块；thinking 状态、可读推理内容；工具详情、Context 用量与压缩状态、当前 Todo 与待答状态 | 中文换行和终端宽度正确，任务进度与循环轮次容易区分；先在滚动终端中完成 |
 | 输入与 slash command 交互 | 命令说明、过滤、键盘选择与补全；复用选择与文本输入能力回答待答问题 | 候选选择清楚可见，参数与未知命令有提示；回答绑定原 question_id，提交后继续原任务 |
 | 完整布局与焦点管理 | 对话区、输入区、状态栏、滚动、详情展开、焦点和增量刷新 | 模型等待期间按键仍可响应，窗口缩放、中文粘贴、多行输入、取消与退出恢复正常 |
 
@@ -269,7 +288,7 @@ CrabLoop 优先借鉴终端退出恢复、输入/粘贴与提交的区分、流�
 
 当前核心通过 Progress 回调发出模型轮次和工具开始/结束，交互与单次入口共享 Session::turn。v6 复用可观测性专题的生命周期与关联 ID，再按需要增加 channel 上的 TextDelta、可读推理和 ToolOutputDelta。CLI/TUI 消费事件并展示，核心负责工具执行；模型网络等待不阻塞按键。当前单次 CLI 入口仍可用于脚本和验收；TUI 复用同一个运行核心。可以在具体需要出现时拆出 src/ui/，所有生产 Rust 仍计入总行数，另列核心/界面分项帮助阅读。
 
-教学验收要求学习者能从界面追踪主循环、工具反馈、压缩和停止，并找到对应代码位置。保留可见的当前 step 与轮次预算，工具和摘要调用另行计数；状态栏与 Langfuse 的同一任务、step、call_id 能对应。输出渲染、slash 交互和完整布局分别验证，主题与复杂快捷键随后按需要添加。
+教学验收要求学习者能从界面追踪主循环、工具反馈、压缩和停止，并找到对应代码位置。保留可见的当前 step、轮次预算与 Context 信息，工具和摘要调用另行计数；状态栏与 Langfuse 的同一任务、step、call_id 能对应。输出渲染、slash 交互和完整布局分别验证，主题与复杂快捷键随后按需要添加。
 
 ### 学习参考：llm-space 的工具契约与交互
 
