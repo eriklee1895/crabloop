@@ -2,32 +2,29 @@
 
 用 Rust 从零写一个能读文件、修改代码、运行测试，再根据真实反馈继续行动的 mini agent。
 
-这是 **milestone/v1 的最小教学实现**：用 **300+ lines** 理解模型、工具、反馈与停止组成的 agent loop。
+v1 用 **300+ lines** 演示一个完整的 agent loop。
 
 ## Quick Start
 
-在当前目录的 `.env` 中配置 `DEEPSEEK_API_KEY`，然后运行：
+默认使用 DeepSeek。在当前目录的 `.env` 中配置 `DEEPSEEK_API_KEY`，其他模型配置见 [.env.example](.env.example)。然后运行：
 
 ```bash
 cargo run
 ```
 
-终端会显示以下提示：
+在 `crab>` 后输入任务，按 Enter 提交，例如：
 
 ```text
-🦀 CrabLoop · a small Rust agent
-Enter one task. Ctrl-D to exit.
-
-crab>
+crab> 读取 README.md，概括项目结构
 ```
 
-在 `crab>` 后输入一个任务，按 Enter 提交；完成后程序退出。脚本和多行任务也从 stdin 传入：
+每次运行处理一个任务，完成后退出。任务也可以通过管道传入：
 
 ```bash
 printf '%s\n' "检查当前目录" | cargo run --quiet
 ```
 
-v1 只从 stdin 接收任务，不接受命令行参数；空输入或 EOF 直接退出。
+任务从 stdin 读取，不接受命令行参数。
 
 工作区就是启动目录。要操作另一个目录，先构建，再从那个目录调用二进制：
 
@@ -38,23 +35,23 @@ cd /path/to/project
 printf '%s\n' "读取项目说明并检查测试" | "$crabloop_bin"
 ```
 
-默认使用 DeepSeek，配置从启动目录的 `.env` 和进程环境读取，进程环境优先。OpenAI 或兼容端点的配置见 [.env.example](.env.example)。不要提交凭证。
+配置读取启动目录的 `.env`，进程环境优先。
 
 运行时会显示工具名称、命令或路径、执行状态和输出预览。
 
 ## 从哪里读核心
 
-从 [src/lib.rs](src/lib.rs) 的 run 函数开始。input 保存当前任务的完整历史：请求模型、追加 response.output、执行工具、用原 call_id 追加结果，再进入下一轮。模型给出最终回答或耗尽预算时停止。
+从 [src/lib.rs](src/lib.rs) 的 `run` 函数开始，沿着“请求模型 → 执行工具 → 回传结果 → 继续或停止”阅读手写循环。模型交互使用 OpenAI Responses API。
 
 | 文件 | 职责 |
 |---|---|
-| src/main.rs | 调用入口、显示最终答案和退出状态 |
-| src/cli.rs | 单次任务输入和最小配置 |
-| src/lib.rs | 限制、停止原因与手写 agent loop |
-| src/model.rs | Responses 请求和完整响应校验 |
-| src/tools.rs | read_file、write_file、edit_file、bash |
+| [src/main.rs](src/main.rs) | 调用入口、显示最终答案和退出状态 |
+| [src/cli.rs](src/cli.rs) | 单次任务输入和最小配置 |
+| [src/lib.rs](src/lib.rs) | 限制、停止原因与手写 agent loop |
+| [src/model.rs](src/model.rs) | Responses 请求和完整响应校验 |
+| [src/tools.rs](src/tools.rs) | `read_file`、`write_file`、`edit_file`、`bash` |
 
-一个任务可以触发多轮模型和工具交互，工具失败也会反馈给模型。模型说完成后，仍需独立检查文件和测试结果。v1 每次运行只处理一个任务。
+工具失败会反馈给模型，供下一轮调整行动。模型说完成后，仍需检查文件和测试结果。
 
 ## 教程
 
