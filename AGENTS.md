@@ -21,7 +21,7 @@ v2-v3: learn Agent fundamentals in small, readable code; defer reliability harde
 
 ## Current state and layout
 
-V1: milestone/v1, 399/460; stdin-only, crab banner/crab>, no args. Readable tool previews; JSON via CRABLOOP_TRACE_TOOLS. Help: docs/cli-help-plan.md. Debug: docs/debugging.md. Brand: docs/assets/README.md.
+V1: milestone/v1, 395/456; stdin-only, crab banner/crab>, no args. Readable tool previews; no trace option. Help: docs/cli-help-plan.md. Debug: docs/debugging.md. Brand: docs/assets/README.md.
 
 Historical v1: 314/319; v2: 504/511. V1 GA: 397/402, 43 Rust + 4 Python with live repair/report and PTY; evidence/v1/ga-review.md. Main: 853/878, 65 Rust + 6 Python. Counts=code/physical; preserve historical evidence.
 

@@ -60,4 +60,6 @@
 
 - [x] **REQ-031：调大默认预算。** main 与当前 v1 的请求 JSON 预算为 4 MiB；main 输出上限为 32,768 tokens，v1 按用户要求为 131,072（128K）。main 摘要正文上限为 16 KiB。仅调整默认值，保留历史标签、小预算实验和已有机制。[实施与验证](devlog/29-default-budgets.md)
 
-- [x] **REQ-032：v1 工具显示。** 默认名称、命令/路径、状态及 ≤240 B 文本预览；CRABLOOP_TRACE_TOOLS 显式保留 JSON 轨迹，模型反馈不变。399 代码行 / 460 物理行，44 Rust + 5 Python 与七步重建通过；实现 `5a063fc`。[实施与验证](devlog/30-v1-tool-display.md)
+- [x] **REQ-032：v1 工具显示。** 默认名称、命令/路径、状态及 ≤240 B 文本预览；模型反馈不变；最初保留的调试开关已按 REQ-033 删除。399 代码行 / 460 物理行，44 Rust + 5 Python 与七步重建通过；实现 `5a063fc`。[实施与验证](devlog/30-v1-tool-display.md)
+
+- [x] **REQ-033：精简 v1 工具显示。** 删除工具 JSON 轨迹开关及专用测试，验收脚本使用独立 verifier 和实际产物，不从预览推断内部调用。395 代码行 / 456 物理行，43 Rust + 5 Python、串行七步重建与本地 release 验证通过；实现 `d3bfaf4`。[实施与验证](devlog/31-v1-remove-trace.md)

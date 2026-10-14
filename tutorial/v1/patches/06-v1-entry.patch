@@ -65,10 +65,10 @@ index 699bdda..aa107c2 100644
 +dotenvy = "=0.15.7"
 diff --git a/scripts/run-live.py b/scripts/run-live.py
 new file mode 100644
-index 0000000..0d6a69f
+index 0000000..b7ae0ad
 --- /dev/null
 +++ b/scripts/run-live.py
-@@ -0,0 +1,100 @@
+@@ -0,0 +1,91 @@
 +#!/usr/bin/env python3
 +"""Run one controlled live repair. Credentials and raw logs stay local."""
 +import argparse
@@ -121,7 +121,6 @@ index 0000000..0d6a69f
 +env = os.environ.copy()
 +env.update(CRABLOOP_PROVIDER="openai", OPENAI_API_KEY=key, OPENAI_BASE_URL=base, CRABLOOP_MODEL=model)
 +env.pop('CRABLOOP_API_URL', None)
-+env['CRABLOOP_TRACE_TOOLS'] = '1'
 +task = 'Read README.md and inspect the source. Fix last_index in lib.rs. Run the existing tests before editing and after the fix. Preserve the public signature and tests.rs. Write NOTES.md describing the change and actual verification. Report only observed results.'
 +subprocess.run(['cargo', 'build', '--locked'], cwd=ROOT, check=True, capture_output=True)
 +if args.scenario == 'report':
@@ -138,12 +137,6 @@ index 0000000..0d6a69f
 +(raw_dir / 'stdout.txt').write_text(stdout)
 +(raw_dir / 'stderr.txt').write_text(stderr)
 +final = verify()
-+events = []
-+for line in stderr.splitlines():
-+    if line.startswith('tool '):
-+        events.append(json.loads(line[5:]))
-+failed_test_seen = any(e['name'] == 'bash' and 'test result: FAILED' in e['result'].get('stdout', '') for e in events)
-+passed_test_seen = any(e['name'] == 'bash' and 'test result: ok.' in e['result'].get('stdout', '') for e in events)
 +original = (ROOT / 'fixtures/buggy-rust/lib.rs').read_text() if args.scenario == 'coding' else ''
 +actual = (workspace / 'lib.rs').read_text() if (workspace / 'lib.rs').is_file() else ''
 +tests_unchanged = (workspace / 'tests.rs').is_file() and (workspace / 'tests.rs').read_bytes() == (ROOT / 'fixtures/buggy-rust/tests.rs').read_bytes()
@@ -153,16 +146,14 @@ index 0000000..0d6a69f
 +    'elapsed_seconds': round((datetime.now(timezone.utc) - start).total_seconds(), 2),
 +    'agent_exit_code': proc.returncode, 'driver_timeout': timed_out,
 +    'baseline_verifier_exit_code': baseline.returncode, 'final_verifier_exit_code': final.returncode,
-+    'original_tests_unchanged': tests_unchanged, 'failed_test_seen': failed_test_seen,
-+    'passed_test_seen': passed_test_seen, 'notes_created': (workspace / 'NOTES.md').exists(),
-+    'tool_events': [{'call_id': e['call_id'], 'name': e['name'], 'ok': e['result'].get('ok'), 'exit_code': e['result'].get('exit_code')} for e in events],
++    'original_tests_unchanged': tests_unchanged, 'notes_created': (workspace / 'NOTES.md').exists(),
 +    'source_diff': ''.join(difflib.unified_diff(original.splitlines(True), actual.splitlines(True), fromfile='before/lib.rs', tofile='after/lib.rs')),
 +    'workspace': str(workspace.relative_to(ROOT)),
 +}
-+record['passed'] = proc.returncode == 0 and final.returncode == 0 and tests_unchanged and failed_test_seen and passed_test_seen and record['notes_created']
++record['passed'] = proc.returncode == 0 and final.returncode == 0 and tests_unchanged and record['notes_created']
 +if args.scenario == 'report':
 +    record['passed'] = proc.returncode == 0 and final.returncode == 0
-+    for field in ('original_tests_unchanged','failed_test_seen','passed_test_seen','notes_created','source_diff'):
++    for field in ('original_tests_unchanged','notes_created','source_diff'):
 +        record.pop(field, None)
 +report = ROOT / 'evidence' / args.stage / f'{stamp}-{args.scenario}-{args.provider}.json'
 +report.parent.mkdir(parents=True, exist_ok=True)
@@ -260,7 +251,7 @@ index 0000000..2aac215
 +    }))
 +}
 diff --git a/src/lib.rs b/src/lib.rs
-index 526f03c..cd48dce 100644
+index 526f03c..fce57a6 100644
 --- a/src/lib.rs
 +++ b/src/lib.rs
 @@ -1,6 +1,9 @@
@@ -298,7 +289,7 @@ index 526f03c..cd48dce 100644
  pub struct Config {
      pub workspace: PathBuf,
      pub task: String,
-@@ -35,79 +40,70 @@ pub struct Config {
+@@ -35,79 +40,66 @@ pub struct Config {
      pub limits: Limits,
  }
  
@@ -390,10 +381,6 @@ index 526f03c..cd48dce 100644
 +            let previews = ["error", "stderr", "content", "stdout"].map(|key| result[key].as_str());
 +            let preview = previews.into_iter().flatten().find(|s| !s.is_empty()).unwrap_or("");
 +            eprintln!("    {status} · preview (≤240 B):\n{}", tools::clip_utf8(preview, 240).0);
-+            if std::env::var_os("CRABLOOP_TRACE_TOOLS").is_some() {
-+                let event = json!({"call_id":call.call_id,"name":call.name,"result":result});
-+                eprintln!("tool {event}");
-+            }
 +
 +            input.push(json!({
 +                "type": "function_call_output",
@@ -695,10 +682,10 @@ index 42e58aa..7024de5 100644
  }
 diff --git a/tests/cli.rs b/tests/cli.rs
 new file mode 100644
-index 0000000..2cf3891
+index 0000000..c63ace0
 --- /dev/null
 +++ b/tests/cli.rs
-@@ -0,0 +1,303 @@
+@@ -0,0 +1,284 @@
 +mod common;
 +use common::{StubResponses, TempDir, fixture, task_output};
 +use std::{
@@ -983,25 +970,6 @@ index 0000000..2cf3891
 +    assert_eq!(result["content"], contents);
 +    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "Done");
 +}
-+
-+#[test]
-+fn explicit_tool_trace_retains_machine_readable_results() {
-+    let dir = TempDir::new();
-+    fs::write(dir.path().join("lib.rs"), "A").unwrap();
-+    fs::write(dir.path().join("tests.rs"), "B").unwrap();
-+    let server = StubResponses::start(vec![fixture("two_calls"), fixture("text")]);
-+    let output = task_output(configured(&dir, &server).env("CRABLOOP_TRACE_TOOLS", "1"), "inspect");
-+    let stderr = String::from_utf8_lossy(&output.stderr);
-+    let traces: Vec<serde_json::Value> = stderr
-+        .lines()
-+        .filter_map(|line| line.strip_prefix("tool "))
-+        .map(|line| serde_json::from_str(line).unwrap())
-+        .collect();
-+    assert!(output.status.success(), "{stderr}");
-+    assert_eq!(traces.len(), 2);
-+    assert_eq!(traces[0]["call_id"], "call_1");
-+    assert_eq!(traces[0]["result"]["content"], "A");
-+}
 diff --git a/tests/common/mod.rs b/tests/common/mod.rs
 index 714a094..6e20a31 100644
 --- a/tests/common/mod.rs
@@ -1076,11 +1044,12 @@ index 714a094..6e20a31 100644
      }
 diff --git a/tests/live_driver_test.py b/tests/live_driver_test.py
 new file mode 100644
-index 0000000..fc92eae
+index 0000000..70e3de4
 --- /dev/null
 +++ b/tests/live_driver_test.py
-@@ -0,0 +1,52 @@
+@@ -0,0 +1,56 @@
 +import os
++import json
 +from pathlib import Path
 +import runpy
 +import shutil
@@ -1114,7 +1083,10 @@ index 0000000..fc92eae
 +                self.assertEqual(result.exception.code, 1)
 +                self.assertEqual(popen.call_args.args[0], [str(root / 'target/debug/crabloop')])
 +                self.assertEqual(popen.call_args.kwargs['stdin'], subprocess.PIPE)
-+                self.assertEqual(popen.call_args.kwargs['env']['CRABLOOP_TRACE_TOOLS'], '1')
++                self.assertNotIn('CRABLOOP_TRACE_TOOLS', popen.call_args.kwargs['env'])
++                record = json.loads(next((root / 'evidence/v1').glob('*.json')).read_text())
++                for field in ('tool_events', 'failed_test_seen', 'passed_test_seen'):
++                    self.assertNotIn(field, record)
 +                process.communicate.assert_called_once()
 +                sent = process.communicate.call_args.kwargs
 +                self.assertEqual(sent['timeout'], 300)
