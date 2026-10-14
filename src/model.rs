@@ -46,7 +46,7 @@ pub async fn respond(client: &Client, config: &Config, body: Value) -> Result<Mo
     let mut ids = HashSet::new();
     let mut calls = Vec::new();
     let mut text = String::new();
-    let mut is_final = false;
+    let mut final_text = String::new();
     for item in &output {
         if item["type"] == "function_call" {
             let call: ToolCall = serde_json::from_value(item.clone())?;
@@ -61,12 +61,15 @@ pub async fn respond(client: &Client, config: &Config, body: Value) -> Result<Mo
                 if content["type"] == "output_text" {
                     let part = content["text"].as_str().context("invalid output text")?;
                     text.push_str(part);
-                    is_final |= !part.trim().is_empty()
-                        && (item["phase"].is_null() || item["phase"] == "final_answer");
+                    if item["phase"].is_null() || item["phase"] == "final_answer" {
+                        final_text.push_str(part);
+                    }
                 }
             }
         }
     }
     ensure!(!calls.is_empty() || !text.trim().is_empty(), "empty response output");
+    let is_final = !final_text.trim().is_empty();
+    let text = if is_final { final_text } else { text };
     Ok(ModelReply { output, calls, text, is_final, usage: raw.get("usage").cloned(), raw })
 }

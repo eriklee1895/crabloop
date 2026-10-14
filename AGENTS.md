@@ -21,7 +21,7 @@ CrabLoop is a small coding-agent harness built from scratch in Rust for hands-on
 
 V1 learning code is milestone/v1; seven patches reproduce it. Historical tags retain evidence. Chinese tutorials accompany root Cargo/src/tests. Main-only debugging guide: docs/debugging.md.
 
-Historical tags: v1/step-05-v1 314 code / 319 physical; v2 504/511. Main is 813/825. Current milestone/v1 is 398/403: direct run(Config), cwd, fixed budget, no Session/TUI. v1 checks: 40 Rust + 4 Python, live repair and PTY passed. Main checks: 61 Rust + 6 Python, fmt/clippy passed. Historical evidence stays separate. The mixed commentary/final display limitation is in evidence/v2/review.md.
+Historical tags retain v1/step-05-v1 314/319 and v2 504/511. V1 GA (v1-ga, milestone/v1) is 397 code / 402 physical: four tools, direct run(Config), cwd and fixed budgets. GA checks: 43 Rust + 4 Python, live repair/report and PTY passed. Main is 816/828; 63 Rust + 6 Python and fmt/clippy passed. See evidence/v1/ga-review.md. Historical evidence stays separate.
 
 Preferred model: DeepSeek V4.1 Flash (deepseek-flash); fallback: gpt-6-luna through TeamoRouter. Both passed v1 tasks. DeepSeek passed v2 with five compactions; Luna v2 is untested. Summaries use reasoning.effort=none and at least 4,096 output tokens; main requests use provider defaults. Request limit: 49,152 bytes; CRABLOOP_CONTEXT_BYTES overrides it (min 4,096). Root AGENTS.md is pinned and must stay below 8,192 bytes. Distinguish offline, live and semantic evidence.
 

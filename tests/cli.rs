@@ -167,3 +167,42 @@ fn empty_chat_and_local_commands_need_no_model_or_journal() {
     assert!(server.requests().is_empty());
     assert!(!dir.path().join(".crabloop").exists());
 }
+
+#[cfg(unix)]
+#[test]
+fn write_file_rejects_fifo_without_blocking_the_run() {
+    let dir = TempDir::new();
+    assert!(Command::new("mkfifo").arg(dir.path().join("pipe")).status().unwrap().success());
+    let server = StubResponses::start(vec![
+        serde_json::json!({"status":"completed","output":[{
+            "type":"function_call","call_id":"fifo","name":"write_file",
+            "arguments":"{\"path\":\"pipe\",\"content\":\"x\"}"
+        }]}),
+        fixture("text"),
+    ]);
+    let mut child = configured(&dir, &server)
+        .arg("write the file")
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    let mut timed_out = false;
+    while child.try_wait().unwrap().is_none() {
+        if std::time::Instant::now() >= deadline {
+            child.kill().unwrap();
+            timed_out = true;
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
+    let output = child.wait_with_output().unwrap();
+    assert!(!timed_out, "write_file blocked on an existing FIFO");
+    assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+    let requests = server.requests();
+    let result = &requests[1]["input"][2];
+    assert_eq!(result["call_id"], "fifo");
+    let body: serde_json::Value = serde_json::from_str(result["output"].as_str().unwrap()).unwrap();
+    assert_eq!(body["ok"], false);
+    assert!(body["error"].as_str().unwrap().contains("regular file"));
+}

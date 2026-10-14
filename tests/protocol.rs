@@ -160,3 +160,24 @@ fn cli_honors_openai_base_url_without_full_endpoint_override() {
 fn setup(server: &StubResponses) -> (reqwest::Client, Config) {
     (reqwest::Client::new(), common::test_config(std::path::Path::new("."), server.endpoint()))
 }
+
+#[tokio::test]
+async fn mixed_phases_display_only_final_text_and_preserve_all_items() {
+    for final_first in [false, true] {
+        let mut response = fixture("text");
+        let final_item = response["output"][0].clone();
+        let commentary = fixture("commentary")["output"][0].clone();
+        response["output"] = if final_first {
+            json!([final_item, commentary])
+        } else {
+            json!([commentary, final_item])
+        };
+        let server = StubResponses::start(vec![response.clone()]);
+        let (client, config) = setup(&server);
+        let reply =
+            model::respond(&client, &config, model::request(&config, "", &[], &[])).await.unwrap();
+        assert_eq!(reply.text, "Done");
+        assert!(reply.is_final);
+        assert_eq!(reply.output, response["output"].as_array().unwrap().clone());
+    }
+}

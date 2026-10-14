@@ -108,11 +108,11 @@ for call in reply.calls {
 
 源码顶层的导入、函数签名以及测试调用一起在 05 diff 中更新。05 中间步骤有 29 项 Rust 测试，第 01–04 章保留当时的写法，迁移从这里明确发生。
 
-本章开头接着应用的 [06-v1-entry.patch](patches/06-v1-entry.patch)展开 schema、请求字段和工具结果，再把启动职责集中到 src/cli.rs：工作区固定为 cwd，支持单任务输入和 .env 数据读取。最终测试集为 40 项 Rust；再运行 `cargo fmt --check` 和 `python3 scripts/count-lines.py --max 399`，检查格式与完整生产代码规模。
+本章开头接着应用的 [06-v1-entry.patch](patches/06-v1-entry.patch)展开 schema、请求字段和工具结果，再把启动职责集中到 src/cli.rs：工作区固定为 cwd，支持单任务输入和 .env 数据读取。最终测试集为 43 项 Rust；再运行 `cargo fmt --check` 和 `python3 scripts/count-lines.py --max 399`，检查格式与完整生产代码规模。
 
 ## 在 v1 停一下，再看下一步
 
-v1 统一以 `milestone/v1` 为学习终点，全部生产 Rust 为 398 代码行、403 物理行。其中单任务输入与配置的 CLI 为 75 代码行，其余实现合计 323 行。run 持有 reqwest::Client 和任务历史，model::request/respond 接收借用的 Config；工具返回 JSON，loop 负责包装 function_call_output。
+v1 统一以 `milestone/v1` 为学习终点，全部生产 Rust 为 397 代码行、402 物理行。其中单任务输入与配置的 CLI 为 71 代码行，其余实现合计 326 行。run 持有 reqwest::Client 和任务历史，model::request/respond 接收借用的 Config；工具返回 JSON，loop 负责包装 function_call_output。
 
 格式统一为 100 列、rustfmt 的 Max 小表达式排版。约 300 行约束核心范围，全部生产 Rust 严格 <400；保持可读排版，超预算时减少功能。
 
