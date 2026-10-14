@@ -53,3 +53,5 @@
 - [x] **REQ-025：CrabLoop 身份与工作方式。** 系统提示词以 `You are CrabLoop 🦀` 开头，明确本地代码与资料任务、跟随用户语言、如实验证和完成后停止；问候与自我介绍直接回答。保持短段落，不加 header/XML；仅修改 main。[实施与验证](devlog/24-crabloop-identity.md)
 
 - [x] **REQ-028：v1 收敛为 stdin 单任务入口。** 删除任务参数与完整 Help，README/.env.example 提供配置说明，保留明确错误。同步脚本、教程和七步重建；388 代码行 / 402 物理行，42 Rust + 5 Python 通过。实现 `97723d8`，学习分支 `388edc2`；main 运行入口保留。[实施与验证](devlog/26-v1-stdin-cli.md)
+
+- [x] **REQ-029：v1 源码空行整理。** 五个文件按顶层定义与函数内逻辑阶段分段，全部非空代码行不变。当前 388 代码行 / 449 物理行；格式、clippy、42 Rust、5 Python 与七步重建一致性通过。源码 `88d675b`，学习分支 `b6bd16c`。[记录](devlog/27-v1-readable-spacing.md)

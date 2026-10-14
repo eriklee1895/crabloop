@@ -12,7 +12,7 @@ A small coding-agent harness that grows step by step in Rust.
 
 真实 DeepSeek V4.1 Flash 录制：第一轮创建并读取文件，第二轮沿用对话修改同一个文件。GIF 缩短等待间隔；[录制与独立验证](evidence/interactive/README.md)。
 
-项目首先帮助学习者快速读懂一个 agent 核心循环：v1 目标约 300 行，全部生产 Rust 严格少于 400 行。复杂 Harness 在后续版本逐步生长。当前 v1 分支已收敛到 388 代码行 / 402 物理行，具体约束见[教学边界](docs/v1-scope.md)。
+项目首先帮助学习者快速读懂一个 agent 核心循环：v1 目标约 300 行，全部生产 Rust 严格少于 400 行。复杂 Harness 在后续版本逐步生长。当前 v1 分支已收敛到 388 代码行 / 449 物理行，具体约束见[教学边界](docs/v1-scope.md)。
 
 ## 从哪里开始
 

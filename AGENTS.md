@@ -21,7 +21,7 @@ v2-v3: learn Agent fundamentals in small, readable code; defer reliability harde
 
 ## Current state and layout
 
-V1: milestone/v1, 388/402, stdin-only; seven patches reproduce it. Setup: README/.env.example. Planned CLI Help: docs/cli-help-plan.md. Debugging: docs/debugging.md.
+V1: milestone/v1, 388/449, stdin-only; seven patches reproduce it. Setup: README/.env.example. Planned CLI Help: docs/cli-help-plan.md. Debugging: docs/debugging.md.
 
 Historical v1/step-05-v1: 314/319; v2: 504/511. V1 GA: 397/402, 43 Rust + 4 Python, live repair/report and PTY passed; see evidence/v1/ga-review.md. Main: 853/869, 65 Rust + 6 Python, fmt/clippy passed. Counts=code/physical; preserve historical evidence.
 
@@ -81,6 +81,6 @@ Distinguish deterministic protocol tests, real local tool execution, and live-mo
 
 Commit Cargo.lock. Verify, merge and push each iteration to main; preserve teaching commits. Keep main, milestone/* and immutable v*/step-* tags. Develop on short-lived codex/* branches; remove them after commit-retention checks. No routine history rewriting. Run scripts/count-lines.py --max 399 on v1. Keep one learning branch per major stage; see docs/git-workflow.md.
 
-Use rustfmt (100 columns, small heuristics Max), but expand protocol JSON for teaching clarity. Count all src/**/*.rs; retain historical milestone counts and report current counts separately. Never hide runtime code in scripts or docs.
+Use rustfmt (100 columns, small heuristics Max); expand protocol JSON for teaching. Separate items and logical phases with blank lines. Count all src/**/*.rs; retain historical counts. Never hide runtime code in scripts or docs.
 
 Keep credentials, local environment files, generated workspaces, and raw session logs out of Git. Publish only deliberately selected and sanitized learning evidence.
