@@ -32,6 +32,7 @@ class LiveDriverScopeTest(unittest.TestCase):
                 self.assertEqual(result.exception.code, 1)
                 self.assertEqual(popen.call_args.args[0], [str(root / 'target/debug/crabloop')])
                 self.assertEqual(popen.call_args.kwargs['stdin'], subprocess.PIPE)
+                self.assertEqual(popen.call_args.kwargs['env']['CRABLOOP_TRACE_TOOLS'], '1')
                 process.communicate.assert_called_once()
                 sent = process.communicate.call_args.kwargs
                 self.assertEqual(sent['timeout'], 300)

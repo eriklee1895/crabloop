@@ -4,7 +4,7 @@
 
 CrabLoop is a small coding-agent harness built from scratch in Rust for hands-on learning.
 
-- v1: target about 300 lines, HARD cap below 400 total production Rust code lines. Teach the hand-written model/tool/feedback/stop loop with four tools.
+- v1: target about 300 lines, with size used as a teaching guideline rather than a hard gate. Teach the hand-written model/tool/feedback/stop loop with four tools.
 - v2: approximately 500 lines total, adding context management and summary compaction.
 - v3: approximately 1,000 lines total, adding ~/.crabloop, TOML configuration, provider presets/Custom, credentials, and model catalog discovery/cache. Minimal Skills is optional if comfortably within scope.
 - v4: Skills and provider-independent web_fetch/web_search. v5: recoverable JSONL sessions and interruption handling under ~/.crabloop. See docs/roadmap.md; these stages are planned, not implemented.
@@ -12,13 +12,13 @@ CrabLoop is a small coding-agent harness built from scratch in Rust for hands-on
 - Use the OpenAI native Responses API and a hand-written agent loop.
 - Grow the same implementation through small, explainable steps. Preserve runnable milestones with v1 and v2 Git tags.
 
-The user tightened v1 scope on 2026-10-12: <400 is mandatory, superseding earlier expansion for interactivity. Count all production src/**/*.rs with scripts/count-lines.py after normal rustfmt; report physical lines too. Tests/docs/fixtures/dev scripts are separate. Reduce features, never hide code, code-golf, outsource the loop, or drop necessary error handling. See docs/v1-scope.md.
+The user removed the v1 line-count hard gate on 2026-10-14, superseding the 2026-10-12 mandatory <400 limit. Keep the implementation small and readable; scripts/count-lines.py is an optional size report, not an acceptance gate. Never hide code, code-golf, outsource the loop, or drop necessary error handling to meet a number. See docs/v1-scope.md.
 
 ## Current state and layout
 
 The only v1 learning code is milestone/v1. Seven tutorial patches end at the same complete src tree; scripts/check-lessons.py verifies it. Historical tags preserve steps and evidence, not alternative learning entries.
 
-The milestone/v1 implementation has been reduced to 389 code lines / 450 physical lines under the established counting rule. The old 571-line interaction expansion remains in Git history and main. Original v1 / step-05-v1 tags retain 314/319. Production Rust lives in five files; run(Config) directly owns history and the serial model/tool loop. No Session, Progress, terminal editor, cross-user-turn chat or SSE remains in v1.
+The milestone/v1 implementation has been reduced to 399 code lines / 460 physical lines under the established counting rule. Default tool display shows name, argument, status and a 240-byte preview; CRABLOOP_TRACE_TOOLS enables JSON traces. Original v1 / step-05-v1 tags retain 314/319. Production Rust lives in five files; run(Config) directly owns history and the serial model/tool loop. No Session, Progress, terminal editor, cross-user-turn chat or SSE remains in v1.
 
 Startup is a single task from stdin: cargo run shows a small crab banner and crab> prompt before reading one line in a terminal, or reads all piped stdin without the banner. All command-line arguments (including positional tasks, -p/--print and -h/--help) are rejected before input/configuration with an English error pointing to README.md. The workspace is cwd; change directories before invoking the binary. Empty input exits before configuration and without a model request. --chat and --workspace are not supported here. The request budget is fixed at 4,194,304 bytes (4 MiB); max_output_tokens is 131,072; other limits and errors remain intact.
 
@@ -26,22 +26,23 @@ Only the startup directory's .env is read as data; process environment wins. CRA
 
 CLI Help remains planned in docs/cli-help-plan.md. Code strings/comments are English; tutorials are Chinese.
 
-GA evidence: evidence/v1/ga-review.md. Preserve the four tools and five-file layout.
+GA evidence: evidence/v1/ga-review.md.
 
-Offline baseline: 42 Rust + 5 Python tests, fmt/clippy and <400 line check. Live repair/report and PTY results are historical evidence in evidence/v1/ga-review.md. No chat functionality remains in v1.
+Offline baseline: 44 Rust + 5 Python tests, fmt/clippy. Live repair/report and PTY results are historical evidence in evidence/v1/ga-review.md. No chat functionality remains in v1.
 
 Read docs/v1-scope.md and docs/v1-reduction-plan.md for this accepted reduction; docs/design.md and docs/plan.md preserve the original learning sequence. Tutorial 06-conversation is a later interaction experiment preserved through its historical commit, not a current v1 capability.
 
 ## How to develop
 
 - Keep AGENTS.md current throughout implementation, as requested by the user. Update it when repository state, interfaces, commands, or durable decisions change. Put detailed history and evidence in docs/devlog/ rather than accumulating a session transcript here.
-- Keep v1 focused on the smallest readable loop. Keep all production Rust below 400 lines; richer interaction/configuration belongs later. v1/v2 stay non-streaming; basic SSE moves to v3.
+- Keep v1 focused on the smallest readable loop. Use code size to guide scope rather than reject changes; richer interaction/configuration belongs later. v1/v2 stay non-streaming; basic SSE moves to v3.
 
 - Work in small increments, each with an observable behavior, an appropriate check, and a short explanation of what it teaches.
 - Keep the current milestone focused. Introduce abstractions when a concrete need appears.
 - Prefer concrete functions and small types. Use standard Rust and basic HTTP/JSON/async libraries.
 - Maintain one implementation. Use Git commits and milestone tags to show its evolution.
 - Write tutorials and explanations in Chinese, with Rust identifiers and protocol names in their original form.
+- Keep the v1 README concise: use "300+ lines" for size, retain startup and learning entrypoints, and omit verification reports, budget parameters and development history. Detailed contributor information belongs in dedicated documents.
 - Tutorials explain a reproducible learning path. Development records capture actual decisions, changes, failures, verification results, and relevant commits.
 
 ## Tutorial voice and progression

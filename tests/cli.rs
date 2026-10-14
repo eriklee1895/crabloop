@@ -250,3 +250,54 @@ fn write_file_rejects_fifo_without_blocking_the_run() {
     assert_eq!(body["ok"], false);
     assert!(body["error"].as_str().unwrap().contains("regular file"));
 }
+
+#[test]
+fn tool_display_is_readable_bounded_and_preserves_model_feedback() {
+    let dir = TempDir::new();
+    let contents = format!("alpha\nbeta\n{}", "x".repeat(500));
+    fs::write(dir.path().join("notes.md"), &contents).unwrap();
+    let server = StubResponses::start(vec![
+        serde_json::json!({"status":"completed","output":[
+            {"type":"function_call","call_id":"read","name":"read_file","arguments":"{\"path\":\"notes.md\"}"},
+            {"type":"function_call","call_id":"missing","name":"read_file","arguments":"{\"path\":\"missing.md\"}"},
+            {"type":"function_call","call_id":"bad_command","name":"bash","arguments":serde_json::json!({"command":"printf 'warning\n' >&2; exit 7"}).to_string()}
+        ]}),
+        fixture("text"),
+    ]);
+    let output = task_output(&mut configured(&dir, &server), "inspect");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(output.status.success(), "{stderr}");
+    assert!(stderr.contains("read_file · notes.md"), "{stderr}");
+    assert!(stderr.contains("done"), "{stderr}");
+    assert!(stderr.contains("alpha\nbeta"), "{stderr}");
+    assert!(stderr.contains("failed"), "{stderr}");
+    assert!(stderr.contains("No such file"), "{stderr}");
+    assert!(stderr.contains("bash · printf"), "{stderr}");
+    assert!(stderr.contains("warning"), "{stderr}");
+    assert!(!stderr.contains("tool {"), "{stderr}");
+    assert!(!stderr.contains(&"x".repeat(300)), "{stderr}");
+    let requests = server.requests();
+    let result: serde_json::Value =
+        serde_json::from_str(requests[1]["input"][4]["output"].as_str().unwrap()).unwrap();
+    assert_eq!(result["content"], contents);
+    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "Done");
+}
+
+#[test]
+fn explicit_tool_trace_retains_machine_readable_results() {
+    let dir = TempDir::new();
+    fs::write(dir.path().join("lib.rs"), "A").unwrap();
+    fs::write(dir.path().join("tests.rs"), "B").unwrap();
+    let server = StubResponses::start(vec![fixture("two_calls"), fixture("text")]);
+    let output = task_output(configured(&dir, &server).env("CRABLOOP_TRACE_TOOLS", "1"), "inspect");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let traces: Vec<serde_json::Value> = stderr
+        .lines()
+        .filter_map(|line| line.strip_prefix("tool "))
+        .map(|line| serde_json::from_str(line).unwrap())
+        .collect();
+    assert!(output.status.success(), "{stderr}");
+    assert_eq!(traces.len(), 2);
+    assert_eq!(traces[0]["call_id"], "call_1");
+    assert_eq!(traces[0]["result"]["content"], "A");
+}

@@ -50,6 +50,7 @@ if baseline.returncode == 0:
 env = os.environ.copy()
 env.update(CRABLOOP_PROVIDER="openai", OPENAI_API_KEY=key, OPENAI_BASE_URL=base, CRABLOOP_MODEL=model)
 env.pop('CRABLOOP_API_URL', None)
+env['CRABLOOP_TRACE_TOOLS'] = '1'
 task = 'Read README.md and inspect the source. Fix last_index in lib.rs. Run the existing tests before editing and after the fix. Preserve the public signature and tests.rs. Write NOTES.md describing the change and actual verification. Report only observed results.'
 subprocess.run(['cargo', 'build', '--locked'], cwd=ROOT, check=True, capture_output=True)
 if args.scenario == 'report':

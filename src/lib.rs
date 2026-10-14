@@ -84,8 +84,18 @@ pub async fn run(config: Config) -> anyhow::Result<RunReport> {
         }
 
         for call in reply.calls {
+            let args: serde_json::Value = serde_json::from_str(&call.arguments).unwrap_or_default();
+            let detail = args["path"].as_str().or(args["command"].as_str()).unwrap_or("");
+            eprintln!("  → {} · {}", call.name, tools::clip_utf8(detail, 100).0);
             let result = tools::execute(&call, &config.workspace, &config.limits).await;
-            eprintln!("tool {}", json!({"call_id":call.call_id,"name":call.name,"result":result}));
+            let status = if result["ok"] == true { "done" } else { "failed" };
+            let previews = ["error", "stderr", "content", "stdout"].map(|key| result[key].as_str());
+            let preview = previews.into_iter().flatten().find(|s| !s.is_empty()).unwrap_or("");
+            eprintln!("    {status} · preview (≤240 B):\n{}", tools::clip_utf8(preview, 240).0);
+            if std::env::var_os("CRABLOOP_TRACE_TOOLS").is_some() {
+                let event = json!({"call_id":call.call_id,"name":call.name,"result":result});
+                eprintln!("tool {event}");
+            }
 
             input.push(json!({
                 "type": "function_call_output",
