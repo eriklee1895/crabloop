@@ -34,6 +34,8 @@ v1 的学习代码只有 `milestone/v1`。直接阅读时切到该分支；从�
 
 详细步骤见[实施与学习计划](../docs/plan.md)，版本边界见[设计说明](../docs/design.md)。实际开发经过从[仓库起步记录](../docs/devlog/00-bootstrap.md)开始。
 
+想观察执行中的状态，可以在 main 选读[调试指南](../docs/debugging.md)：先调试固定响应测试，再对照 JSONL 和 HTTP 请求。它是独立的调试实践，不纳入 v1 学习分支。
+
 完成 v1 后，先读 [06 上下文投影](v2/06-context-projection.md)、[07 摘要压缩](v2/07-compaction.md)、[08 对照实验](v2/08-context-experiments.md) 和 [09 复盘](v2/09-v2-retrospective.md)，使用每章指定的历史基线。
 
 当前 milestone/v1 为 398 行单任务核心，任务内部会多轮请求模型并执行工具。用户连续聊天属于另一层交互：[05b 接着问下一句](v1/05b-interactive.md)留作后续选读，使用提交 9c5cb11 展示其独立增量；main 仍提供这项体验。版本关系见[Git 工作流](../docs/git-workflow.md)。
