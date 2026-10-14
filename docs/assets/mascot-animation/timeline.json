@@ -1,10 +1,40 @@
 {
   "size": 256,
   "loop": 0,
+  "motions": {
+    "prepare": {
+      "angle": 0,
+      "dy": 2
+    },
+    "raise": {
+      "angle": -8,
+      "dy": -3
+    },
+    "wave-out": {
+      "angle": -12,
+      "dy": -5
+    },
+    "wave-out-max": {
+      "angle": -20,
+      "dy": -7
+    },
+    "wave-mid": {
+      "angle": 0,
+      "dy": -3
+    },
+    "wave-in": {
+      "angle": 10,
+      "dy": -5
+    },
+    "wave-in-max": {
+      "angle": 20,
+      "dy": -7
+    }
+  },
   "frames": [
     {
       "pose": "idle",
-      "duration_ms": 1300
+      "duration_ms": 450
     },
     {
       "pose": "half-blink",
@@ -20,47 +50,83 @@
     },
     {
       "pose": "idle",
-      "duration_ms": 250
+      "duration_ms": 150
     },
     {
-      "pose": "wave-out",
-      "duration_ms": 120
+      "pose": "prepare",
+      "duration_ms": 100
+    },
+    {
+      "pose": "raise",
+      "duration_ms": 90
     },
     {
       "pose": "wave-out-max",
-      "duration_ms": 140
+      "duration_ms": 100
     },
     {
       "pose": "wave-out",
-      "duration_ms": 120
+      "duration_ms": 70
     },
     {
-      "pose": "idle",
+      "pose": "wave-mid",
+      "duration_ms": 70
+    },
+    {
+      "pose": "wave-in",
+      "duration_ms": 80
+    },
+    {
+      "pose": "wave-in-max",
       "duration_ms": 120
     },
     {
       "pose": "wave-in",
-      "duration_ms": 160
+      "duration_ms": 70
     },
     {
-      "pose": "idle",
-      "duration_ms": 120
+      "pose": "wave-mid",
+      "duration_ms": 70
     },
     {
       "pose": "wave-out",
-      "duration_ms": 120
+      "duration_ms": 80
     },
     {
       "pose": "wave-out-max",
-      "duration_ms": 140
-    },
-    {
-      "pose": "wave-out",
       "duration_ms": 120
     },
     {
+      "pose": "wave-out",
+      "duration_ms": 70
+    },
+    {
+      "pose": "wave-mid",
+      "duration_ms": 70
+    },
+    {
+      "pose": "wave-in",
+      "duration_ms": 80
+    },
+    {
+      "pose": "wave-in-max",
+      "duration_ms": 120
+    },
+    {
+      "pose": "wave-in",
+      "duration_ms": 70
+    },
+    {
+      "pose": "wave-mid",
+      "duration_ms": 70
+    },
+    {
+      "pose": "prepare",
+      "duration_ms": 100
+    },
+    {
       "pose": "idle",
-      "duration_ms": 970
+      "duration_ms": 830
     }
   ]
 }

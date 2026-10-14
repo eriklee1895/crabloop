@@ -4,7 +4,7 @@
 
 - [crabloop-banner.png](crabloop-banner.png)：README 首屏，标题 CrabLoop，文案为 “A small agent harness, built step by step in Rust.”。
 - [crabloop-mascot.png](crabloop-mascot.png)：透明背景独立吉祥物。
-- [crabloop-mascot.gif](crabloop-mascot.gif)：256px、3.9 秒无限循环的眨眼与单钳轻挥动图；[源帧、时间安排与重建说明](mascot-animation/README.md)。
+- [crabloop-mascot.gif](crabloop-mascot.gif)：256px、3.2 秒无限循环的眨眼与单钳轻挥动图；[源帧、时间安排与重建说明](mascot-animation/README.md)。
 
 素材使用内置 imagegen 生成，Banner 采用用户选定的 T2 探索稿，并经用户明确授权以本地图像工具裁除上下留白；独立吉祥物以该 Banner 为输入提取。标题是图像中的字形设计，未绑定具体字体文件，不宣称精确使用某个字体家族。以后若需要可编辑排版，再明确字体与其来源。
 
@@ -14,7 +14,7 @@
 
 <img src="crabloop-mascot.gif" alt="微笑的小螃蟹眨眼并轻挥一只青绿钳子" width="160">
 
-GIF 保留透明背景；循环先停顿、眨眼，再小幅挥动一只钳子，回到原位。独立动图用于需要轻微动态的场合；静态 PNG 和首页 Banner 仍可直接使用。
+GIF 保留透明背景；循环短暂停顿、眨眼，再明显挥动一只钳子并配合轻微起伏，最后回到原位。独立动图用于需要轻微动态的场合；静态 PNG 和首页 Banner 仍可直接使用。
 
 ## 后续编辑入口
 

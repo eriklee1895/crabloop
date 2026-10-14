@@ -11,13 +11,13 @@ SOURCE = ASSETS / "mascot-animation"
 FRAMES = SOURCE / "frames"
 
 
-def build_poses(size):
+def build_poses(size, motions):
     original = Image.open(ASSETS / "crabloop-mascot.png").convert("RGBA")
     closed = Image.open(SOURCE / "blink-source.png").convert("RGBA")
     if original.size != (1254, 1254) or closed.size != original.size:
         raise ValueError("Revisit the eye regions and claw pivot when replacing the source artwork")
 
-    # Use only the generated eye patches so the body stays perfectly still.
+    # Use only the generated eye patches to preserve the original character.
     eye_mask = Image.new("L", original.size)
     draw = ImageDraw.Draw(eye_mask)
     for box in [(408, 636, 524, 764), (728, 636, 843, 764)]:
@@ -45,14 +45,23 @@ def build_poses(size):
     claw = original.copy()
     claw.putalpha(ImageChops.multiply(original.getchannel("A"), claw_mask))
     removal = claw_mask.copy()
-    ImageDraw.Draw(removal).rectangle((0, 638, 1254, 1254), fill=0)
+    ImageDraw.Draw(removal).rectangle((0, 620, 1254, 1254), fill=0)
     body = original.copy()
     body.putalpha(ImageChops.multiply(original.getchannel("A"), ImageChops.invert(removal)))
-    for name, angle in [("wave-out", -4), ("wave-out-max", -8), ("wave-in", 5)]:
-        moved = claw.rotate(angle, resample=Image.Resampling.NEAREST, center=(1028, 640))
-        poses[name] = Image.alpha_composite(body, moved)
+    for name, motion in motions.items():
+        moved = claw.rotate(motion["angle"], resample=Image.Resampling.NEAREST, center=(1028, 640))
+        poses[name] = Image.alpha_composite(body, moved) if motion["angle"] else original.copy()
 
-    return {name: frame.resize((size, size), Image.Resampling.NEAREST) for name, frame in poses.items()}
+    frames = {}
+    for name, pose in poses.items():
+        frame = pose.resize((size, size), Image.Resampling.NEAREST)
+        dy = round(motions.get(name, {}).get("dy", 0) * size / 256)
+        if dy:
+            shifted = Image.new("RGBA", frame.size)
+            shifted.alpha_composite(frame, (0, dy))
+            frame = shifted
+        frames[name] = frame
+    return frames
 
 
 def export_gif(poses, timeline):
@@ -82,7 +91,7 @@ def export_gif(poses, timeline):
 
 def main():
     timeline = json.loads((SOURCE / "timeline.json").read_text())
-    poses = build_poses(timeline["size"])
+    poses = build_poses(timeline["size"], timeline["motions"])
     FRAMES.mkdir(exist_ok=True)
     for name, frame in poses.items():
         frame.save(FRAMES / f"{name}.png", optimize=True)
