@@ -78,12 +78,15 @@ fn dotenv_is_loaded_as_data_and_process_environment_wins() {
 #[test]
 fn existing_deepseek_key_is_enough_for_default_startup() {
     let dir = TempDir::new();
-    fs::write(dir.path().join(".env"), "DEEPSEEK_API_KEY=private-deepseek-key\nOPENAI_API_KEY=private-proxy-key\nOPENAI_BASE_URL=https://proxy.invalid/v1\n").unwrap();
-    let output = command(&dir).stdin(Stdio::null()).output().unwrap();
+    let server = StubResponses::start(vec![fixture("text")]);
+    fs::write(dir.path().join(".env"), format!("DEEPSEEK_API_KEY=private-deepseek-key\nOPENAI_API_KEY=private-proxy-key\nOPENAI_BASE_URL=https://proxy.invalid/v1\nCRABLOOP_API_URL={}\n", server.endpoint())).unwrap();
+    let output = command(&dir).arg("hello").output().unwrap();
     assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(stderr.contains("deepseek-flash"));
     assert!(!stderr.contains("private-"));
+    assert_eq!(server.requests()[0]["model"], "deepseek-flash");
+    assert_eq!(server.authorizations(), vec!["Bearer private-deepseek-key"]);
 }
 #[test]
 fn explicit_provider_uses_its_own_key_and_default_model() {
@@ -157,4 +160,54 @@ fn empty_task_exits_without_calling_the_model() {
     let output = configured(&dir, &server).args(["-p", "  "]).output().unwrap();
     assert!(output.status.success());
     assert!(server.requests().is_empty());
+}
+
+#[test]
+fn empty_task_and_eof_need_no_credentials() {
+    let dir = TempDir::new();
+    for args in [vec!["-p", "  "], vec![]] {
+        let output = command(&dir).args(args).stdin(Stdio::null()).output().unwrap();
+        assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+        assert!(output.stdout.is_empty());
+    }
+    assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 0);
+}
+
+#[cfg(unix)]
+#[test]
+fn write_file_rejects_fifo_without_blocking_the_run() {
+    let dir = TempDir::new();
+    assert!(Command::new("mkfifo").arg(dir.path().join("pipe")).status().unwrap().success());
+    let server = StubResponses::start(vec![
+        serde_json::json!({"status":"completed","output":[{
+            "type":"function_call","call_id":"fifo","name":"write_file",
+            "arguments":"{\"path\":\"pipe\",\"content\":\"x\"}"
+        }]}),
+        fixture("text"),
+    ]);
+    let mut child = configured(&dir, &server)
+        .arg("write the file")
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    let mut timed_out = false;
+    while child.try_wait().unwrap().is_none() {
+        if std::time::Instant::now() >= deadline {
+            child.kill().unwrap();
+            timed_out = true;
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
+    let output = child.wait_with_output().unwrap();
+    assert!(!timed_out, "write_file blocked on an existing FIFO");
+    assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+    let requests = server.requests();
+    let result = &requests[1]["input"][2];
+    assert_eq!(result["call_id"], "fifo");
+    let body: serde_json::Value = serde_json::from_str(result["output"].as_str().unwrap()).unwrap();
+    assert_eq!(body["ok"], false);
+    assert!(body["error"].as_str().unwrap().contains("regular file"));
 }

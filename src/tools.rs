@@ -71,10 +71,10 @@ async fn execute_inner(call: &ToolCall, workspace: &Path, limits: &Limits) -> Re
         "path must be relative without parent traversal"
     );
     let path = workspace.join(relative);
+    ensure!(!path.exists() || path.is_file(), "path must be a regular file");
     let mut text = if call.name == "write_file" {
         arg("content")?.to_owned()
     } else {
-        ensure!(fs::metadata(&path)?.is_file(), "path must be a regular file");
         let mut bytes = Vec::new();
         fs::File::open(&path)?.take(limits.file_bytes as u64 + 1).read_to_end(&mut bytes)?;
         ensure!(bytes.len() <= limits.file_bytes, "file exceeds size limit");

@@ -11,12 +11,28 @@ pub fn load(args: &[String]) -> Result<Option<Config>> {
         println!("{HELP}");
         return Ok(None);
     }
+    let limits = Limits::default();
     let task = match args.get(1..).unwrap_or_default() {
-        [] => None,
-        [task] if !task.starts_with('-') => Some(task.clone()),
-        [flag, task] if matches!(flag.as_str(), "-p" | "--print") => Some(task.clone()),
+        [] => {
+            let stdin = io::stdin();
+            let mut input = stdin.lock().take(limits.request_bytes as u64 + 1);
+            let mut text = String::new();
+            if stdin.is_terminal() {
+                eprint!("任务（Ctrl-D 退出）> ");
+                input.read_line(&mut text)?;
+            } else {
+                input.read_to_string(&mut text)?;
+            }
+            text
+        }
+        [task] if !task.starts_with('-') => task.clone(),
+        [flag, task] if matches!(flag.as_str(), "-p" | "--print") => task.clone(),
         _ => bail!(HELP),
     };
+    ensure!(task.len() <= limits.request_bytes, "task exceeds input budget");
+    if task.trim().is_empty() {
+        return Ok(None);
+    }
     let workspace = std::env::current_dir()?;
     let local: HashMap<String, String> = match dotenvy::from_path_iter(".env") {
         Ok(entries) => entries
@@ -41,29 +57,9 @@ pub fn load(args: &[String]) -> Result<Option<Config>> {
         ),
         _ => bail!("CRABLOOP_PROVIDER must be deepseek or openai"),
     };
-    let limits = Limits::default();
     let api_key = get(key).with_context(|| format!("{key} is required in .env or environment"))?;
     let model = get("CRABLOOP_MODEL").unwrap_or_else(|| model.into());
     eprintln!("CrabLoop · {model} · {}", workspace.display());
-    let task = match task {
-        Some(task) => task,
-        None => {
-            let stdin = io::stdin();
-            let mut input = stdin.lock().take(limits.request_bytes as u64 + 1);
-            let mut text = String::new();
-            if stdin.is_terminal() {
-                eprint!("任务（Ctrl-D 退出）> ");
-                input.read_line(&mut text)?;
-            } else {
-                input.read_to_string(&mut text)?;
-            }
-            text
-        }
-    };
-    ensure!(task.len() <= limits.request_bytes, "task exceeds input budget");
-    if task.trim().is_empty() {
-        return Ok(None);
-    }
     Ok(Some(Config {
         workspace,
         task: task.trim().into(),

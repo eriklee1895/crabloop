@@ -2,7 +2,7 @@
 
 用 Rust 从零写一个能读文件、修改代码、运行测试，再根据真实反馈继续行动的 mini agent。
 
-这是 **milestone/v1 的最小教学实现**：398 代码行 / 403 物理行，统计包含全部 src/**/*.rs。目标约 300 行、硬上限 <400 代码行；保持正常 rustfmt，没有把运行逻辑移出 src。v1 学习统一使用这一份代码：src/cli.rs 为 75 代码行，其余实现合计 323 行。历史标签仅保存步骤与验收来源。
+这是 **milestone/v1 的最小教学实现**：397 代码行 / 402 物理行，统计包含全部 src/**/*.rs。目标约 300 行、硬上限 <400 代码行；保持正常 rustfmt，没有把运行逻辑移出 src。v1 学习统一使用这一份代码：src/cli.rs 为 71 代码行，其余实现合计 326 行。历史标签仅保存步骤与验收来源。
 
 ## 先运行一个任务
 
@@ -45,9 +45,11 @@ cd /path/to/project
 
 一个用户任务可以触发多轮模型和工具交互。工具失败是下一次模型输入的一部分；模型说完成后，仍需独立检查文件和测试结果。v1 不包含多轮用户聊天、输入编辑器、SSE、摘要或会话恢复；这些逐步在后续实现中展开。日常多轮界面仍可在 main 使用。
 
+v1 的定稿标记为 `v1-ga`；日常阅读继续使用 `milestone/v1`。[GA 审查与验收](evidence/v1/ga-review.md)记录本次格式、结构、测试和真实任务结果。
+
 ## 阅读与验证
 
-从[教程入口](tutorial/README.md)进入 00–05 的最小循环学习；[七个增量](tutorial/v1/patches/README.md)从空目录重建后，全部 src 文件与当前分支一致。阅读和动手都以同一份 v1 为终点。已有验收和开发记录保留原来的含义；当前分支已通过 40 项 Rust、4 项 Python 回归，真实 DeepSeek 修复和独立验证也通过。范围见[教学边界](docs/v1-scope.md)，本次删减见[收敛记录](docs/devlog/08-v1-reduction.md)。
+从[教程入口](tutorial/README.md)进入 00–05 的最小循环学习；[七个增量](tutorial/v1/patches/README.md)从空目录重建后，全部 src 文件与当前分支一致。阅读和动手都以同一份 v1 为终点。已有验收和开发记录保留原来的含义；当前分支已通过 43 项 Rust、4 项 Python 回归，真实 DeepSeek 修复和独立验证也通过。范围见[教学边界](docs/v1-scope.md)，本次删减见[收敛记录](docs/devlog/08-v1-reduction.md)。
 
 ```bash
 python3 scripts/count-lines.py --max 399

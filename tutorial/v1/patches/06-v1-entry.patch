@@ -192,10 +192,10 @@ index 0000000..9dd61cd
 +raise SystemExit(0 if record['passed'] else 1)
 diff --git a/src/cli.rs b/src/cli.rs
 new file mode 100644
-index 0000000..cecbfc6
+index 0000000..cff226f
 --- /dev/null
 +++ b/src/cli.rs
-@@ -0,0 +1,76 @@
+@@ -0,0 +1,72 @@
 +use crate::{Config, Limits};
 +use anyhow::{Context, Result, bail, ensure};
 +use std::{
@@ -209,12 +209,28 @@ index 0000000..cecbfc6
 +        println!("{HELP}");
 +        return Ok(None);
 +    }
++    let limits = Limits::default();
 +    let task = match args.get(1..).unwrap_or_default() {
-+        [] => None,
-+        [task] if !task.starts_with('-') => Some(task.clone()),
-+        [flag, task] if matches!(flag.as_str(), "-p" | "--print") => Some(task.clone()),
++        [] => {
++            let stdin = io::stdin();
++            let mut input = stdin.lock().take(limits.request_bytes as u64 + 1);
++            let mut text = String::new();
++            if stdin.is_terminal() {
++                eprint!("任务（Ctrl-D 退出）> ");
++                input.read_line(&mut text)?;
++            } else {
++                input.read_to_string(&mut text)?;
++            }
++            text
++        }
++        [task] if !task.starts_with('-') => task.clone(),
++        [flag, task] if matches!(flag.as_str(), "-p" | "--print") => task.clone(),
 +        _ => bail!(HELP),
 +    };
++    ensure!(task.len() <= limits.request_bytes, "task exceeds input budget");
++    if task.trim().is_empty() {
++        return Ok(None);
++    }
 +    let workspace = std::env::current_dir()?;
 +    let local: HashMap<String, String> = match dotenvy::from_path_iter(".env") {
 +        Ok(entries) => entries
@@ -239,29 +255,9 @@ index 0000000..cecbfc6
 +        ),
 +        _ => bail!("CRABLOOP_PROVIDER must be deepseek or openai"),
 +    };
-+    let limits = Limits::default();
 +    let api_key = get(key).with_context(|| format!("{key} is required in .env or environment"))?;
 +    let model = get("CRABLOOP_MODEL").unwrap_or_else(|| model.into());
 +    eprintln!("CrabLoop · {model} · {}", workspace.display());
-+    let task = match task {
-+        Some(task) => task,
-+        None => {
-+            let stdin = io::stdin();
-+            let mut input = stdin.lock().take(limits.request_bytes as u64 + 1);
-+            let mut text = String::new();
-+            if stdin.is_terminal() {
-+                eprint!("任务（Ctrl-D 退出）> ");
-+                input.read_line(&mut text)?;
-+            } else {
-+                input.read_to_string(&mut text)?;
-+            }
-+            text
-+        }
-+    };
-+    ensure!(task.len() <= limits.request_bytes, "task exceeds input budget");
-+    if task.trim().is_empty() {
-+        return Ok(None);
-+    }
 +    Ok(Some(Config {
 +        workspace,
 +        task: task.trim().into(),
@@ -363,7 +359,7 @@ index 1845717..a21e637 100644
      eprintln!("stop: {:?}; model turns: {}", report.reason, report.model_turns);
      if report.reason != StopReason::Final {
 diff --git a/src/model.rs b/src/model.rs
-index ca3821f..50a6a8e 100644
+index ca3821f..508bab3 100644
 --- a/src/model.rs
 +++ b/src/model.rs
 @@ -17,12 +17,17 @@ pub struct ModelReply {
@@ -388,15 +384,36 @@ index ca3821f..50a6a8e 100644
  }
  pub async fn respond(client: &Client, config: &Config, body: Value) -> Result<ModelReply> {
      let raw: Value = client
-@@ -61,5 +66,5 @@ pub async fn respond(client: &Client, config: &Config, body: Value) -> Result<Mo
+@@ -39,7 +44,7 @@ pub async fn respond(client: &Client, config: &Config, body: Value) -> Result<Mo
+     let mut ids = HashSet::new();
+     let mut calls = Vec::new();
+     let mut text = String::new();
+-    let mut is_final = false;
++    let mut final_text = String::new();
+     for item in &output {
+         if item["type"] == "function_call" {
+             let call: ToolCall = serde_json::from_value(item.clone())?;
+@@ -54,12 +59,15 @@ pub async fn respond(client: &Client, config: &Config, body: Value) -> Result<Mo
+                 if content["type"] == "output_text" {
+                     let part = content["text"].as_str().context("invalid output text")?;
+                     text.push_str(part);
+-                    is_final |= !part.trim().is_empty()
+-                        && (item["phase"].is_null() || item["phase"] == "final_answer");
++                    if item["phase"].is_null() || item["phase"] == "final_answer" {
++                        final_text.push_str(part);
++                    }
+                 }
+             }
          }
      }
      ensure!(!calls.is_empty() || !text.trim().is_empty(), "empty response output");
 -    Ok(ModelReply { output, calls, text, is_final, usage: raw.get("usage").cloned() })
++    let is_final = !final_text.trim().is_empty();
++    let text = if is_final { final_text } else { text };
 +    Ok(ModelReply { output, calls, text, is_final })
  }
 diff --git a/src/tools.rs b/src/tools.rs
-index 42e58aa..642276c 100644
+index 42e58aa..3621e63 100644
 --- a/src/tools.rs
 +++ b/src/tools.rs
 @@ -9,15 +9,38 @@ use std::{
@@ -447,6 +464,18 @@ index 42e58aa..642276c 100644
  }
  pub fn clip_utf8(text: &str, max_bytes: usize) -> (String, bool) {
      let mut end = text.len().min(max_bytes);
+@@ -48,10 +71,10 @@ async fn execute_inner(call: &ToolCall, workspace: &Path, limits: &Limits) -> Re
+         "path must be relative without parent traversal"
+     );
+     let path = workspace.join(relative);
++    ensure!(!path.exists() || path.is_file(), "path must be a regular file");
+     let mut text = if call.name == "write_file" {
+         arg("content")?.to_owned()
+     } else {
+-        ensure!(fs::metadata(&path)?.is_file(), "path must be a regular file");
+         let mut bytes = Vec::new();
+         fs::File::open(&path)?.take(limits.file_bytes as u64 + 1).read_to_end(&mut bytes)?;
+         ensure!(bytes.len() <= limits.file_bytes, "file exceeds size limit");
 @@ -124,7 +147,12 @@ async fn bash(command: &str, workspace: &Path, limits: &Limits) -> Result<Value>
              (observed_status, true, true)
          }
@@ -465,10 +494,10 @@ index 42e58aa..642276c 100644
  }
 diff --git a/tests/cli.rs b/tests/cli.rs
 new file mode 100644
-index 0000000..a98a3b3
+index 0000000..84850d4
 --- /dev/null
 +++ b/tests/cli.rs
-@@ -0,0 +1,160 @@
+@@ -0,0 +1,213 @@
 +mod common;
 +use common::{StubResponses, TempDir, fixture};
 +use std::{
@@ -549,12 +578,15 @@ index 0000000..a98a3b3
 +#[test]
 +fn existing_deepseek_key_is_enough_for_default_startup() {
 +    let dir = TempDir::new();
-+    fs::write(dir.path().join(".env"), "DEEPSEEK_API_KEY=private-deepseek-key\nOPENAI_API_KEY=private-proxy-key\nOPENAI_BASE_URL=https://proxy.invalid/v1\n").unwrap();
-+    let output = command(&dir).stdin(Stdio::null()).output().unwrap();
++    let server = StubResponses::start(vec![fixture("text")]);
++    fs::write(dir.path().join(".env"), format!("DEEPSEEK_API_KEY=private-deepseek-key\nOPENAI_API_KEY=private-proxy-key\nOPENAI_BASE_URL=https://proxy.invalid/v1\nCRABLOOP_API_URL={}\n", server.endpoint())).unwrap();
++    let output = command(&dir).arg("hello").output().unwrap();
 +    assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
 +    let stderr = String::from_utf8_lossy(&output.stderr);
 +    assert!(stderr.contains("deepseek-flash"));
 +    assert!(!stderr.contains("private-"));
++    assert_eq!(server.requests()[0]["model"], "deepseek-flash");
++    assert_eq!(server.authorizations(), vec!["Bearer private-deepseek-key"]);
 +}
 +#[test]
 +fn explicit_provider_uses_its_own_key_and_default_model() {
@@ -628,6 +660,56 @@ index 0000000..a98a3b3
 +    let output = configured(&dir, &server).args(["-p", "  "]).output().unwrap();
 +    assert!(output.status.success());
 +    assert!(server.requests().is_empty());
++}
++
++#[test]
++fn empty_task_and_eof_need_no_credentials() {
++    let dir = TempDir::new();
++    for args in [vec!["-p", "  "], vec![]] {
++        let output = command(&dir).args(args).stdin(Stdio::null()).output().unwrap();
++        assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
++        assert!(output.stdout.is_empty());
++    }
++    assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 0);
++}
++
++#[cfg(unix)]
++#[test]
++fn write_file_rejects_fifo_without_blocking_the_run() {
++    let dir = TempDir::new();
++    assert!(Command::new("mkfifo").arg(dir.path().join("pipe")).status().unwrap().success());
++    let server = StubResponses::start(vec![
++        serde_json::json!({"status":"completed","output":[{
++            "type":"function_call","call_id":"fifo","name":"write_file",
++            "arguments":"{\"path\":\"pipe\",\"content\":\"x\"}"
++        }]}),
++        fixture("text"),
++    ]);
++    let mut child = configured(&dir, &server)
++        .arg("write the file")
++        .stdout(Stdio::piped())
++        .stderr(Stdio::piped())
++        .spawn()
++        .unwrap();
++    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
++    let mut timed_out = false;
++    while child.try_wait().unwrap().is_none() {
++        if std::time::Instant::now() >= deadline {
++            child.kill().unwrap();
++            timed_out = true;
++            break;
++        }
++        std::thread::sleep(std::time::Duration::from_millis(10));
++    }
++    let output = child.wait_with_output().unwrap();
++    assert!(!timed_out, "write_file blocked on an existing FIFO");
++    assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
++    let requests = server.requests();
++    let result = &requests[1]["input"][2];
++    assert_eq!(result["call_id"], "fifo");
++    let body: serde_json::Value = serde_json::from_str(result["output"].as_str().unwrap()).unwrap();
++    assert_eq!(body["ok"], false);
++    assert!(body["error"].as_str().unwrap().contains("regular file"));
 +}
 diff --git a/tests/common/mod.rs b/tests/common/mod.rs
 index 714a094..3ecb91f 100644
@@ -711,7 +793,7 @@ index 0000000..e48e771
 +if __name__ == "__main__":
 +    unittest.main()
 diff --git a/tests/protocol.rs b/tests/protocol.rs
-index c471d86..a79e0b0 100644
+index c471d86..6fb083e 100644
 --- a/tests/protocol.rs
 +++ b/tests/protocol.rs
 @@ -108,10 +108,10 @@ fn cli_validates_configuration_before_network_access() {
@@ -753,3 +835,28 @@ index c471d86..a79e0b0 100644
          .env("CRABLOOP_MODEL", "test-model")
          .env_remove("CRABLOOP_API_URL")
          .env("OPENAI_BASE_URL", server.endpoint().trim_end_matches("/responses"))
+@@ -157,3 +157,24 @@ fn cli_honors_openai_base_url_without_full_endpoint_override() {
+ fn setup(server: &StubResponses) -> (reqwest::Client, Config) {
+     (reqwest::Client::new(), common::test_config(std::path::Path::new("."), server.endpoint()))
+ }
++
++#[tokio::test]
++async fn mixed_phases_display_only_final_text_and_preserve_all_items() {
++    for final_first in [false, true] {
++        let mut response = fixture("text");
++        let final_item = response["output"][0].clone();
++        let commentary = fixture("commentary")["output"][0].clone();
++        response["output"] = if final_first {
++            json!([final_item, commentary])
++        } else {
++            json!([commentary, final_item])
++        };
++        let server = StubResponses::start(vec![response.clone()]);
++        let (client, config) = setup(&server);
++        let reply =
++            model::respond(&client, &config, model::request(&config, "", &[], &[])).await.unwrap();
++        assert_eq!(reply.text, "Done");
++        assert!(reply.is_final);
++        assert_eq!(reply.output, response["output"].as_array().unwrap().clone());
++    }
++}
