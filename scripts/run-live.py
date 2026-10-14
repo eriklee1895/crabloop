@@ -55,10 +55,10 @@ subprocess.run(['cargo', 'build', '--locked'], cwd=ROOT, check=True, capture_out
 if args.scenario == 'report':
     task = 'Follow README.md: inspect all inbox documents, produce report.json with exact facts, source paths and counts, and a Chinese SUMMARY.md citing every source. Preserve the original inbox files. Verify your output against the input documents before reporting completion.'
 start = datetime.now(timezone.utc)
-proc = subprocess.Popen([str(ROOT / 'target/debug/crabloop'), '-p', task], env=env, cwd=workspace, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True)
+proc = subprocess.Popen([str(ROOT / 'target/debug/crabloop')], env=env, cwd=workspace, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True)
 timed_out = False
 try:
-    stdout, stderr = proc.communicate(timeout=300)
+    stdout, stderr = proc.communicate(input=task, timeout=300)
 except subprocess.TimeoutExpired:
     timed_out = True
     os.killpg(proc.pid, signal.SIGKILL)

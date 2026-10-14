@@ -2,7 +2,7 @@
 
 用 Rust 从零写一个能读文件、修改代码、运行测试，再根据真实反馈继续行动的 mini agent。
 
-这是 **milestone/v1 的最小教学实现**：397 代码行 / 402 物理行，统计包含全部 src/**/*.rs。目标约 300 行、硬上限 <400 代码行；保持正常 rustfmt，没有把运行逻辑移出 src。v1 学习统一使用这一份代码：src/cli.rs 为 71 代码行，其余实现合计 326 行。历史标签仅保存步骤与验收来源。
+这是 **milestone/v1 的最小教学实现**：388 代码行 / 402 物理行，统计包含全部 src/**/*.rs。目标约 300 行、硬上限 <400 代码行；保持正常 rustfmt，没有把运行逻辑移出 src。v1 学习统一使用这一份代码：src/cli.rs 为 62 代码行，其余实现合计 326 行。历史标签仅保存步骤与验收来源。
 
 ## 先运行一个任务
 
@@ -12,13 +12,13 @@
 cargo run
 ```
 
-看到提示后输入一个任务，按 Enter 提交；完成后程序退出。也可以直接指定任务或传入管道：
+看到提示后输入一个任务，按 Enter 提交；完成后程序退出。脚本和多行任务也从 stdin 传入：
 
 ```bash
-cargo run -- -p "检查 README，说明这个项目的结构"
 printf '%s\n' "检查当前目录" | cargo run --quiet
-cargo run -- --help
 ```
+
+v1 不接受命令行参数，包括任务文本、`-p/--print` 和 `-h/--help`。误传参数会直接报错并指向本 README；空输入或 EOF 直接退出，不读取凭证、不请求模型。启动和配置说明集中在这里及 [.env.example](.env.example)。专业 CLI Help 的排版、高亮与颜色属于[后续独立迭代](docs/cli-help-plan.md)。
 
 工作区就是启动目录。要操作另一个目录，先构建，再从那个目录调用二进制：
 
@@ -26,7 +26,7 @@ cargo run -- --help
 cargo build --locked
 crabloop_bin="$PWD/target/debug/crabloop"
 cd /path/to/project
-"$crabloop_bin" -p "读取项目说明并检查测试"
+printf '%s\n' "读取项目说明并检查测试" | "$crabloop_bin"
 ```
 
 配置从启动目录的 .env 和进程环境读取，进程环境优先。默认 DeepSeek；使用 OpenAI 或兼容端点时显式设置 CRABLOOP_PROVIDER=openai，再提供 OPENAI_API_KEY、OPENAI_BASE_URL 和 CRABLOOP_MODEL。完整端点可由 CRABLOOP_API_URL 覆盖。配置格式见 [.env.example](.env.example)，凭证不可提交。
@@ -49,7 +49,7 @@ v1 的定稿提交为 `83a4e83`；日常阅读统一使用 `milestone/v1`。[GA 
 
 ## 阅读与验证
 
-从[教程入口](tutorial/README.md)进入 00–05 的最小循环学习；[七个增量](tutorial/v1/patches/README.md)从空目录重建后，全部 src 文件与当前分支一致。阅读和动手都以同一份 v1 为终点。已有验收和开发记录保留原来的含义；当前分支已通过 43 项 Rust、4 项 Python 回归，真实 DeepSeek 修复和独立验证也通过。范围见[教学边界](docs/v1-scope.md)，本次删减见[收敛记录](docs/devlog/08-v1-reduction.md)。
+从[教程入口](tutorial/README.md)进入 00–05 的最小循环学习；[七个增量](tutorial/v1/patches/README.md)从空目录重建后，全部 src 文件与当前分支一致。阅读和动手都以同一份 v1 为终点。已有验收和开发记录保留原来的含义；当前入口通过 42 项 Rust、5 项 Python 离线回归；此前的真实 DeepSeek 修复和独立验证保留为历史证据，本次入口删减未重跑真实模型。范围见[教学边界](docs/v1-scope.md)，本次删减见[收敛记录](docs/devlog/08-v1-reduction.md)。
 
 ```bash
 python3 scripts/count-lines.py --max 399

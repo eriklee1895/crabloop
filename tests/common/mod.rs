@@ -1,4 +1,17 @@
 #![allow(dead_code)]
+
+pub fn task_output(command: &mut std::process::Command, task: &str) -> std::process::Output {
+    use std::io::Write;
+    use std::process::Stdio;
+    let mut child = command
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    child.stdin.take().unwrap().write_all(task.as_bytes()).unwrap();
+    child.wait_with_output().unwrap()
+}
 use crabloop::{Config, Limits, model::ToolCall};
 use serde_json::Value;
 use std::{

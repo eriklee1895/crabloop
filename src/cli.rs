@@ -5,32 +5,21 @@ use std::{
     io::{self, BufRead, IsTerminal, Read},
 };
 
-const HELP: &str = "usage: crabloop [-p TASK]\n\
-Without arguments: read a task from stdin; -p/--print TASK runs one task.\n\
-Reads .env from the current directory; DEEPSEEK_API_KEY defaults to deepseek-flash. Set CRABLOOP_PROVIDER=openai to use OPENAI_API_KEY / OPENAI_BASE_URL / CRABLOOP_MODEL.";
 pub fn load(args: &[String]) -> Result<Option<Config>> {
-    if args.len() == 2 && matches!(args[1].as_str(), "-h" | "--help") {
-        println!("{HELP}");
-        return Ok(None);
-    }
+    ensure!(
+        args.len() <= 1,
+        "v1 takes no arguments; enter a task on stdin. See README.md for setup."
+    );
     let limits = Limits::default();
-    let task = match args.get(1..).unwrap_or_default() {
-        [] => {
-            let stdin = io::stdin();
-            let mut input = stdin.lock().take(limits.request_bytes as u64 + 1);
-            let mut text = String::new();
-            if stdin.is_terminal() {
-                eprint!("Task (Ctrl-D to exit)> ");
-                input.read_line(&mut text)?;
-            } else {
-                input.read_to_string(&mut text)?;
-            }
-            text
-        }
-        [task] if !task.starts_with('-') => task.clone(),
-        [flag, task] if matches!(flag.as_str(), "-p" | "--print") => task.clone(),
-        _ => bail!(HELP),
-    };
+    let stdin = io::stdin();
+    let mut input = stdin.lock().take(limits.request_bytes as u64 + 1);
+    let mut task = String::new();
+    if stdin.is_terminal() {
+        eprint!("Task (Ctrl-D to exit)> ");
+        input.read_line(&mut task)?;
+    } else {
+        input.read_to_string(&mut task)?;
+    }
     ensure!(task.len() <= limits.request_bytes, "task exceeds input budget");
     if task.trim().is_empty() {
         return Ok(None);
