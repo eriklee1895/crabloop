@@ -26,15 +26,6 @@ printf '%s\n' "检查当前目录" | cargo run --quiet
 
 任务从 stdin 读取，不接受命令行参数。
 
-工作区就是启动目录。要操作另一个目录，先构建，再从那个目录调用二进制：
-
-```bash
-cargo build --locked
-crabloop_bin="$PWD/target/debug/crabloop"
-cd /path/to/project
-printf '%s\n' "读取项目说明并检查测试" | "$crabloop_bin"
-```
-
 配置读取启动目录的 `.env`，进程环境优先。
 
 运行时会显示工具名称、命令或路径、执行状态和输出预览。
