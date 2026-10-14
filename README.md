@@ -78,7 +78,7 @@ Cargo 工程放在仓库根目录；教程按阶段组织在 tutorial/v1/ 和 tu
 
 - [设计说明](docs/design.md)：版本边界、协议、运行限制、上下文策略与完成标准。
 - [完整实施与学习计划](docs/plan.md)：10 个学习站点、9 个实施任务、故障实验和验收方法。
-- [v1 GA 审查](evidence/v1/ga-review.md)：定稿标记 `v1-ga`、格式与文件组织、离线检查和真实任务证据。
+- [v1 GA 审查](evidence/v1/ga-review.md)：定稿提交与验收、格式与文件组织、离线检查和真实任务证据。
 - [调试指南](docs/debugging.md)：main 的单步调试、JSONL 对照和 Proxyman HTTP 观察。
 - [教程写作约定](docs/writing-guide.md)：叙述方式、代码讲解、实验和章节质量要求。
 - [仓库起步记录](docs/devlog/00-bootstrap.md)：初始化、目录与写作方式的决定。

@@ -11,7 +11,7 @@ main 保持最新、已经验证的实现，Git 提交历史保留每轮演进�
 
 ## 现在怎样选择 v1
 
-2026-10-14 完成 final review，`v1-ga` 固定定稿快照；完整[审查与验收](../evidence/v1/ga-review.md)已保存。学习入口继续统一为 milestone/v1。
+2026-10-14 完成 final review，定稿提交为 83a4e83；完整[审查与验收](../evidence/v1/ga-review.md)已保存。学习入口继续统一为 milestone/v1。
 
 `git switch milestone/v1` 得到已经包含使用优化的第一版：当前目录作为工作区、.env 数据读取、`-p` 或无参数输入一个任务。完整源码为 397 代码行 / 402 物理行，直接展示四工具反馈循环，无跨提问会话、编辑器或压缩。
 

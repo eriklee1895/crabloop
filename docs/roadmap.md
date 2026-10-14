@@ -241,7 +241,7 @@ v6 拆成三个可运行、独立验收的增量：
 | 输入与 slash command 交互 | 命令说明、过滤、键盘选择与补全；复用选择与文本输入能力回答待答问题 | 候选选择清楚可见，参数与未知命令有提示；回答绑定原 question_id，提交后继续原任务 |
 | 完整布局与焦点管理 | 对话区、输入区、状态栏、滚动、详情展开、焦点和增量刷新 | 模型等待期间按键仍可响应，窗口缩放、中文粘贴、多行输入、取消与退出恢复正常 |
 
-thinking 状态表示运行进度；推理正文只展示供应商实际提供的可读 reasoning/summary。encrypted_content 继续保持不透明。commentary、final_answer 和推理内容分别呈现，完整协议项仍用于历史回传；当前混合 phase 正文拼接的限制见[已知问题](../evidence/v2/review.md)。流式 Markdown 需要处理稳定内容与未完成尾部。实时 bash stdout/stderr 还需执行层的输出事件，作为明确增量实现。
+thinking 状态表示运行进度；推理正文只展示供应商实际提供的可读 reasoning/summary。encrypted_content 继续保持不透明。commentary、final_answer 和推理内容分别呈现，完整协议项仍用于历史回传；最终答案混入 commentary 的问题已在 [v1 GA 收尾](../evidence/v1/ga-review.md)修复，独立的 commentary 过程展示仍待实现。流式 Markdown 需要处理稳定内容与未完成尾部。实时 bash stdout/stderr 还需执行层的输出事件，作为明确增量实现。
 
 现有 /new、/help、/exit 已有本地执行逻辑。未来 /model、/config、/skills、/resume 的功能随配置、Skills、会话版本实现，v6 菜单提供统一入口。命令的可用状态和取消行为遵循同一个运行核心；配置菜单与手改 TOML 使用同一来源。
 
