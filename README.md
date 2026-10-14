@@ -72,7 +72,7 @@ v2 增加上下文预算、历史整理和摘要压缩，通过实验检查任�
 
 ## 当前进度与文档
 
-当前已实现四工具、Responses 行动循环、上下文压缩和轻量多轮终端界面，教程 00–09 已完成。DeepSeek V4.1 Flash 与备选 gpt-6-luna 已通过真实修复任务；通用本地报告任务也有独立验收。v1 学习代码为 397 行、v2 为 504 行；加入 CLI、交互和正常教学排版后的当前实现为 **836 代码行 / 848 物理行**，包含全部 src 文件，不再把它称作 300 行版本。[v1 GA 验收](evidence/v1/ga-review.md) 和 [v2 压缩验收](evidence/v2/acceptance.md) 已保存。v3–v5 仍是规划，v6–v8 为建议与选修。
+当前已实现四工具、Responses 行动循环、上下文压缩和轻量多轮终端界面，教程 00–09 已完成。DeepSeek V4.1 Flash 与备选 gpt-6-luna 已通过真实修复任务；通用本地报告任务也有独立验收。v1 学习代码为 397 行、v2 为 504 行；加入 CLI、交互和正常教学排版后的当前实现为 **837 代码行 / 849 物理行**，包含全部 src 文件，不再把它称作 300 行版本。[v1 GA 验收](evidence/v1/ga-review.md) 和 [v2 压缩验收](evidence/v2/acceptance.md) 已保存。v3–v5 仍是规划，v6–v8 为建议与选修。
 
 Cargo 工程放在仓库根目录；教程按阶段组织在 tutorial/v1/ 和 tutorial/v2/；实际开发记录放在 docs/devlog/。
 
@@ -108,7 +108,17 @@ cargo run -- --help
 
 自动选择遵循已有配置：没有显式模型/完整端点或进程级 OpenAI 配置时，优先使用 DEEPSEEK_API_KEY；否则沿用 OPENAI_API_KEY、OPENAI_BASE_URL、CRABLOOP_MODEL。可用 CRABLOOP_PROVIDER=deepseek/openai 明确指定。openai 模式默认模型为 gpt-6-luna，官方 DeepSeek base URL 则默认 deepseek-flash；其他服务应显式填写支持的模型名。CRABLOOP_API_URL 覆盖所选 provider 的完整端点，Key 始终来自该 provider 对应变量。
 
-旧的任务位置参数仍可用。无参数管道输入作为一个完整任务；`--chat` 显式按行进行多轮对话。只读取启动目录的 .env，不向父目录搜索，也不执行文件里的命令。空会话退出不会创建日志或请求模型。当前界面使用 rustyline 编辑输入；每轮完整响应返回后，commentary 以“过程”段落显示在本轮工具之前，最终答案单独显示；基础流式显示安排在 v3，完整屏幕布局留给 v6。
+main 的 provider 选择按下表从上到下匹配：
+
+| 条件 | 选择 | 凭证变量 |
+|---|---|---|
+| 显式配置 CRABLOOP_PROVIDER | 使用指定的 deepseek 或 openai | 对应 provider 的 Key |
+| 未指定 provider，有 DEEPSEEK_API_KEY，且没有下述显式通用配置 | deepseek | DEEPSEEK_API_KEY |
+| 其余情况 | openai | OPENAI_API_KEY |
+
+“显式通用配置”指 CRABLOOP_MODEL 或 CRABLOOP_API_URL 已配置（进程环境或 .env），或进程环境中存在非空的 OPENAI_API_KEY / OPENAI_BASE_URL。openai 模式中的 DeepSeek hostname 判断只影响默认模型，不改变 provider 或 Key 来源。需要固定选择时，直接设置 CRABLOOP_PROVIDER。
+
+旧的任务位置参数仍可用。无参数管道输入作为一个完整任务；`--chat` 显式按行进行多轮对话。只读取启动目录的 .env，不向父目录搜索，也不执行文件里的命令。空会话退出不会创建日志或请求模型。当前界面使用 rustyline 编辑输入；每轮完整响应返回后，commentary 以 `Progress` 段落显示在本轮工具之前，最终答案单独显示；基础流式显示安排在 v3，完整屏幕布局留给 v6。
 
 单次模式的 stderr 保留过程说明、工具 JSON 轨迹和日志路径；交互模式显示工具进度。每个实际开始的会话写入工作区 .crabloop 的 JSONL，用于观察，不支持跨进程恢复。请求错误或中断后要先检查文件状态，再用 `/new`；这不会回滚已发生的修改。CRABLOOP_CONTEXT_BYTES 默认 49152，最小 4096。摘要请求要求模型支持 reasoning.effort=none；v2 主验收模型为 DeepSeek V4.1 Flash。
 

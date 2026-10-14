@@ -197,7 +197,7 @@ pub async fn run(config: Config) -> anyhow::Result<RunReport> {
     session
         .turn(&task, |event| match event {
             Progress::Model(turn) => eprintln!("turn {turn}"),
-            Progress::Commentary(text) => eprintln!("\n过程\n{text}\n"),
+            Progress::Commentary(text) => eprintln!("\nProgress\n{text}\n"),
             Progress::ToolStart(_) => {}
             Progress::ToolResult(call, result) => eprintln!(
                 "tool {}",

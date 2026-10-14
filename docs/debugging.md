@@ -58,7 +58,7 @@ run --locked -- -p "读取 Cargo.toml，列出直接依赖的名称，不修改�
 
 保留相同断点，观察这次模型自己选择了什么动作。这个任务是否调用 read_file 或 bash、用了几轮，需要以本次实际结果为准。
 
-commentary 是面向用户的中间说明，final_answer 是完成后的回答，reasoning 则是另一类协议项。main 在每轮完整响应返回后，把 commentary 作为“过程”段落显示在本轮工具之前，最后单独显示最终答案；-p 的过程说明写入 stderr。完整 output 和 JSONL 仍保留原始内容。最终文本选择不会删除这些回放项。可读 reasoning summary 与加密 reasoning 也需区分，后者不作为展示文本。
+commentary 是面向用户的中间说明，final_answer 是完成后的回答，reasoning 则是另一类协议项。main 在每轮完整响应返回后，把 commentary 作为 `Progress` 段落显示在本轮工具之前，最后单独显示最终答案；-p 的过程说明写入 stderr。完整 output 和 JSONL 仍保留原始内容。最终文本选择不会删除这些回放项。可读 reasoning summary 与加密 reasoning 也需区分，后者不作为展示文本。
 
 main 会在工作区 .crabloop 中保存 JSONL。终端打印本次 journal 路径后，只打开这次运行的文件，沿事件顺序阅读：
 
