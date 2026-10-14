@@ -29,19 +29,27 @@ fn no_arguments_reads_a_task_from_stdin_in_current_directory() {
         .stderr(Stdio::piped())
         .spawn()
         .unwrap();
-    child.stdin.take().unwrap().write_all("请检查这个目录\n并说明结果\n".as_bytes()).unwrap();
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(b"Inspect this directory\nand summarize the result\n")
+        .unwrap();
     let output = child.wait_with_output().unwrap();
     assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
-    assert_eq!(server.requests()[0]["input"][0]["content"], "请检查这个目录\n并说明结果");
+    assert_eq!(
+        server.requests()[0]["input"][0]["content"],
+        "Inspect this directory\nand summarize the result"
+    );
     assert!(dir.path().join(".crabloop").is_dir());
 }
 #[test]
 fn task_argument_defaults_to_current_workspace() {
     let dir = TempDir::new();
     let server = StubResponses::start(vec![fixture("text")]);
-    let output = configured(&dir, &server).arg("检查 README").output().unwrap();
+    let output = configured(&dir, &server).arg("Inspect README").output().unwrap();
     assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
-    assert_eq!(server.requests()[0]["input"][0]["content"], "检查 README");
+    assert_eq!(server.requests()[0]["input"][0]["content"], "Inspect README");
 }
 #[test]
 fn help_needs_no_credentials_and_eof_does_not_call_model() {
@@ -212,29 +220,32 @@ fn commentary_is_printed_once_per_response_and_final_stdout_stays_clean() {
     let dir = TempDir::new();
     let mut first = fixture("commentary");
     first["output"][0]["content"] = serde_json::json!([
-        {"type":"output_text","text":"准备检查。\n"},
-        {"type":"output_text","text":"读取项目。"}
+        {"type":"output_text","text":"Preparing to inspect.\n"},
+        {"type":"output_text","text":"Reading the project."}
     ]);
     let mut action = fixture("commentary");
-    action["output"][0]["content"][0]["text"] = "现在写入记录。".into();
+    action["output"][0]["content"][0]["text"] = "Writing the record now.".into();
     action["output"].as_array_mut().unwrap().push(serde_json::json!({
         "type":"function_call","call_id":"note","name":"write_file",
         "arguments":"{\"path\":\"note.txt\",\"content\":\"saved\"}"
     }));
     let mut final_reply = fixture("commentary");
-    final_reply["output"][0]["content"][0]["text"] = "记录已写入。".into();
+    final_reply["output"][0]["content"][0]["text"] = "The record is saved.".into();
     final_reply["output"].as_array_mut().unwrap().push(fixture("text")["output"][0].clone());
     let server = StubResponses::start(vec![first.clone(), action, final_reply]);
     let output = configured(&dir, &server).args(["-p", "hello"]).output().unwrap();
     assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
     assert_eq!(String::from_utf8_lossy(&output.stdout), "Done\n");
     let stderr = String::from_utf8_lossy(&output.stderr);
-    for text in ["准备检查。\n读取项目。", "现在写入记录。", "记录已写入。"]
-    {
+    for text in [
+        "Preparing to inspect.\nReading the project.",
+        "Writing the record now.",
+        "The record is saved.",
+    ] {
         assert_eq!(stderr.matches(text).count(), 1, "{stderr}");
     }
-    assert!(stderr.find("现在写入记录。").unwrap() < stderr.find("tool ").unwrap());
-    assert!(stderr.find("tool ").unwrap() < stderr.find("记录已写入。").unwrap());
+    assert!(stderr.find("Writing the record now.").unwrap() < stderr.find("tool ").unwrap());
+    assert!(stderr.find("tool ").unwrap() < stderr.find("The record is saved.").unwrap());
     assert_eq!(fs::read_to_string(dir.path().join("note.txt")).unwrap(), "saved");
     let sent = server.requests();
     assert_eq!(sent.len(), 3);
@@ -245,7 +256,7 @@ fn commentary_is_printed_once_per_response_and_final_stdout_stays_clean() {
 fn chat_renders_commentary_separately_from_the_final_answer() {
     let dir = TempDir::new();
     let mut reply = fixture("commentary");
-    reply["output"][0]["content"][0]["text"] = "检查完成。".into();
+    reply["output"][0]["content"][0]["text"] = "Inspection complete.".into();
     reply["output"].as_array_mut().unwrap().push(fixture("text")["output"][0].clone());
     let server = StubResponses::start(vec![reply]);
     let mut child = configured(&dir, &server)
@@ -259,8 +270,8 @@ fn chat_renders_commentary_separately_from_the_final_answer() {
     let output = child.wait_with_output().unwrap();
     assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
     let stderr = String::from_utf8_lossy(&output.stderr);
-    assert_eq!(stderr.matches("检查完成。").count(), 1, "{stderr}");
+    assert_eq!(stderr.matches("Inspection complete.").count(), 1, "{stderr}");
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("Done"));
-    assert!(!stdout.contains("检查完成。"));
+    assert!(!stdout.contains("Inspection complete."));
 }

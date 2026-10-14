@@ -12,17 +12,17 @@ async fn read_write_roundtrip_and_output_correlation() {
     let dir = TempDir::new();
     let limits = Limits::default();
     let written = execute(
-        &make_call("write_1", "write_file", json!({"path":"hello.rs","content":"你好 🦀"})),
+        &make_call("write_1", "write_file", json!({"path":"hello.rs","content":"Hello 🦀"})),
         dir.path(),
         &limits,
     )
     .await;
     assert_eq!(written["ok"], true);
-    assert_eq!(fs::read_to_string(dir.path().join("hello.rs")).unwrap(), "你好 🦀");
+    assert_eq!(fs::read_to_string(dir.path().join("hello.rs")).unwrap(), "Hello 🦀");
     let read =
         execute(&make_call("read_1", "read_file", json!({"path":"hello.rs"})), dir.path(), &limits)
             .await;
-    assert_eq!(read["content"], "你好 🦀");
+    assert_eq!(read["content"], "Hello 🦀");
     assert_eq!(read["ok"], true);
 }
 #[tokio::test]
@@ -124,11 +124,11 @@ async fn invalid_arguments_paths_and_unknown_tools_return_correlated_errors() {
 #[tokio::test]
 async fn read_truncation_is_utf8_safe_and_non_utf8_is_an_error() {
     let dir = TempDir::new();
-    fs::write(dir.path().join("text"), "你好🦀").unwrap();
-    let limits = Limits { read_output_bytes: 7, ..Limits::default() };
+    fs::write(dir.path().join("text"), "café🦀").unwrap();
+    let limits = Limits { read_output_bytes: 5, ..Limits::default() };
     let result =
         execute(&make_call("r", "read_file", json!({"path":"text"})), dir.path(), &limits).await;
-    assert_eq!(result["content"], "你好");
+    assert_eq!(result["content"], "café");
     assert_eq!(result["truncated"], true);
     assert_eq!(clip_utf8("🦀", 3), (String::new(), true));
     fs::write(dir.path().join("binary"), [255u8, 0]).unwrap();
@@ -153,7 +153,7 @@ fn tool_schemas_have_required_string_arguments_and_strict_objects() {
 #[tokio::test]
 async fn oversized_utf8_reports_size_instead_of_encoding() {
     let dir = TempDir::new();
-    fs::write(dir.path().join("large"), "你你好").unwrap();
+    fs::write(dir.path().join("large"), "éééé").unwrap();
     let limits = Limits { file_bytes: 7, ..Limits::default() };
     let r = execute(&make_call("read", "read_file", json!({"path":"large"})), dir.path(), &limits)
         .await;

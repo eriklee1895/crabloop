@@ -8,7 +8,7 @@ workspace = Path(sys.argv[1])
 try:
     data = json.loads((workspace / "report.json").read_text())
     expected = [{"id": ident, "owner": owner, "status": status, "source": f"inbox/{ident}.md"}
-                for ident, owner, status in [("alpha", "林", "done"), ("beta", "陈", "pending"), ("gamma", "周", "done")]]
+                for ident, owner, status in [("alpha", "Lin", "done"), ("beta", "Chen", "pending"), ("gamma", "Zhou", "done")]]
     actual = [{key: item[key] for key in ("id", "owner", "status", "source")} for item in data["items"]]
     assert actual == expected, "item facts or sources do not match"
     counts = data["counts"]

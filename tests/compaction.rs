@@ -8,7 +8,7 @@ use crabloop::{
 };
 use serde_json::{Value, json};
 
-const SUMMARY: &str = "已完成：读过文件。\n修改文件：尚无。\n验证结果：初始测试失败；修改后未运行。\n剩余工作：修复并测试。\n不确定事项：尚未验证修复。";
+const SUMMARY: &str = "Completed: Read the file.\nFiles changed: None.\nVerification: Initial tests failed; no tests were run after editing.\nRemaining work: Fix and test.\nUncertainties: The fix has not been verified.";
 fn message(text: &str) -> Value {
     json!({"type":"message","role":"assistant","content":[{"type":"output_text","text":text}]})
 }
@@ -194,7 +194,7 @@ async fn loop_compacts_and_continues_without_counting_summary_as_main_turn() {
     assert_eq!(report.model_turns, 4);
     assert_eq!(stub.requests().len(), 5);
     assert_eq!(stub.requests()[3]["tools"], json!([]));
-    assert!(stub.requests()[4]["input"].to_string().contains("初始测试失败"));
+    assert!(stub.requests()[4]["input"].to_string().contains("Initial tests failed"));
 }
 
 #[tokio::test]

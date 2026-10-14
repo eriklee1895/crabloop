@@ -12,7 +12,7 @@ class ReportVerifierTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.workspace = Path(self.temp.name) / 'report'
         shutil.copytree(ROOT / 'fixtures/local-report', self.workspace)
-        self.data = {'items': [{'id': ident, 'owner': owner, 'status': status, 'source': f'inbox/{ident}.md'} for ident,owner,status in [('alpha','林','done'),('beta','陈','pending'),('gamma','周','done')]], 'counts': {'done':2,'pending':1}}
+        self.data = {'items': [{'id': ident, 'owner': owner, 'status': status, 'source': f'inbox/{ident}.md'} for ident,owner,status in [('alpha','Lin','done'),('beta','Chen','pending'),('gamma','Zhou','done')]], 'counts': {'done':2,'pending':1}}
         (self.workspace / 'SUMMARY.md').write_text('inbox/alpha.md inbox/beta.md inbox/gamma.md')
     def tearDown(self):
         self.temp.cleanup()
@@ -31,7 +31,7 @@ class ReportVerifierTests(unittest.TestCase):
     def test_rejects_changed_source_and_wrong_owner(self):
         self.data['items'][0]['owner'] = 'wrong'
         self.assertNotEqual(self.verify(),0)
-        self.data['items'][0]['owner'] = '林'
+        self.data['items'][0]['owner'] = 'Lin'
         (self.workspace/'inbox/alpha.md').write_text('modified source')
         self.assertNotEqual(self.verify(),0)
 
