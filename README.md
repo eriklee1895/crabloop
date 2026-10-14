@@ -1,4 +1,6 @@
-![CrabLoop — A small agent harness, built step by step in Rust.](docs/assets/crabloop-banner.png)
+<p align="center">
+  <img src="docs/assets/crabloop-banner.png" alt="CrabLoop — A small agent harness, built step by step in Rust." width="640">
+</p>
 
 [![CI](https://github.com/eriklee1895/crabloop/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/eriklee1895/crabloop/actions/workflows/ci.yml) [![Rust](https://img.shields.io/badge/built_with-Rust-d66b45?logo=rust&logoColor=white)](Cargo.toml) [![v1 under 400 lines](https://img.shields.io/badge/v1-%3C400_lines-299d91)](https://github.com/eriklee1895/crabloop/tree/milestone/v1) [![中文教程](https://img.shields.io/badge/教程-中文-299d91)](tutorial/README.md)
 
