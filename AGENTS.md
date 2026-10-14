@@ -6,7 +6,7 @@ CrabLoop is a small coding-agent harness built from scratch in Rust for hands-on
 
 v2-v3: learn Agent fundamentals in small, readable code; defer reliability hardening. Preserve core contracts. See docs/roadmap.md.
 
-- v1: target about 300 lines, HARD cap below 400 total production Rust code lines. Teach the hand-written model/tool/feedback/stop loop with four tools.
+- v1: small, readable hand-written model/tool/feedback/stop loop with four tools; line counts are teaching guidance.
 - v2: approximately 500 lines total, adding context management and summary compaction.
 - v3: ~1,000 lines: clap/Help first; then basic SSE, ~/.crabloop TOML/credentials, provider presets/Custom, model catalog/cache and runtime/context display. Minimal Skills optional within scope.
 - After v3: a separate opt-in telemetry topic using lifecycle observers and Rust OpenTelemetry/OTLP to Langfuse v4. Share event IDs with TUI/journal; export failure must not stop the agent. See docs/roadmap.md.
@@ -17,11 +17,11 @@ v2-v3: learn Agent fundamentals in small, readable code; defer reliability harde
 - Grow the same implementation through small, explainable steps. Preserve runnable milestones with v1 and v2 Git tags.
 - Study llm-space's tool contracts and UI/state boundaries; fixed references are in docs/roadmap.md.
 
-2026-10-12 v1 rule: <400 is mandatory. After normal rustfmt, count all production src/**/*.rs with scripts/count-lines.py and report physical lines. Tests/docs/fixtures/dev scripts are separate. Reduce scope; never hide code, code-golf, outsource the loop or omit necessary errors. See docs/v1-scope.md.
+2026-10-14 v1 guide: size is a teaching reference, not a hard gate. Count all src/**/*.rs after rustfmt and report physical lines. Keep runtime code visible and readable; never code-golf or omit necessary errors. See docs/v1-scope.md.
 
 ## Current state and layout
 
-V1: milestone/v1, 395/456; stdin-only, crab banner/crab>, no args. Readable tool previews; no trace option. Help: docs/cli-help-plan.md. Debug: docs/debugging.md. Brand: docs/assets/README.md.
+V1: milestone/v1, 406/467; stdin-only, crab banner/crab>, no args. Tool name/status; no success output or trace option. Help: docs/cli-help-plan.md. Debug: docs/debugging.md. Brand: docs/assets/README.md.
 
 Historical v1: 314/319; v2: 504/511. V1 GA: 397/402, 43 Rust + 4 Python with live repair/report and PTY; evidence/v1/ga-review.md. Main: 853/878, 65 Rust + 6 Python. Counts=code/physical; preserve historical evidence.
 

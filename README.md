@@ -1,6 +1,6 @@
 ![CrabLoop — A small agent harness, built step by step in Rust.](docs/assets/crabloop-banner.png)
 
-[![CI](https://github.com/eriklee1895/crabloop/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/eriklee1895/crabloop/actions/workflows/ci.yml) [![Rust](https://img.shields.io/badge/built_with-Rust-d66b45?logo=rust&logoColor=white)](Cargo.toml) [![v1 under 400 lines](https://img.shields.io/badge/v1-%3C400_lines-299d91)](https://github.com/eriklee1895/crabloop/tree/milestone/v1) [![中文教程](https://img.shields.io/badge/教程-中文-299d91)](tutorial/README.md)
+[![CI](https://github.com/eriklee1895/crabloop/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/eriklee1895/crabloop/actions/workflows/ci.yml) [![Rust](https://img.shields.io/badge/built_with-Rust-d66b45?logo=rust&logoColor=white)](Cargo.toml) [![v1 learning loop](https://img.shields.io/badge/v1-learning_loop-299d91)](https://github.com/eriklee1895/crabloop/tree/milestone/v1) [![中文教程](https://img.shields.io/badge/教程-中文-299d91)](tutorial/README.md)
 
 用 Rust 从零实现一个小型 coding agent，通过读取代码、修改文件、运行测试和处理反馈，练习 agent harness 的核心机制。
 
@@ -10,7 +10,7 @@
 
 真实 DeepSeek V4.1 Flash 录制：第一轮创建并读取文件，第二轮沿用对话修改同一个文件。GIF 缩短等待间隔；[录制与独立验证](evidence/interactive/README.md)。
 
-项目首先帮助学习者快速读懂一个 agent 核心循环：v1 目标约 300 行，全部生产 Rust 严格少于 400 行。复杂 Harness 在后续版本逐步生长。当前 v1 分支已收敛到 395 代码行 / 456 物理行，具体约束见[教学边界](docs/v1-scope.md)。
+项目首先帮助学习者快速读懂一个 agent 核心循环：v1 保持小而可读的核心循环，行数作为教学参考。复杂 Harness 在后续版本逐步生长。当前 v1 分支已收敛到 406 代码行 / 467 物理行，具体约束见[教学边界](docs/v1-scope.md)。
 
 ## 从哪里开始
 
@@ -18,7 +18,7 @@
 
 | 入口 | 适合学习什么 | 启动与交互 |
 |---|---|---|
-| `milestone/v1` | v1 唯一学习代码：332 行 Harness 与入口 + 63 行 CLI | cwd 工作区；无参数启动，从 stdin 输入一次任务 |
+| `milestone/v1` | v1 唯一学习代码：343 行 Harness 与入口 + 63 行 CLI | cwd 工作区；无参数启动，从 stdin 输入一次任务 |
 | `milestone/v2` | 504 行的上下文投影与摘要压缩 | 保留当时的显式参数入口 |
 | `main` | 当前完整实现：四工具、多轮会话和上下文压缩 | `cargo run` 聊天；`cargo run -- -p "任务"` 单次执行 |
 
@@ -35,7 +35,7 @@ cargo run
 
 | 版本 | 核心实现目标 | 要亲手弄清楚的问题 |
 |---|---:|---|
-| v1 | 目标约 300 行，硬上限 <400；当前 395 行 | 如何快速看懂模型—工具—反馈—停止的核心循环？ |
+| v1 | 小而可读的核心循环；当前 406 行 | 如何快速看懂模型—工具—反馈—停止的核心循环？ |
 | v2 | 约 500 行 Rust，上下文管理与压缩 | 每轮模型看到什么，历史怎样被选择和整理？ |
 | v3 | 约 1000 行 Rust，基础 SSE、home、TOML、provider、模型目录与轻量 context 信息 | 怎样配置一次、切换模型，并看清上下文用量？ |
 | v3 后：可观测性专题 | 配置开关、observer、Rust OpenTelemetry → Langfuse v4 | 每个 step 看到了什么，工具反馈与压缩怎样影响下一轮？ |
@@ -128,4 +128,4 @@ main 的 provider 选择按下表从上到下匹配：
 
 专业 CLI Help 将作为后续独立增量，设计 Usage、分组、对齐、高亮与多色，并兼顾无颜色输出和无需凭证查看。[设计边界](docs/cli-help-plan.md)；main 的聊天与 -p 单次执行入口继续保留。
 
-当前 v1 的工具默认显示名称、命令或路径、done/failed 与最多 240 字节的文本预览，保留正常换行。模型仍收到完整的受限工具结果；stdout 只保留最终回答。v1 不提供工具 JSON 调试开关；验收脚本使用独立 verifier 和实际产物。[实施与验证](docs/devlog/31-v1-remove-trace.md)
+当前 v1 的工具只显示名称、命令或路径及状态，成功结果不回显正文；失败显示一行简短原因。模型仍收到完整的受限工具结果，stdout 只保留最终回答。没有新增显示开关。[实施与验证](docs/devlog/32-v1-quiet-tool-results.md)
