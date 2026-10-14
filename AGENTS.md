@@ -21,7 +21,7 @@ v2-v3: learn Agent fundamentals in small, readable code; defer reliability harde
 
 ## Current state and layout
 
-V1: milestone/v1, 388/449, stdin-only; seven patches reproduce it. Setup: README/.env.example. Planned CLI Help: docs/cli-help-plan.md. Debugging: docs/debugging.md. Brand: docs/assets/README.md.
+V1: milestone/v1, 389/450; stdin-only, crab banner/crab>, no args. Seven patches reproduce it. CLI Help planned: docs/cli-help-plan.md. Debugging: docs/debugging.md. Brand: docs/assets/README.md.
 
 Historical v1/step-05-v1: 314/319; v2: 504/511. V1 GA: 397/402, 43 Rust + 4 Python, live repair/report and PTY passed; see evidence/v1/ga-review.md. Main: 853/869, 65 Rust + 6 Python, fmt/clippy passed. Counts=code/physical; preserve historical evidence.
 

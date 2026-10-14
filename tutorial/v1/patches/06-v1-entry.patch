@@ -205,10 +205,10 @@ index f2dc482..6adf02f 100644
      counts = data["counts"]
 diff --git a/src/cli.rs b/src/cli.rs
 new file mode 100644
-index 0000000..ccdad26
+index 0000000..2aac215
 --- /dev/null
 +++ b/src/cli.rs
-@@ -0,0 +1,70 @@
+@@ -0,0 +1,71 @@
 +use crate::{Config, Limits};
 +use anyhow::{Context, Result, bail, ensure};
 +use std::{
@@ -227,7 +227,8 @@ index 0000000..ccdad26
 +    let mut input = stdin.lock().take(limits.request_bytes as u64 + 1);
 +    let mut task = String::new();
 +    if stdin.is_terminal() {
-+        eprint!("Task (Ctrl-D to exit)> ");
++        eprintln!("🦀 CrabLoop · a small Rust agent\nEnter one task. Ctrl-D to exit.\n");
++        eprint!("crab> ");
 +        input.read_line(&mut task)?;
 +    } else {
 +        input.read_to_string(&mut task)?;
@@ -696,10 +697,10 @@ index 42e58aa..7024de5 100644
  }
 diff --git a/tests/cli.rs b/tests/cli.rs
 new file mode 100644
-index 0000000..3562602
+index 0000000..0a558e9
 --- /dev/null
 +++ b/tests/cli.rs
-@@ -0,0 +1,248 @@
+@@ -0,0 +1,252 @@
 +mod common;
 +use common::{StubResponses, TempDir, fixture, task_output};
 +use std::{
@@ -787,7 +788,8 @@ index 0000000..3562602
 +        let error = String::from_utf8_lossy(&output.stderr);
 +        assert!(error.contains("v1 takes no arguments"), "{error}");
 +        assert!(error.contains("README.md"), "{error}");
-+        assert!(!error.contains("Task ("), "{error}");
++        assert!(!error.contains("crab>"), "{error}");
++        assert!(!error.contains("🦀"), "{error}");
 +    }
 +    assert!(server.requests().is_empty());
 +}
@@ -874,6 +876,9 @@ index 0000000..3562602
 +    let output = task_output(&mut configured(&dir, &server), "hello");
 +    assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
 +    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "Done");
++    let stderr = String::from_utf8_lossy(&output.stderr);
++    assert!(!stderr.contains("crab>"), "{stderr}");
++    assert!(!stderr.contains("🦀"), "{stderr}");
 +    assert_eq!(server.requests().len(), 1);
 +}
 +#[test]

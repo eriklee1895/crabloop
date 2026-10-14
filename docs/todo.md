@@ -54,4 +54,6 @@
 
 - [x] **REQ-028：v1 收敛为 stdin 单任务入口。** 删除任务参数与完整 Help，README/.env.example 提供配置说明，保留明确错误。同步脚本、教程和七步重建；388 代码行 / 402 物理行，42 Rust + 5 Python 通过。实现 `97723d8`，学习分支 `388edc2`；main 运行入口保留。[实施与验证](devlog/26-v1-stdin-cli.md)
 
-- [x] **REQ-029：v1 源码空行整理。** 五个文件按顶层定义与函数内逻辑阶段分段，全部非空代码行不变。当前 388 代码行 / 449 物理行；格式、clippy、42 Rust、5 Python 与七步重建一致性通过。源码 `88d675b`，学习分支 `b6bd16c`。[记录](devlog/27-v1-readable-spacing.md)
+- [x] **REQ-029：v1 源码空行整理。** 五个文件按顶层定义与函数内逻辑阶段分段，全部非空代码行不变。当时为 388 代码行 / 449 物理行；格式、clippy、42 Rust、5 Python 与七步重建一致性通过。源码 `88d675b`，学习分支 `b6bd16c`。[记录](devlog/27-v1-readable-spacing.md)
+
+- [x] **REQ-030：v1 stdin-only 入口与终端提示。** 清除未提交旧文件带回的 Help、位置参数及 -p，恢复小螃蟹欢迎信息和 `crab>`。389 代码行 / 450 物理行，42 Rust + 5 Python、PTY 与七步重建通过；学习分支提交 `9424df4`。main 同步教程补丁、当前数字和记录。[实施与验证](devlog/28-v1-stdin-banner.md)
