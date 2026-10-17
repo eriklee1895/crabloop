@@ -6,9 +6,12 @@ v1 用 **300+ lines** 演示一个完整的 agent loop。
 
 ## Quick Start
 
-默认使用 DeepSeek。在当前目录的 `.env` 中配置 `DEEPSEEK_API_KEY`，其他模型配置见 [.env.example](.env.example)。然后运行：
+配置三个环境变量。以 DeepSeek 为例；使用 OpenAI 时省略 `OPENAI_BASE_URL`，模型换成账号可用的 Responses 模型：
 
 ```bash
+export OPENAI_API_KEY=你的密钥
+export OPENAI_BASE_URL=https://api.deepseek.com
+export CRABLOOP_MODEL=deepseek-flash
 cargo run
 ```
 
@@ -18,17 +21,13 @@ cargo run
 crab> 读取 README.md，概括项目结构
 ```
 
-终端里可以连续提问，同一进程会保留前面的对话；Ctrl-D 退出。管道输入仍作为一次任务处理，完成后退出：
+每个非空行是一个任务，同一进程保留前面的对话；Ctrl-D 退出。管道输入走同一条路，每行一轮：
 
 ```bash
-printf '%s\n' "检查当前目录" | cargo run --quiet
+printf '%s\n' "检查当前目录" "哪个文件最大？" | cargo run --quiet
 ```
 
-任务从 stdin 读取，不接受命令行参数。
-
-配置读取启动目录的 `.env`，进程环境优先。
-
-运行时显示工具名称、命令或路径和状态；成功结果不回显正文，失败只显示一行简短原因。
+启动目录就是工作目录。运行时 stderr 显示每轮工具调用数和 `→ 工具名 参数 · ok=...`，stdout 只有最终回答。
 
 ## 从哪里读核心
 
@@ -36,9 +35,8 @@ printf '%s\n' "检查当前目录" | cargo run --quiet
 
 | 文件 | 职责 |
 |---|---|
-| [src/main.rs](src/main.rs) | 持续输入、保留会话历史、显示回答和退出状态 |
-| [src/cli.rs](src/cli.rs) | stdin 读取和最小配置 |
-| [src/lib.rs](src/lib.rs) | 限制、停止原因与手写 agent loop |
+| [src/main.rs](src/main.rs) | 逐行读取任务、持有对话历史、打印回答和退出状态 |
+| [src/lib.rs](src/lib.rs) | `Config`、停止原因 `Stop` 与手写 agent loop `run_turn` |
 | [src/model.rs](src/model.rs) | Responses 请求和完整响应校验 |
 | [src/tools.rs](src/tools.rs) | `read_file`、`write_file`、`edit_file`、`bash` |
 
@@ -46,4 +44,4 @@ printf '%s\n' "检查当前目录" | cargo run --quiet
 
 ## 教程
 
-从[教程入口](tutorial/README.md)开始，也可以用[七个增量](tutorial/v1/patches/README.md)从空目录重建这份 v1 实现。
+从[教程入口](tutorial/README.md)开始，也可以用[六个增量](tutorial/v1/patches/README.md)从空目录重建这份 v1 实现。

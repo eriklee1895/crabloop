@@ -4,21 +4,17 @@
 
 这一章结束时，程序还不会替你读文件。它会先听懂两种回答：“这是一段文字”，以及“请调用这个工具”。文件操作留到下一章接上。
 
-## 先做一个只跑一次的小探针
+## 从一个空目录开始
 
-先在参考仓库根目录记住它的位置，再创建独立的练习工程。目录可以叫 `crabloop-lab`，Cargo 包名保持 `crabloop`，后面的测试会使用这个名字：
+按[增量入口](patches/README.md)准备好练习目录 `playground/v1-lesson`，并复制了 `Cargo.lock` 以后，应用本章补丁：
 
 ```bash
-export CRABLOOP_SOURCE="$PWD"
-mkdir -p playground
-cargo new playground/crabloop-lab --name crabloop --edition 2024
-cd playground/crabloop-lab
-git init -q
+git apply --check "$CRABLOOP_SOURCE/tutorial/v1/patches/01-responses.patch"
+git apply "$CRABLOOP_SOURCE/tutorial/v1/patches/01-responses.patch"
+cargo test --locked --test protocol
 ```
 
-也可以按[增量入口](patches/README.md)应用 `00-probe.patch`，直接得到包含锁文件的同一探针。两种方式任选一种，接下来都在练习目录操作。
-
-把 `Cargo.toml` 的 dependencies 部分替换为：
+补丁建立了一个名为 `crabloop` 的 Cargo 工程。先看 `Cargo.toml` 的依赖：
 
 ```toml
 [dependencies]
@@ -29,53 +25,51 @@ serde_json = "=1.0.152"
 tokio = { version = "=1.53.2", features = ["macros", "rt-multi-thread", "process", "io-util", "time"] }
 ```
 
-`reqwest` 发送 HTTP 请求，`serde_json` 处理 JSON，`tokio` 让程序能够等待网络。其余依赖和进程相关 feature 会在后面用到，先不需要逐个展开。
+`reqwest` 发送 HTTP 请求，`serde`/`serde_json` 处理 JSON，`tokio` 让程序能够等待网络和子进程，`anyhow` 让错误带着上下文一路返回。这就是 v1 全部的依赖，后面不再增加。
 
-现在把 `src/main.rs` 替换为下面这个完整程序：
+本章写下的代码分在两个文件里：`src/lib.rs` 放配置，`src/model.rs` 放和模型对话的两个函数。另外还有一个小探针 `examples/probe.rs`，用来亲眼看一次真实响应。
+
+## 程序需要知道的三件事
+
+在发请求之前，程序要知道：请求发到哪里、用哪把钥匙、请哪个模型回答。`src/lib.rs` 的 `Config::from_env` 从环境变量读出这些信息：
 
 ```rust
-use serde_json::{Value, json};
+pub fn from_env() -> Result<Self> {
+    let var = |key: &str| std::env::var(key).ok().filter(|v| !v.trim().is_empty());
+    let base = var("OPENAI_BASE_URL").unwrap_or_else(|| "https://api.openai.com/v1".into());
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    let key = std::env::var("OPENAI_API_KEY")?;
-    let model = std::env::var("CRABLOOP_MODEL")?;
-    let base = std::env::var("OPENAI_BASE_URL")?;
-    let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(60))
-        .build()?;
-    let response: Value = client
-        .post(format!("{}/responses", base.trim_end_matches('/')))
-        .bearer_auth(key)
-        .json(&json!({
-            "model": model, "input": "只回复 CRABLOOP_PROTOCOL_OK",
-            "store": false, "max_output_tokens": 2048
-        }))
-        .send().await?
-        .error_for_status()?
-        .json().await?;
-    println!("{}", serde_json::to_string_pretty(&response)?);
-    Ok(())
+    Ok(Self {
+        endpoint: format!("{}/responses", base.trim_end_matches('/')),
+        api_key: var("OPENAI_API_KEY").context("OPENAI_API_KEY is required")?,
+        model: var("CRABLOOP_MODEL").context("CRABLOOP_MODEL is required")?,
+        workspace: std::env::current_dir()?,
+    })
 }
 ```
 
-读这段代码时，先沿着动作走：取配置 → 创建客户端 → 发送 JSON → 检查 HTTP 状态 → 解码响应 → 打印。`?` 会把某一步的失败交给入口，避免带着错误继续向下；`.await` 则等待网络操作完成。
+`var` 是一个小闭包：变量不存在或为空，都得到 `None`。`OPENAI_BASE_URL` 可以省略，默认是 OpenAI；密钥和模型名必须提供，缺了就用 `context` 给出一句明确的错误，再由 `?` 交还给调用者。程序不根据模型名猜测服务地址，选哪家服务完全由这三个变量决定。
 
-先运行 `cargo check`。手写工程会在这一步生成 `Cargo.lock`，以后带上 `--locked`，保持解析后的依赖版本一致。
+`workspace` 是启动程序时所在的目录。现在还用不上，下一章的文件工具会以它为根解析路径。
 
 ## 让它真的说一句话
 
-探针读取三个进程环境变量：`OPENAI_API_KEY`、`OPENAI_BASE_URL` 和 `CRABLOOP_MODEL`。此阶段还不会自动加载 `.env`。
-
-以 DeepSeek 为例，模型名使用 `deepseek-flash`，URL 前缀使用 `https://api.deepseek.com`，对应密钥放入本章通用的 `OPENAI_API_KEY`。先在自己的终端配置密钥，再运行：
+以 DeepSeek 为例，在自己的终端设置三个变量：
 
 ```bash
+export OPENAI_API_KEY=你的密钥
 export OPENAI_BASE_URL=https://api.deepseek.com
 export CRABLOOP_MODEL=deepseek-flash
-cargo run --locked
 ```
 
-这是会访问真实服务的手动实验。我们的请求要求只回复 `CRABLOOP_PROTOCOL_OK`，但程序打印的是整个 JSON。第一次看到一大段响应时，不用逐字段阅读，先找到 `output`：
+使用 OpenAI 时省略 `OPENAI_BASE_URL`，模型名换成你账号可用的模型。任何支持 Responses API 和 function calling 的服务都可以，只要换掉这三个值。后面每章的真实实验都沿用这一组变量。
+
+然后运行探针：
+
+```bash
+cargo run --locked --example probe -- "只回复 CRABLOOP_PROTOCOL_OK"
+```
+
+这是会访问真实服务的手动实验。探针把任务包成一条用户消息，调用 `model::request` 和 `model::respond`，再把响应中的 `output` 数组打印出来。第一次看到它时，不用逐字段阅读，先认出每一项的 `type`：
 
 ```mermaid
 flowchart TD
@@ -83,10 +77,10 @@ flowchart TD
     R --> O["output 数组"]
     O --> M["message<br/>content 中寻找 output_text"]
     O --> F["function_call<br/>工具名、参数与 call_id"]
-    O --> X["其他输出项<br/>例如推理信息，后续仍需保留"]
+    O --> X["其他输出项<br/>例如 reasoning，后续仍需保留"]
 ```
 
-正常文字回答会出现在 `message` 的 `content` 中，对应类型是 `output_text`。下面只是省略其他字段的**结构示意**，不是一次真实运行的转录：
+正常文字回答出现在 `message` 的 `content` 中。下面是省略了其他字段的**结构示意**，不是一次真实运行的转录：
 
 ```json
 {
@@ -99,35 +93,89 @@ flowchart TD
 }
 ```
 
-现在能回答一个小问题了：程序得到的是 HTTP JSON；最终文字藏在输出数组里面。不能想当然地把整个响应当成字符串，也不能假设 HTTP JSON 顶层一定有 SDK 那样的文本快捷属性。
+最终文字藏在输出数组里面。不能想当然地把整个响应当成字符串，也不能假设 HTTP JSON 顶层一定有 SDK 那样的文本快捷属性。
+
+## 一次请求里装了什么
+
+打开 `src/model.rs`。`request` 只是把几样东西拼成一份 JSON：
+
+```rust
+pub fn request(config: &Config, input: &[Value]) -> Value {
+    json!({
+        "model": config.model,
+        "instructions": INSTRUCTIONS,
+        "input": input,
+        "store": false,
+        "include": ["reasoning.encrypted_content"],
+        "max_output_tokens": 131_072
+    })
+}
+```
+
+`instructions` 放程序的固定约定，`input` 放任务与历史。`store: false` 表示服务端不替我们保存对话，历史由我们自己保存、每次完整发送；第 04 章的循环会因此很容易观察。`include` 要求服务把推理内容以加密形式返回，我们不解读它，只负责原样带回下一次请求。
+
+`input` 的类型是 `&[Value]`：函数只借用历史来构造请求，不拿走它。现在还没有工具说明，下一章会在这份 JSON 里加上一行 `"tools"`。
 
 ## 从“打印响应”走到“理解响应”
 
-接下来应用 [01-responses.patch](patches/01-responses.patch)。如果刚才手写探针与补丁起点有排版差异，可以参照 diff 逐文件修改；完整增量包含所有新增文件。
+`respond` 发出请求并检查 HTTP 状态，然后把响应解码成一个很小的结构：
 
-```bash
-git apply --check "$CRABLOOP_SOURCE/tutorial/v1/patches/01-responses.patch"
-git apply "$CRABLOOP_SOURCE/tutorial/v1/patches/01-responses.patch"
-cargo test --locked --test protocol
+```rust
+#[derive(Deserialize)]
+struct Response {
+    status: String,
+    output: Vec<Value>,
+}
 ```
 
-`CRABLOOP_SOURCE` 指向参考仓库，设置方法见[增量入口](patches/README.md)。代码到达 `step-01-responses`：`src/main.rs` 负责接收配置，`src/model.rs` 的 `ModelClient` 构造请求、校验响应，`ToolCall` 和 `ModelReply` 保存解析后的结果。
+只取两个字段。`output` 保留为 `Vec<Value>`，也就是原样的 JSON：里面可能有我们不认识、也不打算解读的项，但下一次请求还要把它们完整送回去。
 
-在 `ModelClient::request` 中，`instructions` 放程序约定，`input` 放任务与历史，`tools` 放工具说明。本阶段 `tools` 为空，尚未连接真实工具。请求设置 `store: false`，由我们显式保存并发送历史；这会让第 04 章的循环更容易观察。
+至于我们需要读懂的那几种项，用一个 `enum` 描述它们的形状：
 
-这些协议测试会启动本地 HTTP 服务，不需要模型密钥。它先返回我们准备好的 JSON，程序仍然经过真正的发送、接收和解析过程。这样可以稳定检查请求是否带对了字段，也能制造真实服务不一定恰好返回的错误。
-
-这个阶段的命令行入口已经接收任务。沿用刚才的三个环境变量，可以运行：
-
-```bash
-cargo run --locked -- --workspace . "只回复 CRABLOOP_PROTOCOL_OK"
+```rust
+#[derive(Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+enum Item {
+    FunctionCall(ToolCall),
+    Message { content: Vec<Content>, phase: Option<String> },
+    #[serde(other)]
+    Other,
+}
 ```
 
-这是本章的阶段入口。最终 v1 的 stdin 输入和 `.env` 配置会在第 05 章接上，不要把两套启动方式混用。
+`#[serde(tag = "type")]` 让 serde 按每一项的 `type` 字段选择分支：`function_call` 变成 `Item::FunctionCall`，`message` 变成 `Item::Message`，其他任何类型都落进 `Other`。这几行几乎就是上面那张图的 Rust 写法。
+
+`respond` 随后逐项匹配：
+
+```rust
+for item in &response.output {
+    match Item::deserialize(item)? {
+        Item::FunctionCall(call) => calls.push(call),
+        Item::Message { content, phase } => {
+            if phase.as_deref().is_none_or(|p| p == "final_answer") {
+                final_text.extend(content.into_iter().filter_map(|c| c.text));
+            }
+        }
+        Item::Other => {}
+    }
+}
+```
+
+`Item::deserialize(item)` 从借用的 `&Value` 读出需要的字段，原来的 `output` 保持不变。最后它返回一个 `Reply`：
+
+```rust
+pub struct Reply {
+    pub output: Vec<Value>,
+    pub calls: Vec<ToolCall>,
+    pub final_text: Option<String>,
+}
+```
+
+`calls` 方便执行动作，`output` 留给下一轮重放历史，`final_text` 只有在模型给出最终回答时才是 `Some`。用 `Option` 而不是“一个字符串加一个布尔值”，是让“没有最终回答”成为一种类型上就看得见的状态。
 
 ## 如果回答是一张“动作单”
 
-再看测试样本中的另一种输出：
+再看测试样本 `tests/fixtures/responses/two_calls.json` 中的一项：
 
 ```json
 {
@@ -135,15 +183,15 @@ cargo run --locked -- --workspace . "只回复 CRABLOOP_PROTOCOL_OK"
   "id": "fc_call_1",
   "call_id": "call_1",
   "name": "read_file",
-  "arguments": "{\"path\":\"lib.rs\"}"
+  "arguments": "{\"path\": \"lib.rs\"}"
 }
 ```
 
 这份数据说的是：“请读取 `lib.rs`。”它没有包含文件内容，也没有替我们执行读取。
 
-先留意 `arguments`：它是一个字符串，字符串内部才是一份 JSON。响应解析先认出工具调用，下一章的执行入口再解开参数、验证路径。两个步骤各自处理不同的错误。
+先留意 `arguments`：它是一个字符串，字符串内部才是一份 JSON。`ToolCall` 先把它原样保存为 `String`，下一章的工具入口再解开参数、验证路径。两个步骤各自处理不同的错误。
 
-再看两个相似的名字：`id` 标识这一个输出项；`call_id` 用来关联稍后返回的工具结果。后续的对应关系会像这样：
+再看两个相似的名字：`id` 标识这一个输出项；`call_id` 用来关联稍后返回的工具结果。`ToolCall` 只取 `call_id`、`name`、`arguments` 三个字段：
 
 ```mermaid
 flowchart LR
@@ -154,20 +202,31 @@ flowchart LR
     C -. 用同一个 call_id 关联 .-> R
 ```
 
-打开 `src/model.rs`：`ToolCall` 保存执行所需的 `call_id`、`name` 和 `arguments`；`ModelReply` 同时保留完整 `output`。前者方便执行动作，后者留给下一轮重放历史。即使其中有我们不解读的推理内容，也不能只因为“暂时用不上”就丢掉它。
+如果一个 `function_call` 缺少 `call_id`，`Item::deserialize` 会直接失败，`respond` 返回错误：没有 `call_id` 的调用，结果无处可接，不能执行。
 
 ## 先确认完整，再决定做什么
 
-如果响应在生成途中被截断，里面可能已经出现了一部分工具调用。这时急着执行，动作可能基于一份不完整的回答。
+如果响应在生成途中被截断，里面可能已经出现了一部分工具调用。这时急着执行，动作可能基于一份不完整的回答。因此 `respond` 在处理任何输出项之前先检查：
 
-因此解析器先检查响应状态，再处理输出项。运行下面的实验，观察不完整响应、缺失 `call_id` 和重复 `call_id` 怎样被拒绝：
-
-```bash
-cargo test --locked --test protocol incomplete_and_missing_or_duplicate_call_ids_are_rejected -- --exact
+```rust
+ensure!(response.status == "completed", "response status is {}", response.status);
+ensure!(!response.output.is_empty(), "response has no output");
 ```
 
-另外，只有中间说明 `commentary` 的响应也不能当成最终回答。它可以留在历史里，但 `ModelReply.is_final` 应为 false。第 04 章会用这个判断决定是否继续循环。
+本章的协议测试会启动一个本地 HTTP 服务，按顺序返回准备好的 JSON。程序仍然经过真正的发送、接收和解析，所以不需要模型密钥，也能稳定制造真实服务不一定恰好返回的情况。运行下面的实验，观察不完整响应、缺少 `call_id`、空输出和 HTTP 500 怎样变成错误：
 
-这些测试确认客户端如何处理约定好的响应；前面的手动请求则检查你的真实服务能否完成一次往返。带着这个区别继续：现在我们能认出 `read_file` 这份动作单了，下一章让它真正读到磁盘上的文件。
+```bash
+cargo test --locked --test protocol incomplete_missing_call_id_empty_output_and_http_500_are_errors -- --exact
+```
 
-下一章：[02：让一个工具调用真正读到文件](02-file-tools.md)。本章固定源码见 [`step-01-responses` 的 model.rs](https://github.com/eriklee1895/crabloop/blob/step-01-responses/src/model.rs)。
+另外，只有中间说明 `commentary` 的响应也不能当成最终回答。它可以留在历史里，但 `final_text` 是 `None`；没有 `phase` 字段的旧式文本则仍算最终回答：
+
+```bash
+cargo test --locked --test protocol commentary_is_preserved_and_not_final_but_phaseless_text_is -- --exact
+```
+
+第 04 章会用 `final_text` 决定循环是否结束。
+
+这些测试确认客户端如何处理约定好的响应；前面的探针则检查你的真实服务能否完成一次往返。带着这个区别继续：现在我们能认出 `read_file` 这张动作单了，下一章让它真正读到磁盘上的文件。
+
+下一章：[02：让一个工具调用真正读到文件](02-file-tools.md)。

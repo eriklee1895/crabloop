@@ -6,15 +6,13 @@
 
 这一章就来接通这条回路。先跟着两个文件走一趟，再故意弄断回传，看看循环会在哪儿露出问题。
 
-> 本章从 `step-03-bash` 走到 `step-04-loop`，代码使用这一阶段的 `run`、`ModelClient` 和 `ToolResult`。当前 `milestone/v1` 已继续演进：`main` 保存连续提问的历史，`run_turn` 借用历史执行当前任务。这里先学清楚一个任务内部的循环，阶段接口在下一章收束。
-
 ## 先看一次小小的往返
 
 为了把注意力放在循环上，我们先用一个本地实验。临时目录里只有两个待读取的文件：`lib.rs` 的内容是 `A`，`tests.rs` 的内容是 `B`。本地 HTTP 服务事先准备好两份响应：第一份要求读取这两个文件，第二份只回答 `Done`。
 
 响应顺序是我们安排的，文件读取和 HTTP 请求则由程序真正执行。这样，无需配置模型密钥，也能反复观察同一条反馈通路。
 
-在跟做前三章的练习目录中应用[本章完整增量](patches/04-agent-loop.patch)。`CRABLOOP_SOURCE` 指向参考仓库，设置方法见[增量入口](patches/README.md)。已经应用过 04 补丁时，直接运行测试即可。
+在跟做前三章的练习目录中应用[本章完整增量](patches/04-agent-loop.patch)。它只修改 `src/lib.rs`：新增 `Stop` 和 `run_turn`，并给 `Config` 加上两个上限字段。`CRABLOOP_SOURCE` 指向参考仓库，设置方法见[增量入口](patches/README.md)。
 
 ```bash
 git apply --check "$CRABLOOP_SOURCE/tutorial/v1/patches/04-agent-loop.patch"
@@ -22,7 +20,16 @@ git apply "$CRABLOOP_SOURCE/tutorial/v1/patches/04-agent-loop.patch"
 cargo test --locked --test loop two_calls_then_final_preserves_ids_and_returns_both_results -- --exact --nocapture
 ```
 
-运行时，留意 `turn 1: 2 tool call(s)` 和 `turn 2: 0 tool call(s)`：模型服务被请求了两次，两个文件工具都在这两次请求之间执行。
+运行时，留意终端里的几行进度：
+
+```text
+turn 1: 2 tool call(s)
+  → read_file {"path": "lib.rs"} · ok=true
+  → read_file {"path": "tests.rs"} · ok=true
+turn 2: 0 tool call(s)
+```
+
+模型服务被请求了两次，两个文件工具都在这两次请求之间执行。每个工具调用只打印一行：工具名、参数和 `ok`。工具结果的正文不打印给人看，它要去的地方是下一次请求。
 
 下面把这段过程展开。图中的模型服务是本地测试服务；箭头表示消息或调用的方向。
 
@@ -47,23 +54,31 @@ sequenceDiagram
 
 ## 让历史留在一个地方
 
-打开练习工程的 `src/lib.rs`。新增的 `run` 函数先创建 HTTP 客户端、准备工具描述，再把用户任务放进一个数组：
+打开练习工程的 `src/lib.rs`，新增的 `run_turn` 就是第 00 章那段伪代码的 Rust 版本。先看它的签名：
 
 ```rust
-let mut input = vec![json!({"role":"user", "content":config.task})];
+pub async fn run_turn(config: &Config, input: &mut Vec<Value>) -> Result<Stop> {
 ```
 
-这一刻，`input` 只有一项。它的类型是 `Vec<Value>`：同一个数组里既可以放用户消息，也可以放模型输出和工具结果。`run` 持有这个数组，整个任务运行期间它都在。
-
-每轮请求都借用这份历史。下面摘出发送请求与保存响应的三行，省略预算检查和进度记录：
+历史 `input` 不归 `run_turn` 所有，它由调用者创建，再以 `&mut` 借给这一轮任务。测试里的调用者是这样准备它的：
 
 ```rust
-let request = client.request(INSTRUCTIONS, &input, &tools);
-let reply = client.respond(request).await?;
+let mut input = vec![json!({"role": "user", "content": "Repair the bug"})];
+run_turn(&config, &mut input).await
+```
+
+这一刻，`input` 只有一项。它的类型是 `Vec<Value>`：同一个数组里既可以放用户消息，也可以放模型输出和工具结果。`&mut` 允许 `run_turn` 往里追加内容；函数返回以后，数组和里面增长出来的历史仍然留在调用者手里。第 06 章会用到这一点。
+
+每轮请求都读取这份历史。下面摘出发送请求与保存响应的几行：
+
+```rust
+let request = model::request(config, input);
+// ……请求预算检查，见本章末尾
+let reply = model::respond(&client, config, &request).await?;
 input.extend(reply.output);
 ```
 
-`&input` 把当前内容交给请求构造函数，数组仍留在 `run` 中。模型返回后，`extend` 把 `reply.output` 里的各项按顺序追加到末尾。
+`model::request` 和 `model::respond` 就是第 01 章写下的两个函数。模型返回后，`extend` 把 `reply.output` 里的各项按顺序追加到末尾。
 
 为什么先保存调用，再去执行工具？因为下一次请求不只需要“文件里是 A”，还需要知道这条结果回答了哪个调用。模型原来的调用和我们后来生成的结果，要一起留在历史里。
 
@@ -71,18 +86,23 @@ input.extend(reply.output);
 
 ## 把两个结果接到原来的调用上
 
-模型把动作列出来之后，轮到 Rust 程序逐个执行。还是在 `src/lib.rs` 的 `run` 中，工具处理的关键代码是：
+模型把动作列出来之后，轮到 Rust 程序逐个执行。还是在 `run_turn` 中，工具处理的关键代码是：
 
 ```rust
 for call in reply.calls {
-    let result = tools::execute(&call, &config.workspace, &config.limits).await;
-    input.push(result.as_input());
+    let result = tools::execute(&call, config).await;
+    // ……打印一行进度
+    input.push(json!({
+        "type": "function_call_output",
+        "call_id": call.call_id,
+        "output": result.to_string()
+    }));
 }
 ```
 
-`await` 等当前工具完成，再处理下一个调用。这里的两个 `read_file` 按顺序运行；两个结果都进入 `input` 以后，外层循环才会发出第二次模型请求。
+`await` 等当前工具完成，再处理下一个调用。这里的两个 `read_file` 按顺序运行；两个结果都进入 `input` 以后，外层的 `for` 循环才会发出第二次模型请求。
 
-`result.as_input()` 在 `src/tools.rs` 中，把执行结果转换成 Responses 接受的形式。以第一个文件为例，生成的这一项是：
+`tools::execute` 是第 02 章写下的入口，它返回一份 JSON。`run_turn` 把它序列化成字符串，和原调用的 `call_id` 一起包成 Responses 接受的 `function_call_output`。以第一个文件为例，生成的这一项是：
 
 ```json
 {
@@ -115,7 +135,7 @@ flowchart LR
 
 ## 故意把回路断开一次
 
-现在只在自己的练习副本中，把刚才的 `input.push(result.as_input());` 暂时注释掉，然后重新运行同一个测试：
+现在只在自己的练习副本中，把刚才那段 `input.push(json!({ ... }));` 整段暂时注释掉，然后重新运行同一个测试：
 
 ```bash
 cargo test --locked --test loop two_calls_then_final_preserves_ids_and_returns_both_results -- --exact --nocapture
@@ -125,7 +145,7 @@ cargo test --locked --test loop two_calls_then_final_preserves_ids_and_returns_b
 
 这个实验把两个容易混在一起的事实分开了：工具确实执行过；模型下一轮是否收到了执行结果，还要检查请求。
 
-恢复这行代码，再运行一次测试，确认重新通过后继续。
+恢复这段代码，再运行一次测试，确认重新通过后继续。
 
 ## 当工具没有做成，回路也要接着走
 
@@ -137,7 +157,7 @@ cargo test --locked --test loop two_calls_then_final_preserves_ids_and_returns_b
 cargo test --locked --test loop tool_error_then_corrected_call_receives_actionable_feedback -- --exact --nocapture
 ```
 
-第一次编辑找不到原文，会返回 `ok: false` 和 `old_text did not match; read the file again`。文件保持原样，错误结果仍然通过同一个 `input.push(...)` 进入历史。第二次编辑成功后，文件才变成 `NEW`。
+第一次编辑找不到原文，会返回 `ok: false` 和 `old_text did not match; read the file again`，终端上那一行进度显示 `ok=false`。文件保持原样，错误结果仍然通过同一个 `input.push(...)` 进入历史。第二次编辑成功后，文件才变成 `NEW`。
 
 这正是循环里值得保留的一点：可修正的工具错误也是反馈。它告诉模型当前动作为什么没有做成，让后续动作有机会调整。不要在这里一遇到 `ok: false` 就退出，也不要只把错误打印到终端。
 
@@ -147,25 +167,42 @@ cargo test --locked --test loop tool_error_then_corrected_call_receives_actionab
 
 工具结果送回去以后，我们仍然要回答一个问题：下一轮是继续行动，还是已经可以结束？
 
-`run` 在保存模型输出后做这个判断：
+`run_turn` 在保存模型输出后做这个判断：
 
 ```rust
-if reply.calls.is_empty() && reply.is_final {
-    report.reason = StopReason::Final;
-    report.final_text = reply.text;
-    break;
+if reply.calls.is_empty()
+    && let Some(text) = reply.final_text
+{
+    return Ok(Stop::Final(text));
 }
 ```
 
-两个条件都要满足。有工具调用，就先执行；只有中间说明 `commentary`、没有最终回答时，也继续下一轮。否则，一句“我先看一下文件”就可能被当成任务已经完成。
+两个条件都要满足。有工具调用，就先执行；只有中间说明 `commentary`、`final_text` 为 `None` 时，也继续下一轮。否则，一句“我先看一下文件”就可能被当成任务已经完成。`&& let Some(text) = ...` 是 Rust 2024 的 let-chain：条件成立的同时，把最终回答取出来。
 
-为了给迟迟不结束的任务留一个出口，`RunReport` 还区分另外两种停止原因：
+为了给迟迟不结束的任务留一个出口，返回值 `Stop` 还区分另外两种停止原因：
+
+```rust
+pub enum Stop {
+    Final(String),
+    MaxTurns,
+    ContextLimit,
+}
+```
 
 | 停止原因 | 本轮观察到了什么 |
 |---|---|
-| `Final` | 没有待执行工具调用，且模型给出了最终回答 |
-| `MaxTurns` | 已达到允许的模型调用轮数 |
-| `ContextLimit` | 发请求前，整个请求 JSON 已超过字节预算 |
+| `Final(text)` | 没有待执行工具调用，且模型给出了最终回答 |
+| `MaxTurns` | 已达到 `config.max_turns` 次模型请求（默认 16） |
+| `ContextLimit` | 发请求前，整个请求 JSON 已超过 `config.request_bytes`（默认 4 MiB） |
+
+只有 `Final` 带着回答文本：类型本身就说明了“轮数用完”时没有可展示的答案。请求预算的检查在每次发请求之前：
+
+```rust
+let request = model::request(config, input);
+if serde_json::to_vec(&request)?.len() > config.request_bytes {
+    return Ok(Stop::ContextLimit);
+}
+```
 
 HTTP 或协议错误通过 `Result` 返回调用方；工具内部可修正的错误则像刚才那样进入历史。看清这两条路径，才知道错误发生后程序会退出，还是会给模型下一次机会。
 
@@ -185,4 +222,4 @@ cargo test --locked --test loop
 
 最后一个问题会带我们进入[第 05 章：让四个工具一起做完一件事](05-v1-coding-task.md)。那里会换成真实模型，并在循环之外检查文件与测试结果。
 
-本章完整源码见 [`step-04-loop` 的 lib.rs](https://github.com/eriklee1895/crabloop/blob/step-04-loop/src/lib.rs)，本地实验见[同阶段的 tests/loop.rs](https://github.com/eriklee1895/crabloop/blob/step-04-loop/tests/loop.rs)。
+到这里，`run_turn` 已经是 `milestone/v1` 中的最终版本，本地实验都在练习工程的 `tests/loop.rs` 里。

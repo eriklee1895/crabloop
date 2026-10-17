@@ -6,9 +6,9 @@ CrabLoop is a small coding-agent harness built from scratch in Rust for hands-on
 
 Keep the project focused on a mini coding agent and its Harness; do not reframe it as a Workbench.
 
-- v1: target about 300 lines, with size used as a teaching guideline rather than a hard gate. Teach the hand-written model/tool/feedback/stop loop with four tools.
-- v2: approximately 500 lines total, adding context management and summary compaction.
-- v3: approximately 1,000 lines total, adding ~/.crabloop, TOML configuration, provider presets/Custom, credentials, and model catalog discovery/cache. Minimal Skills is optional if comfortably within scope.
+- v1: hard cap 400 code lines, sweet spot 300-350. Teach only the hand-written model/tool/feedback/stop loop with four tools; cut everything else to later versions.
+- v2: about 500-600 lines total, adding context management and summary compaction.
+- v3: 1,000+ lines total (full-featured starts here), adding ~/.crabloop, TOML configuration, provider presets/Custom, credentials, and model catalog discovery/cache. Minimal Skills is optional if comfortably within scope.
 - v4: Skills and provider-independent web_fetch/web_search. v5: recoverable JSONL sessions and interruption handling under ~/.crabloop. See docs/roadmap.md; these stages are planned, not implemented.
 - Acceptance includes both coding repairs and general local agentic tasks such as reading source documents and producing a verifiable structured report.
 - Use the OpenAI native Responses API and a hand-written agent loop.
@@ -16,26 +16,20 @@ Keep the project focused on a mini coding agent and its Harness; do not reframe 
 
 ## Current state and layout
 
-The only v1 learning code is milestone/v1. Seven tutorial patches end at the same complete src tree; scripts/check-lessons.py verifies it. Historical tags preserve steps and evidence, not alternative learning entries.
+The only v1 learning code is milestone/v1. Six additive tutorial patches (one per chapter 01-06) rebuild the same src tree from an empty directory; scripts/check-lessons.py verifies each stage (fmt + tests) and that every patched file equals the working tree. Historical tags preserve older steps and evidence, not alternative learning entries.
 
-The milestone/v1 implementation has 436 code lines / 495 physical lines under the established counting rule. Tool display shows name/argument/status; success output is hidden and failures have one brief reason. Original v1 / step-05-v1 tags retain 314/319. Production Rust lives in five files; main owns one Vec<Value> across user questions; run_turn borrows it for the model/tool loop. run(Config) remains a one-task wrapper. No Session, editor, persistence or SSE.
+v1 has 304 code / 350 physical lines in four files: main.rs (stdin entry, owns history), lib.rs (Config, Stop, run_turn), model.rs (request/respond, serde Response/Item, raw output kept for replay), tools.rs (schemas, execute, four tools). examples/probe.rs sends one request for chapter 01. No Session, editor, persistence, SSE, .env or provider presets.
 
-Terminal startup shows the crab banner and crab> prompt. After each answer, read another task and retain history until Ctrl-D; blank terminal lines are ignored. Piped stdin stays one task. Arguments are rejected before configuration; workspace is cwd. EOF/empty pipe needs no credentials or request. Errors, MaxTurns and ContextLimit end the process; no automatic recovery/replay. Limits: request 4 MiB, output 131,072 tokens; model/tool turns reset per question.
+Each non-empty stdin line is one task, terminal or pipe alike; main keeps one Vec<Value> until EOF and run_turn borrows it. stdout carries only final answers; stderr shows the crab> prompt, `turn N` and one `→ name args · ok=` line per tool. MaxTurns/ContextLimit exit with code 2; errors end the process. Limits: 16 turns per task, request 4 MiB, output 131,072 tokens, file 64 KiB, read 8 KiB, pipes 4 KiB each, bash 30 s.
 
-Only the startup directory's .env is read as data; process environment wins. CRABLOOP_PROVIDER defaults to deepseek (DEEPSEEK_API_KEY, deepseek-flash). Explicit openai uses OPENAI_API_KEY, OPENAI_BASE_URL (default https://api.openai.com/v1) and default gpt-6-luna. CRABLOOP_MODEL and full CRABLOOP_API_URL override the selected profile. No model-name, hostname or key-presence inference. The live test driver explicitly selects openai while supplying the chosen provider's matching key/base/model; it runs the binary from the fixture directory. Never execute or print .env contents.
+Config is OPENAI_API_KEY, OPENAI_BASE_URL (default https://api.openai.com/v1) and CRABLOOP_MODEL (required); workspace is cwd; arguments are ignored. DeepSeek: base https://api.deepseek.com, model deepseek-flash. The bash child does not inherit OPENAI_API_KEY. scripts/run-live.py reads .env for the driver only. Never execute or print .env contents.
 
-CLI Help remains planned in docs/cli-help-plan.md. Code strings/comments are English; tutorials are Chinese.
-
-GA evidence: evidence/v1/ga-review.md.
-
-Offline baseline: 44 Rust + 6 Python tests, fmt/clippy. Live repair/report and PTY results are historical evidence in evidence/v1/ga-review.md. Only in-process chat is retained.
-
-Read docs/v1-scope.md and docs/v1-reduction-plan.md for this accepted reduction; docs/design.md and docs/plan.md preserve the original learning sequence. Tutorial 00-06 follows the staged loop through the current in-process chat; chapter 06 explains main/read_task/run_turn, not the historical Session/rustyline experiment.
+Offline baseline: 29 Rust + 5 Python tests, fmt/clippy, check-lessons. Live evidence in evidence/v1/ga-review.md predates the slim version (docs/devlog/37-v1-slim.md). Code strings/comments are English; tutorials are Chinese. CLI Help remains planned in docs/cli-help-plan.md. Read docs/v1-scope.md for scope; docs/design.md and docs/plan.md preserve the original learning sequence.
 
 ## How to develop
 
 - Keep AGENTS.md current with repository state, interfaces and durable decisions; put detailed history and evidence in docs/devlog/.
-- Keep v1 focused on the smallest readable loop. Use code size to guide scope rather than reject changes; richer interaction/configuration belongs later. v1/v2 stay non-streaming; basic SSE moves to v3.
+- Keep v1 focused on the smallest readable loop; richer interaction/configuration belongs later. v1/v2 stay non-streaming; basic SSE moves to v3.
 
 - Work in small increments, each with an observable behavior, an appropriate check, and a short explanation of what it teaches.
 - Keep the current milestone focused. Introduce abstractions when a concrete need appears.
@@ -48,7 +42,7 @@ Read docs/v1-scope.md and docs/v1-reduction-plan.md for this accepted reduction;
 
 ## Tutorial voice and progression
 
-Read [the writing guide](docs/writing-guide.md) before writing or revising a chapter.
+Read [the writing guide](docs/writing-guide.md) before writing or revising a chapter. Chapters teach final interfaces; patches only add code.
 
 - Use patient, connected Chinese prose. Lead the reader from an empty project through small runnable changes.
 - Keep prose concise. Roadmaps describe goals/scope; devlogs hold decisions and verification details.
