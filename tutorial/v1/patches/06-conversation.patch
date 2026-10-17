@@ -1,0 +1,48 @@
+diff --git a/tests/cli.rs b/tests/cli.rs
+--- a/tests/cli.rs
++++ b/tests/cli.rs
+@@ -40,3 +40,16 @@ fn a_stdin_line_runs_tools_in_the_startup_directory() {
+     assert_eq!(result["call_id"], "call_1");
+     assert!(result["output"].as_str().unwrap().contains("from cwd"));
+ }
++
++#[test]
++fn each_stdin_line_is_a_task_and_history_is_kept() {
++    let dir = TempDir::new();
++    let server = StubResponses::start(vec![fixture("text"), fixture("text")]);
++    let output = task_output(&mut crabloop(&dir, &server), "first\n\nsecond\n");
++    assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
++    assert_eq!(String::from_utf8_lossy(&output.stdout), "Done\nDone\n");
++    let second = &server.requests()[1]["input"];
++    assert_eq!(second[0]["content"], "first");
++    assert_eq!(second[1]["content"][0]["text"], "Done");
++    assert_eq!(second[2]["content"], "second");
++}
+diff --git a/tests/loop.rs b/tests/loop.rs
+--- a/tests/loop.rs
++++ b/tests/loop.rs
+@@ -165,3 +165,24 @@ async fn scripted_bugfix_loop_uses_all_tools_and_passes_external_verifier() {
+         .unwrap();
+     assert!(verified.status.success(), "{}", String::from_utf8_lossy(&verified.stderr));
+ }
++
++#[tokio::test]
++async fn followup_replays_previous_answer_and_complete_tool_results() {
++    let dir = TempDir::new();
++    fs::write(dir.path().join("lib.rs"), "A").unwrap();
++    fs::write(dir.path().join("tests.rs"), "B").unwrap();
++    let server = StubResponses::start(vec![fixture("two_calls"), fixture("text"), fixture("text")]);
++    let config = test_config(dir.path(), server.endpoint());
++    let mut input = vec![json!({"role":"user","content":"Read the files"})];
++    assert_eq!(run_turn(&config, &mut input).await.unwrap(), done());
++    assert_eq!(server.requests().len(), 2);
++    input.push(json!({"role":"user","content":"Which files did you read?"}));
++    let expected = input.clone();
++    run_turn(&config, &mut input).await.unwrap();
++    assert_eq!(server.requests()[2]["input"], json!(expected));
++    assert_eq!(expected[5]["content"][0]["text"], "Done");
++    assert_eq!(expected[6]["content"], "Which files did you read?");
++    assert_eq!(expected[3]["call_id"], "call_1");
++    let result: Value = serde_json::from_str(expected[3]["output"].as_str().unwrap()).unwrap();
++    assert_eq!(result["content"], "A");
++}

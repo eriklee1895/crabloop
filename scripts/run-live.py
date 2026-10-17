@@ -48,8 +48,7 @@ baseline = verify()
 if baseline.returncode == 0:
     raise SystemExit('Fixture unexpectedly passes before repair')
 env = os.environ.copy()
-env.update(CRABLOOP_PROVIDER="openai", OPENAI_API_KEY=key, OPENAI_BASE_URL=base, CRABLOOP_MODEL=model)
-env.pop('CRABLOOP_API_URL', None)
+env.update(OPENAI_API_KEY=key, OPENAI_BASE_URL=base, CRABLOOP_MODEL=model)
 task = 'Read README.md and inspect the source. Fix last_index in lib.rs. Run the existing tests before editing and after the fix. Preserve the public signature and tests.rs. Write NOTES.md describing the change and actual verification. Report only observed results.'
 subprocess.run(['cargo', 'build', '--locked'], cwd=ROOT, check=True, capture_output=True)
 if args.scenario == 'report':
@@ -58,7 +57,7 @@ start = datetime.now(timezone.utc)
 proc = subprocess.Popen([str(ROOT / 'target/debug/crabloop')], env=env, cwd=workspace, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True)
 timed_out = False
 try:
-    stdout, stderr = proc.communicate(input=task, timeout=300)
+    stdout, stderr = proc.communicate(input=task + '\n', timeout=300)
 except subprocess.TimeoutExpired:
     timed_out = True
     os.killpg(proc.pid, signal.SIGKILL)

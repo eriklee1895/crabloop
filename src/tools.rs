@@ -1,12 +1,16 @@
-use crate::{Limits, model::ToolCall};
-use anyhow::{Context, Result, ensure};
+use crate::{Config, model::ToolCall};
+use anyhow::{Context, Result, bail, ensure};
 use serde_json::{Map, Value, json};
 use std::{
     fs,
-    io::Read,
-    path::{Component, Path},
+    path::{Component, Path, PathBuf},
     process::Stdio,
 };
+use tokio::io::{AsyncRead, AsyncReadExt};
+
+const FILE_BYTES: usize = 64 * 1024;
+const READ_BYTES: usize = 8 * 1024;
+const PIPE_BYTES: u64 = 4 * 1024;
 
 pub fn schemas() -> Vec<Value> {
     [
@@ -26,7 +30,7 @@ pub fn schemas() -> Vec<Value> {
     .into_iter()
     .map(|(name, description, args)| {
         let properties: Map<String, Value> =
-            args.iter().map(|arg| ((*arg).into(), json!({"type": "string"}))).collect();
+            args.iter().map(|arg| (arg.to_string(), json!({"type": "string"}))).collect();
 
         json!({
             "type": "function",
@@ -44,96 +48,72 @@ pub fn schemas() -> Vec<Value> {
     .collect()
 }
 
-pub fn clip_utf8(text: &str, max_bytes: usize) -> (String, bool) {
-    let mut end = text.len().min(max_bytes);
-    while !text.is_char_boundary(end) {
-        end -= 1;
-    }
-
-    (text[..end].into(), end < text.len())
+pub fn clip(text: &str, max_bytes: usize) -> (&str, bool) {
+    let end = text.floor_char_boundary(max_bytes);
+    (&text[..end], end < text.len())
 }
 
-pub async fn execute(call: &ToolCall, workspace: &Path, limits: &Limits) -> Value {
-    execute_inner(call, workspace, limits)
+/// Run one tool call. Failures become `{"ok": false, ...}` results for the model.
+pub async fn execute(call: &ToolCall, config: &Config) -> Value {
+    dispatch(call, config)
         .await
-        .unwrap_or_else(|error| json!({"ok":false, "error":format!("{error:#}")}))
+        .unwrap_or_else(|error| json!({"ok": false, "error": format!("{error:#}")}))
 }
 
-async fn execute_inner(call: &ToolCall, workspace: &Path, limits: &Limits) -> Result<Value> {
+async fn dispatch(call: &ToolCall, config: &Config) -> Result<Value> {
     let args: Value = serde_json::from_str(&call.arguments)?;
     let arg = |key: &str| args[key].as_str().with_context(|| format!("{key} must be a string"));
+    let path = || resolve(&config.workspace, arg("path")?);
 
-    if call.name == "bash" {
-        return bash(arg("command")?, workspace, limits).await;
+    match call.name.as_str() {
+        "bash" => bash(arg("command")?, config).await,
+        "read_file" => {
+            let text = read(&path()?)?;
+            let (content, truncated) = clip(&text, READ_BYTES);
+            Ok(json!({"ok": true, "content": content, "truncated": truncated}))
+        }
+        "write_file" => write(&path()?, arg("content")?),
+        "edit_file" => {
+            let (path, old) = (path()?, arg("old_text")?);
+            ensure!(!old.is_empty(), "old_text must not be empty");
+            let mut text = read(&path)?;
+            let start = text.find(old).context("old_text did not match; read the file again")?;
+            ensure!(text.rfind(old) == Some(start), "old_text must have a unique match");
+            text.replace_range(start..start + old.len(), arg("new_text")?);
+            write(&path, &text)
+        }
+        name => bail!("unknown tool: {name}"),
     }
+}
 
-    ensure!(
-        ["read_file", "write_file", "edit_file"].contains(&call.name.as_str()),
-        "unknown tool: {}",
-        call.name
-    );
-
-    let relative = Path::new(arg("path")?);
+/// Paths are relative to the workspace; this is a path contract, not a sandbox.
+fn resolve(workspace: &Path, relative: &str) -> Result<PathBuf> {
+    let relative = Path::new(relative);
     ensure!(
         !relative.is_absolute() && !relative.components().any(|c| c == Component::ParentDir),
         "path must be relative without parent traversal"
     );
     let path = workspace.join(relative);
     ensure!(!path.exists() || path.is_file(), "path must be a regular file");
+    Ok(path)
+}
 
-    let mut text = if call.name == "write_file" {
-        arg("content")?.to_owned()
-    } else {
-        let mut bytes = Vec::new();
-        fs::File::open(&path)?.take(limits.file_bytes as u64 + 1).read_to_end(&mut bytes)?;
-        ensure!(bytes.len() <= limits.file_bytes, "file exceeds size limit");
-        String::from_utf8(bytes)?
-    };
+fn read(path: &Path) -> Result<String> {
+    ensure!(fs::metadata(path)?.len() <= FILE_BYTES as u64, "file exceeds size limit");
+    Ok(fs::read_to_string(path)?)
+}
 
-    if call.name == "read_file" {
-        let (content, truncated) = clip_utf8(&text, limits.read_output_bytes);
-        return Ok(json!({"ok":true,"content":content,"truncated":truncated}));
-    }
-
-    if call.name == "edit_file" {
-        let old = arg("old_text")?;
-        ensure!(!old.is_empty(), "old_text must not be empty");
-        let start = text.find(old).context("old_text did not match; read the file again")?;
-        ensure!(text.rfind(old) == Some(start), "old_text must have a unique match");
-        text.replace_range(start..start + old.len(), arg("new_text")?);
-    }
-
-    ensure!(text.len() <= limits.file_bytes, "result exceeds file size limit");
+fn write(path: &Path, text: &str) -> Result<Value> {
+    ensure!(text.len() <= FILE_BYTES, "result exceeds file size limit");
     fs::write(path, text)?;
-    Ok(json!({"ok":true}))
+    Ok(json!({"ok": true}))
 }
 
-async fn drain(
-    mut reader: impl tokio::io::AsyncRead + Unpin,
-    kept: &mut Vec<u8>,
-    limit: usize,
-) -> std::io::Result<bool> {
-    use tokio::io::AsyncReadExt;
-
-    let mut chunk = [0; 4096];
-    let mut truncated = false;
-
-    loop {
-        let n = reader.read(&mut chunk).await?;
-        if n == 0 {
-            return Ok(truncated);
-        }
-
-        let take = n.min(limit.saturating_sub(kept.len()));
-        kept.extend_from_slice(&chunk[..take]);
-        truncated |= take < n;
-    }
-}
-
-async fn bash(command: &str, workspace: &Path, limits: &Limits) -> Result<Value> {
+async fn bash(command: &str, config: &Config) -> Result<Value> {
     let mut child = tokio::process::Command::new("bash")
         .args(["-c", command])
-        .current_dir(workspace)
+        .current_dir(&config.workspace)
+        .env_remove("OPENAI_API_KEY")
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -143,28 +123,21 @@ async fn bash(command: &str, workspace: &Path, limits: &Limits) -> Result<Value>
     let out = child.stdout.take().context("stdout pipe missing")?;
     let err = child.stderr.take().context("stderr pipe missing")?;
     let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
-
-    let completion = tokio::time::timeout(limits.bash_timeout, async {
-        tokio::try_join!(
-            child.wait(),
-            drain(out, &mut stdout, limits.stream_bytes),
-            drain(err, &mut stderr, limits.stream_bytes)
-        )
+    let done = tokio::time::timeout(config.bash_timeout, async {
+        tokio::try_join!(child.wait(), drain(out, &mut stdout), drain(err, &mut stderr))
     })
     .await;
 
-    let (status, timed_out, truncated) = match completion {
-        Ok(Ok((status, out_cut, err_cut))) => (Some(status), false, out_cut || err_cut),
-        other => {
-            let observed_status = child.try_wait()?;
-            if observed_status.is_none() {
+    let (status, timed_out, truncated) = match done {
+        Ok(result) => {
+            let (status, out_cut, err_cut) = result?;
+            (Some(status), false, out_cut || err_cut)
+        }
+        Err(_) => {
+            if child.try_wait()?.is_none() {
                 child.kill().await?;
             }
-
-            if let Ok(Err(error)) = other {
-                return Err(error.into());
-            }
-            (observed_status, true, true)
+            (child.try_wait()?, true, true)
         }
     };
 
@@ -176,4 +149,10 @@ async fn bash(command: &str, workspace: &Path, limits: &Limits) -> Result<Value>
         "timed_out": timed_out,
         "truncated": truncated
     }))
+}
+
+/// Keep the first bytes of a pipe, but keep reading so the child never blocks on a full pipe.
+async fn drain(mut pipe: impl AsyncRead + Unpin, kept: &mut Vec<u8>) -> std::io::Result<bool> {
+    (&mut pipe).take(PIPE_BYTES).read_to_end(kept).await?;
+    Ok(tokio::io::copy(&mut pipe, &mut tokio::io::sink()).await? > 0)
 }

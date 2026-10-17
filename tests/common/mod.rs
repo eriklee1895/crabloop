@@ -1,24 +1,13 @@
 #![allow(dead_code)]
 
-pub fn task_output(command: &mut std::process::Command, task: &str) -> std::process::Output {
-    use std::io::Write;
-    use std::process::Stdio;
-    let mut child = command
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .unwrap();
-    child.stdin.take().unwrap().write_all(task.as_bytes()).unwrap();
-    child.wait_with_output().unwrap()
-}
-use crabloop::{Config, Limits, model::ToolCall};
+use crabloop::{Config, model::ToolCall};
 use serde_json::Value;
 use std::{
     fs,
     io::{Read, Write},
     net::{TcpListener, TcpStream},
     path::{Path, PathBuf},
+    process::{Command, Output, Stdio},
     sync::{
         Arc, Mutex,
         atomic::{AtomicBool, AtomicU64, Ordering},
@@ -27,51 +16,62 @@ use std::{
     time::Duration,
 };
 
-pub fn fixture(name: &str) -> Value {
-    serde_json::from_str(
-        &fs::read_to_string(format!(
-            "{}/tests/fixtures/responses/{name}.json",
-            env!("CARGO_MANIFEST_DIR")
-        ))
-        .unwrap(),
-    )
-    .unwrap()
+pub fn test_config(workspace: &Path, endpoint: &str) -> Config {
+    Config {
+        endpoint: endpoint.into(),
+        api_key: "test-key".into(),
+        model: "test-model".into(),
+        workspace: workspace.to_path_buf(),
+        max_turns: 16,
+        request_bytes: 4 * 1024 * 1024,
+        bash_timeout: Duration::from_secs(30),
+    }
 }
+
+pub fn fixture(name: &str) -> Value {
+    let path = format!("{}/tests/fixtures/responses/{name}.json", env!("CARGO_MANIFEST_DIR"));
+    serde_json::from_str(&fs::read_to_string(path).unwrap()).unwrap()
+}
+
 pub fn make_call(call_id: &str, name: &str, arguments: Value) -> ToolCall {
     ToolCall { call_id: call_id.into(), name: name.into(), arguments: arguments.to_string() }
 }
-pub fn test_config(workspace: &Path, endpoint: &str) -> Config {
-    Config {
-        workspace: workspace.to_path_buf(),
-        task: "Repair the bug".into(),
-        endpoint: endpoint.into(),
-        model: "test-model".into(),
-        api_key: "test-key".into(),
-        limits: Limits::default(),
-    }
+
+/// Run the binary with `stdin` as its whole input.
+pub fn task_output(command: &mut Command, stdin: &str) -> Output {
+    let mut child = command
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    child.stdin.take().unwrap().write_all(stdin.as_bytes()).unwrap();
+    child.wait_with_output().unwrap()
 }
+
 pub struct TempDir(PathBuf);
+
 impl TempDir {
     pub fn new() -> Self {
         static NEXT: AtomicU64 = AtomicU64::new(0);
-        let p = std::env::temp_dir().join(format!(
-            "crabloop-test-{}-{}",
-            std::process::id(),
-            NEXT.fetch_add(1, Ordering::Relaxed)
-        ));
-        fs::create_dir(&p).unwrap();
-        Self(p)
+        let id = NEXT.fetch_add(1, Ordering::Relaxed);
+        let path = std::env::temp_dir().join(format!("crabloop-test-{}-{id}", std::process::id()));
+        fs::create_dir(&path).unwrap();
+        Self(path)
     }
+
     pub fn path(&self) -> &Path {
         &self.0
     }
 }
+
 impl Drop for TempDir {
     fn drop(&mut self) {
         let _ = fs::remove_dir_all(&self.0);
     }
 }
 
+/// A one-thread HTTP server that answers each POST with the next prepared response.
 pub struct StubResponses {
     endpoint: String,
     requests: Arc<Mutex<Vec<Value>>>,
