@@ -28,8 +28,8 @@
 ## 验证
 
 - `cargo fmt --check`、`cargo clippy --locked --all-targets -- -D warnings`、`cargo test --locked`：29 个 Rust 测试通过（cli 3 / loop 8 / protocol 5 / tools 13）。
-- Python：`live_driver_test.py`、`verify_report_test.py` 共 5 个测试通过。
+- Python：`live_driver_test.py`、`verify_report_test.py` 共 5 个测试通过（取证时修 verifier 后为 6 个，见 38）。
 - `python3 scripts/check-lessons.py`：六步全部通过，最终文件一致。
 - 手动核对第 04 章“断开回传”和第 06 章“历史只活一轮”两个实验：改动后对应测试按预期失败，恢复后通过。
 - 统计：304 代码行 / 350 物理行（lib 65、main 24、model 75、tools 140）。
-- 未运行真实模型；收敛后的 live 证据待补（见 todo）。
+- 当时还没跑真实模型；之后补的证据见 `38-v1-slim-live.md`。

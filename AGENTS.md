@@ -24,7 +24,7 @@ Each non-empty stdin line is one task, terminal or pipe alike; main keeps one Ve
 
 Config is OPENAI_API_KEY, OPENAI_BASE_URL (default https://api.openai.com/v1) and CRABLOOP_MODEL (required); workspace is cwd; arguments are ignored. DeepSeek: base https://api.deepseek.com, model deepseek-flash. The bash child does not inherit OPENAI_API_KEY. scripts/run-live.py reads .env for the driver only. Never execute or print .env contents.
 
-Offline baseline: 29 Rust + 5 Python tests, fmt/clippy, check-lessons. Live evidence in evidence/v1/ga-review.md predates the slim version (docs/devlog/37-v1-slim.md). Code strings/comments are English; tutorials are Chinese. CLI Help remains planned in docs/cli-help-plan.md. Read docs/v1-scope.md for scope; docs/design.md and docs/plan.md preserve the original learning sequence.
+Offline baseline: 29 Rust + 6 Python tests, fmt/clippy, check-lessons. Live DeepSeek evidence for the slim version: evidence/v1/slim-acceptance.md (docs/devlog/38-v1-slim-live.md). Code strings/comments are English; tutorials are Chinese. CLI Help remains planned in docs/cli-help-plan.md. Read docs/v1-scope.md for scope; docs/design.md and docs/plan.md preserve the original learning sequence.
 
 ## How to develop
 

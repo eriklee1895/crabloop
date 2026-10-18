@@ -6,6 +6,7 @@ import difflib
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import signal
@@ -77,6 +78,8 @@ record = {
     'original_tests_unchanged': tests_unchanged, 'notes_created': (workspace / 'NOTES.md').exists(),
     'source_diff': ''.join(difflib.unified_diff(original.splitlines(True), actual.splitlines(True), fromfile='before/lib.rs', tofile='after/lib.rs')),
     'workspace': str(workspace.relative_to(ROOT)),
+    'model_requests': len(re.findall(r'turn \d+:', stderr)),
+    'tool_calls': {name: len(re.findall(rf'^\s+→ {name} ', stderr, re.M)) for name in ('read_file', 'write_file', 'edit_file', 'bash')},
 }
 record['passed'] = proc.returncode == 0 and final.returncode == 0 and tests_unchanged and record['notes_created']
 if args.scenario == 'report':
