@@ -16,6 +16,8 @@ cargo test --locked --test tools bash_reports_exit_code_and_both_streams -- --ex
 
 `CRABLOOP_SOURCE` 的设置见[增量入口](patches/README.md)。本章实验都使用真实本地进程，无需调用模型。
 
+> **安全提示：** 从这一章起，模型能在工作目录里执行任意命令，而 v1 没有 sandbox。`bash` 只从子进程里去掉 `OPENAI_API_KEY`，其余环境变量原样继承，env 里的其他密钥都看得见。到第 05 章让真实模型调用工具时，请在测试目录或 container 里运行，避开装着重要密钥的环境。clean env / env allowlist、command approval 和 workspace isolation 留到后续版本。
+
 ## 打印了 ok，也可能执行失败
 
 第一个测试执行的命令很短：`printf ok; printf problem >&2; exit 7`。它向 stdout 写入 `ok`，向 stderr 写入 `problem`，最后以退出码 7 结束。

@@ -6,6 +6,8 @@ v1 用 **300+ lines** 演示一个完整的 agent loop。
 
 ## Quick Start
 
+> **安全提示：v1 没有 sandbox。** 模型可以在工作目录里执行任意 bash 命令。bash 子进程只去掉了 `OPENAI_API_KEY`，其余环境变量照样继承，env 里的其他密钥它都能看到。请在测试目录或 container 里运行，不要在装着重要密钥的环境里启动。clean env / env allowlist、command approval 和 workspace isolation 留到后续版本。
+
 配置三个环境变量。以 DeepSeek 为例；使用 OpenAI 时省略 `OPENAI_BASE_URL`，模型换成账号可用的 Responses 模型：
 
 ```bash
