@@ -1,0 +1,343 @@
+diff --git a/fixtures/buggy-rust/README.md b/fixtures/buggy-rust/README.md
+new file mode 100644
+--- /dev/null
++++ b/fixtures/buggy-rust/README.md
+@@ -0,0 +1,9 @@
++# Last-index exercise
++
++Repair lib.rs without changing the public function signature or tests.rs.
++Run the tests before editing and again afterward:
++
++    rustc --edition=2024 --test tests.rs -o test-bin
++    ./test-bin
++
++Also write a short NOTES.md explaining the change and the actual test result.
+diff --git a/fixtures/buggy-rust/lib.rs b/fixtures/buggy-rust/lib.rs
+new file mode 100644
+--- /dev/null
++++ b/fixtures/buggy-rust/lib.rs
+@@ -0,0 +1,3 @@
++pub fn last_index(len: usize) -> Option<usize> {
++    Some(len)
++}
+diff --git a/fixtures/buggy-rust/tests.rs b/fixtures/buggy-rust/tests.rs
+new file mode 100644
+--- /dev/null
++++ b/fixtures/buggy-rust/tests.rs
+@@ -0,0 +1,8 @@
++#[path = "lib.rs"]
++mod solution;
++#[test]
++fn empty_has_no_index() { assert_eq!(solution::last_index(0), None); }
++#[test]
++fn single_element_index_is_zero() { assert_eq!(solution::last_index(1), Some(0)); }
++#[test]
++fn ten_elements_end_at_nine() { assert_eq!(solution::last_index(10), Some(9)); }
+diff --git a/fixtures/local-report/README.md b/fixtures/local-report/README.md
+new file mode 100644
+--- /dev/null
++++ b/fixtures/local-report/README.md
+@@ -0,0 +1,5 @@
++# Local report exercise
++
++Read each Markdown file in inbox/. Create report.json with an items array sorted by id. Each item has id, owner, status, and source (the relative source filename). Include counts with done and pending totals.
++
++Also create SUMMARY.md with a short Chinese summary and links to all source files. Preserve every inbox file. This task organizes documents; it does not require changing program code.
+diff --git a/fixtures/local-report/inbox/alpha.md b/fixtures/local-report/inbox/alpha.md
+new file mode 100644
+--- /dev/null
++++ b/fixtures/local-report/inbox/alpha.md
+@@ -0,0 +1,5 @@
++# 工作项 alpha
++
++编号：alpha
++负责人：林
++状态：done
+diff --git a/fixtures/local-report/inbox/beta.md b/fixtures/local-report/inbox/beta.md
+new file mode 100644
+--- /dev/null
++++ b/fixtures/local-report/inbox/beta.md
+@@ -0,0 +1,5 @@
++# 工作项 beta
++
++编号：beta
++负责人：陈
++状态：pending
+diff --git a/fixtures/local-report/inbox/gamma.md b/fixtures/local-report/inbox/gamma.md
+new file mode 100644
+--- /dev/null
++++ b/fixtures/local-report/inbox/gamma.md
+@@ -0,0 +1,5 @@
++# 工作项 gamma
++
++编号：gamma
++负责人：周
++状态：done
+diff --git a/fixtures/verifier/verify.rs b/fixtures/verifier/verify.rs
+new file mode 100644
+--- /dev/null
++++ b/fixtures/verifier/verify.rs
+@@ -0,0 +1,9 @@
++include!(env!("CRABLOOP_SOLUTION"));
++#[test]
++fn empty_is_none() { assert_eq!(last_index(0), None); }
++#[test]
++fn one_is_zero() { assert_eq!(last_index(1), Some(0)); }
++#[test]
++fn ten_is_nine() { assert_eq!(last_index(10), Some(9)); }
++#[test]
++fn largest_length_is_supported() { assert_eq!(last_index(usize::MAX), Some(usize::MAX - 1)); }
+diff --git a/scripts/count-lines.py b/scripts/count-lines.py
+new file mode 100644
+--- /dev/null
++++ b/scripts/count-lines.py
+@@ -0,0 +1,11 @@
++#!/usr/bin/env python3
++"""Count every Rust source under src; comments/blank lines have an explicit rule."""
++from pathlib import Path
++import json
++root = Path(__file__).resolve().parents[1]
++files = []
++for path in sorted((root / "src").rglob("*.rs")):
++    lines = path.read_text().splitlines()
++    code = sum(bool(line.strip()) and not line.lstrip().startswith("//") for line in lines)
++    files.append({"path": str(path.relative_to(root)), "physical": len(lines), "code": code})
++print(json.dumps({"rule": "all src/**/*.rs; nonblank and non-standalone // comment lines; block comments count", "files": files, "physical": sum(f["physical"] for f in files), "code": sum(f["code"] for f in files)}, indent=2))
+diff --git a/scripts/verify-playground.sh b/scripts/verify-playground.sh
+new file mode 100644
+--- /dev/null
++++ b/scripts/verify-playground.sh
+@@ -0,0 +1,12 @@
++#!/usr/bin/env bash
++set -euo pipefail
++if [ "$#" -ne 1 ]; then
++    printf 'usage: verify-playground.sh WORKSPACE\n' >&2
++    exit 2
++fi
++repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
++work_abs=$(CDPATH= cd -- "$1" && pwd -P)
++verify_tmp=$(mktemp -d "${TMPDIR:-/tmp}/crabloop-verify.XXXXXX")
++trap 'rm -rf -- "$verify_tmp"' EXIT
++CRABLOOP_SOLUTION="$work_abs/lib.rs" rustc --edition=2024 --test "$repo_dir/fixtures/verifier/verify.rs" -o "$verify_tmp/tests"
++"$verify_tmp/tests"
+diff --git a/scripts/verify-report.py b/scripts/verify-report.py
+new file mode 100644
+--- /dev/null
++++ b/scripts/verify-report.py
+@@ -0,0 +1,29 @@
++#!/usr/bin/env python3
++"""Independent fact and source-preservation checks for the local report task."""
++import json
++from pathlib import Path
++import sys
++root = Path(__file__).resolve().parents[1]
++workspace = Path(sys.argv[1])
++try:
++    data = json.loads((workspace / "report.json").read_text())
++    # Owner names exactly as written in fixtures/local-report/inbox (Chinese characters).
++    facts = [("alpha", "\u6797", "done"), ("beta", "\u9648", "pending"), ("gamma", "\u5468", "done")]
++    expected = [{"id": ident, "owner": owner, "status": status, "source": f"inbox/{ident}.md"}
++                for ident, owner, status in facts]
++    actual = [{key: item[key] for key in ("id", "owner", "status", "source")} for item in data["items"]]
++    assert actual == expected, "item facts or sources do not match"
++    counts = data["counts"]
++    assert {key: counts[key] for key in ("done", "pending")} == {"done": 2, "pending": 1}, "counts do not match"
++    assert all(type(counts[key]) is int for key in ("done", "pending")), "counts must be integers"
++    if "total" in counts:
++        assert type(counts["total"]) is int and counts["total"] == 3, "optional total is incorrect"
++    summary = (workspace / "SUMMARY.md").read_text()
++    for item in expected:
++        source = item["source"]
++        assert source in summary, "summary must cite each source"
++        assert (workspace / source).read_bytes() == (root / "fixtures/local-report" / source).read_bytes(), "source document changed"
++except (OSError, ValueError, AssertionError, KeyError, TypeError) as error:
++    print("report verification failed:", error, file=sys.stderr)
++    raise SystemExit(1)
++print("report verification passed: 3 items, exact facts and counts, all sources preserved")
+diff --git a/src/main.rs b/src/main.rs
+new file mode 100644
+--- /dev/null
++++ b/src/main.rs
+@@ -0,0 +1,27 @@
++use crabloop::{Config, Stop, run_turn};
++use std::io::BufRead;
++use std::process::ExitCode;
++
++#[tokio::main]
++async fn main() -> anyhow::Result<ExitCode> {
++    let config = Config::from_env()?;
++    let mut input = Vec::new();
++
++    eprint!("crab> ");
++    for line in std::io::stdin().lock().lines() {
++        let task = line?;
++        if !task.trim().is_empty() {
++            input.push(serde_json::json!({"role": "user", "content": task}));
++            match run_turn(&config, &mut input).await? {
++                Stop::Final(text) => println!("{text}"),
++                stop => {
++                    eprintln!("stopped: {stop:?}");
++                    return Ok(ExitCode::from(2));
++                }
++            }
++        }
++        eprint!("crab> ");
++    }
++
++    Ok(ExitCode::SUCCESS)
++}
+diff --git a/tests/cli.rs b/tests/cli.rs
+new file mode 100644
+--- /dev/null
++++ b/tests/cli.rs
+@@ -0,0 +1,42 @@
++mod common;
++use common::{StubResponses, TempDir, fixture, task_output};
++use serde_json::json;
++use std::process::Command;
++
++fn crabloop(dir: &TempDir, server: &StubResponses) -> Command {
++    let mut command = Command::new(env!("CARGO_BIN_EXE_crabloop"));
++    command
++        .current_dir(dir.path())
++        .env("OPENAI_API_KEY", "test-key")
++        .env("OPENAI_BASE_URL", server.endpoint().trim_end_matches("/responses"))
++        .env("CRABLOOP_MODEL", "test-model");
++    command
++}
++
++#[test]
++fn missing_key_is_reported_before_any_request() {
++    let dir = TempDir::new();
++    let server = StubResponses::start(vec![]);
++    let output = task_output(crabloop(&dir, &server).env_remove("OPENAI_API_KEY"), "hello\n");
++    assert!(!output.status.success());
++    assert!(String::from_utf8_lossy(&output.stderr).contains("OPENAI_API_KEY"));
++    assert!(server.requests().is_empty());
++}
++
++#[test]
++fn a_stdin_line_runs_tools_in_the_startup_directory() {
++    let dir = TempDir::new();
++    std::fs::write(dir.path().join("note.txt"), "from cwd").unwrap();
++    let mut call = fixture("text");
++    call["output"] = json!([{
++        "type": "function_call", "call_id": "call_1", "name": "read_file",
++        "arguments": "{\"path\":\"note.txt\"}"
++    }]);
++    let server = StubResponses::start(vec![call, fixture("text")]);
++    let output = task_output(&mut crabloop(&dir, &server), "read note.txt\n");
++    assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
++    assert_eq!(String::from_utf8_lossy(&output.stdout), "Done\n");
++    let result = &server.requests()[1]["input"][2];
++    assert_eq!(result["call_id"], "call_1");
++    assert!(result["output"].as_str().unwrap().contains("from cwd"));
++}
+diff --git a/tests/loop.rs b/tests/loop.rs
+--- a/tests/loop.rs
++++ b/tests/loop.rs
+@@ -114,3 +114,54 @@ async fn request_budget_stops_before_network_access() {
+     assert_eq!(run(config).await.unwrap(), Stop::ContextLimit);
+     assert_eq!(server.requests().len(), 0);
+ }
++
++#[tokio::test]
++async fn scripted_bugfix_loop_uses_all_tools_and_passes_external_verifier() {
++    let dir = TempDir::new();
++    let fixture_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures/buggy-rust");
++    for name in ["lib.rs", "tests.rs"] {
++        fs::copy(fixture_dir.join(name), dir.path().join(name)).unwrap();
++    }
++    let test = "rustc --edition=2024 --test tests.rs -o test-bin && ./test-bin";
++    let server = StubResponses::start(vec![
++        call_reply("read", "read_file", json!({"path":"lib.rs"})),
++        call_reply("before", "bash", json!({"command":test})),
++        call_reply(
++            "note",
++            "write_file",
++            json!({"path":"NOTES.md","content":"Repair checked subtraction; test before and after."}),
++        ),
++        call_reply(
++            "edit",
++            "edit_file",
++            json!({"path":"lib.rs","old_text":"Some(len)","new_text":"len.checked_sub(1)"}),
++        ),
++        call_reply("after", "bash", json!({"command":test})),
++        fixture("text"),
++    ]);
++    let stop = run(test_config(dir.path(), server.endpoint())).await.unwrap();
++    assert_eq!(stop, done());
++    assert_eq!(server.requests().len(), 6);
++    let requests = server.requests();
++    let results: Vec<Value> = requests[5]["input"]
++        .as_array()
++        .unwrap()
++        .iter()
++        .filter(|i| i["type"] == "function_call_output")
++        .map(|i| serde_json::from_str(i["output"].as_str().unwrap()).unwrap())
++        .collect();
++    assert_eq!(results[1]["ok"], false);
++    assert!(results[1]["stdout"].as_str().unwrap().contains("FAILED"));
++    assert_eq!(results[4]["ok"], true);
++    assert!(results[4]["stdout"].as_str().unwrap().contains("test result: ok"));
++    assert_eq!(
++        fs::read(dir.path().join("tests.rs")).unwrap(),
++        fs::read(fixture_dir.join("tests.rs")).unwrap()
++    );
++    let verified = std::process::Command::new("bash")
++        .arg(format!("{}/scripts/verify-playground.sh", env!("CARGO_MANIFEST_DIR")))
++        .arg(dir.path())
++        .output()
++        .unwrap();
++    assert!(verified.status.success(), "{}", String::from_utf8_lossy(&verified.stderr));
++}
+diff --git a/tests/verify_report_test.py b/tests/verify_report_test.py
+new file mode 100644
+--- /dev/null
++++ b/tests/verify_report_test.py
+@@ -0,0 +1,45 @@
++import json
++from pathlib import Path
++import shutil
++import subprocess
++import tempfile
++import unittest
++
++ROOT = Path(__file__).resolve().parents[1]
++
++class ReportVerifierTests(unittest.TestCase):
++    def setUp(self):
++        self.temp = tempfile.TemporaryDirectory()
++        self.workspace = Path(self.temp.name) / 'report'
++        shutil.copytree(ROOT / 'fixtures/local-report', self.workspace)
++        self.data = {'items': [{'id': ident, 'owner': owner, 'status': status, 'source': f'inbox/{ident}.md'} for ident,owner,status in [('alpha','\u6797','done'),('beta','\u9648','pending'),('gamma','\u5468','done')]], 'counts': {'done':2,'pending':1}}
++        (self.workspace / 'SUMMARY.md').write_text('inbox/alpha.md inbox/beta.md inbox/gamma.md')
++    def tearDown(self):
++        self.temp.cleanup()
++    def verify(self):
++        (self.workspace / 'report.json').write_text(json.dumps(self.data))
++        return subprocess.run(['python3',str(ROOT/'scripts/verify-report.py'),str(self.workspace)],capture_output=True).returncode
++    def test_expected_owners_match_the_fixture_documents(self):
++        for item in self.data['items']:
++            text = (self.workspace / item['source']).read_text()
++            self.assertIn(item['owner'], text)
++            self.assertIn(item['status'], text)
++        self.assertEqual(self.verify(), 0)
++    def test_accepts_required_facts_and_an_extra_correct_total(self):
++        self.data['counts']['total'] = 3
++        self.data['items'][0]['note'] = 'optional descriptive metadata'
++        self.assertEqual(self.verify(),0)
++    def test_rejects_wrong_counts_and_boolean_counts(self):
++        self.data['counts']['done'] = 1
++        self.assertNotEqual(self.verify(),0)
++        self.data['counts'] = {'done':2,'pending':True}
++        self.assertNotEqual(self.verify(),0)
++    def test_rejects_changed_source_and_wrong_owner(self):
++        self.data['items'][0]['owner'] = 'wrong'
++        self.assertNotEqual(self.verify(),0)
++        self.data['items'][0]['owner'] = '\u6797'
++        (self.workspace/'inbox/alpha.md').write_text('modified source')
++        self.assertNotEqual(self.verify(),0)
++
++if __name__ == '__main__':
++    unittest.main()

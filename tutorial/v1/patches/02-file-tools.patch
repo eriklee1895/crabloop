@@ -4,338 +4,250 @@ diff --git a/src/lib.rs b/src/lib.rs
 @@ -1,4 +1,5 @@
  pub mod model;
 +pub mod tools;
- use std::{path::PathBuf, time::Duration};
- #[derive(Clone)]
- pub struct Limits {
+ 
+ use anyhow::{Context, Result};
+ use std::path::PathBuf;
+diff --git a/src/model.rs b/src/model.rs
+--- a/src/model.rs
++++ b/src/model.rs
+@@ -47,6 +47,7 @@ pub fn request(config: &Config, input: &[Value]) -> Value {
+         "model": config.model,
+         "instructions": INSTRUCTIONS,
+         "input": input,
++        "tools": crate::tools::schemas(),
+         "store": false,
+         "include": ["reasoning.encrypted_content"],
+         "max_output_tokens": 131_072
 diff --git a/src/tools.rs b/src/tools.rs
 new file mode 100644
 --- /dev/null
 +++ b/src/tools.rs
-@@ -0,0 +1,99 @@
-+use crate::{Limits, model::ToolCall};
-+use anyhow::{Context, Result, ensure};
+@@ -0,0 +1,105 @@
++use crate::{Config, model::ToolCall};
++use anyhow::{Context, Result, bail, ensure};
 +use serde_json::{Map, Value, json};
 +use std::{
 +    fs,
-+    io::Read,
-+    path::{Component, Path},
++    path::{Component, Path, PathBuf},
 +};
 +
-+pub struct ToolResult {
-+    pub call_id: String,
-+    pub output: Value,
-+}
-+impl ToolResult {
-+    pub fn as_input(&self) -> Value {
-+        json!({"type":"function_call_output", "call_id":self.call_id, "output":self.output.to_string()})
-+    }
-+}
++const FILE_BYTES: usize = 64 * 1024;
++const READ_BYTES: usize = 8 * 1024;
++
 +pub fn schemas() -> Vec<Value> {
-+    [("read_file", "Read a UTF-8 file; output may be truncated.", &["path"][..]),
-+     ("write_file", "Create or overwrite a UTF-8 file; parent must exist.", &["path", "content"]),
-+     ("edit_file", "Replace one unique, non-empty exact match.", &["path", "old_text", "new_text"])]
-+        .into_iter().map(|(name, description, args)| {
-+            let properties: Map<String, Value> = args.iter().map(|arg| ((*arg).into(), json!({"type":"string"}))).collect();
-+            json!({"type":"function", "name":name, "description":description, "strict":true,
-+                "parameters":{"type":"object", "properties":properties, "required":args, "additionalProperties":false}})
-+        }).collect()
++    [
++        ("read_file", "Read a UTF-8 file; output may be truncated.", &["path"][..]),
++        (
++            "write_file",
++            "Create or overwrite a UTF-8 file; parent must exist.",
++            &["path", "content"],
++        ),
++        (
++            "edit_file",
++            "Replace one unique, non-empty exact match.",
++            &["path", "old_text", "new_text"],
++        ),
++    ]
++    .into_iter()
++    .map(|(name, description, args)| {
++        let properties: Map<String, Value> =
++            args.iter().map(|arg| (arg.to_string(), json!({"type": "string"}))).collect();
++
++        json!({
++            "type": "function",
++            "name": name,
++            "description": description,
++            "strict": true,
++            "parameters": {
++                "type": "object",
++                "properties": properties,
++                "required": args,
++                "additionalProperties": false
++            }
++        })
++    })
++    .collect()
 +}
-+pub fn clip_utf8(text: &str, max_bytes: usize) -> (String, bool) {
-+    let mut end = text.len().min(max_bytes);
-+    while !text.is_char_boundary(end) {
-+        end -= 1;
-+    }
-+    (text[..end].into(), end < text.len())
++
++pub fn clip(text: &str, max_bytes: usize) -> (&str, bool) {
++    let end = text.floor_char_boundary(max_bytes);
++    (&text[..end], end < text.len())
 +}
-+pub async fn execute(call: &ToolCall, workspace: &Path, limits: &Limits) -> ToolResult {
-+    let output = execute_inner(call, workspace, limits)
++
++/// Run one tool call. Failures become `{"ok": false, ...}` results for the model.
++pub async fn execute(call: &ToolCall, config: &Config) -> Value {
++    dispatch(call, config)
 +        .await
-+        .unwrap_or_else(|error| json!({"ok":false, "error":format!("{error:#}")}));
-+    ToolResult {
-+        call_id: call.call_id.clone(),
-+        output,
++        .unwrap_or_else(|error| json!({"ok": false, "error": format!("{error:#}")}))
++}
++
++async fn dispatch(call: &ToolCall, config: &Config) -> Result<Value> {
++    let args: Value = serde_json::from_str(&call.arguments)?;
++    let arg = |key: &str| args[key].as_str().with_context(|| format!("{key} must be a string"));
++    let path = || resolve(&config.workspace, arg("path")?);
++
++    match call.name.as_str() {
++        "read_file" => {
++            let text = read(&path()?)?;
++            let (content, truncated) = clip(&text, READ_BYTES);
++            Ok(json!({"ok": true, "content": content, "truncated": truncated}))
++        }
++        "write_file" => write(&path()?, arg("content")?),
++        "edit_file" => {
++            let (path, old) = (path()?, arg("old_text")?);
++            ensure!(!old.is_empty(), "old_text must not be empty");
++            let mut text = read(&path)?;
++            let start = text.find(old).context("old_text did not match; read the file again")?;
++            ensure!(text.rfind(old) == Some(start), "old_text must have a unique match");
++            text.replace_range(start..start + old.len(), arg("new_text")?);
++            write(&path, &text)
++        }
++        name => bail!("unknown tool: {name}"),
 +    }
 +}
-+async fn execute_inner(call: &ToolCall, workspace: &Path, limits: &Limits) -> Result<Value> {
-+    let args: Value = serde_json::from_str(&call.arguments)?;
-+    let arg = |key: &str| {
-+        args[key]
-+            .as_str()
-+            .with_context(|| format!("{key} must be a string"))
-+    };
-+    ensure!(
-+        ["read_file", "write_file", "edit_file"].contains(&call.name.as_str()),
-+        "unknown tool: {}",
-+        call.name
-+    );
-+    let relative = Path::new(arg("path")?);
++
++/// Paths are relative to the workspace; this is a path contract, not a sandbox.
++fn resolve(workspace: &Path, relative: &str) -> Result<PathBuf> {
++    let relative = Path::new(relative);
 +    ensure!(
 +        !relative.is_absolute() && !relative.components().any(|c| c == Component::ParentDir),
 +        "path must be relative without parent traversal"
 +    );
 +    let path = workspace.join(relative);
-+    let mut text = if call.name == "write_file" {
-+        arg("content")?.to_owned()
-+    } else {
-+        ensure!(
-+            fs::metadata(&path)?.is_file(),
-+            "path must be a regular file"
-+        );
-+        let mut bytes = Vec::new();
-+        fs::File::open(&path)?
-+            .take(limits.file_bytes as u64 + 1)
-+            .read_to_end(&mut bytes)?;
-+        ensure!(bytes.len() <= limits.file_bytes, "file exceeds size limit");
-+        String::from_utf8(bytes)?
-+    };
-+    if call.name == "read_file" {
-+        let (content, truncated) = clip_utf8(&text, limits.read_output_bytes);
-+        return Ok(json!({"ok":true,"content":content,"truncated":truncated}));
-+    }
-+    if call.name == "edit_file" {
-+        let old = arg("old_text")?;
-+        ensure!(!old.is_empty(), "old_text must not be empty");
-+        let start = text
-+            .find(old)
-+            .context("old_text did not match; read the file again")?;
-+        ensure!(
-+            text.rfind(old) == Some(start),
-+            "old_text must have a unique match"
-+        );
-+        text.replace_range(start..start + old.len(), arg("new_text")?);
-+    }
-+    ensure!(
-+        text.len() <= limits.file_bytes,
-+        "result exceeds file size limit"
-+    );
++    ensure!(!path.exists() || path.is_file(), "path must be a regular file");
++    Ok(path)
++}
++
++fn read(path: &Path) -> Result<String> {
++    ensure!(fs::metadata(path)?.len() <= FILE_BYTES as u64, "file exceeds size limit");
++    Ok(fs::read_to_string(path)?)
++}
++
++fn write(path: &Path, text: &str) -> Result<Value> {
++    ensure!(text.len() <= FILE_BYTES, "result exceeds file size limit");
 +    fs::write(path, text)?;
-+    Ok(json!({"ok":true}))
++    Ok(json!({"ok": true}))
 +}
 diff --git a/tests/tools.rs b/tests/tools.rs
 new file mode 100644
 --- /dev/null
 +++ b/tests/tools.rs
-@@ -0,0 +1,223 @@
+@@ -0,0 +1,118 @@
 +mod common;
-+use common::{TempDir, make_call};
-+use crabloop::{
-+    Limits,
-+    tools::{clip_utf8, execute, schemas},
-+};
-+use serde_json::json;
++use common::{TempDir, make_call, test_config};
++use crabloop::{Config, tools};
++use serde_json::{Value, json};
 +use std::fs;
 +
-+#[tokio::test]
-+async fn read_write_roundtrip_and_output_correlation() {
-+    let dir = TempDir::new();
-+    let limits = Limits::default();
-+    let written = execute(
-+        &make_call(
-+            "write_1",
-+            "write_file",
-+            json!({"path":"hello.rs","content":"你好 🦀"}),
-+        ),
-+        dir.path(),
-+        &limits,
-+    )
-+    .await;
-+    assert_eq!(written.output["ok"], true);
-+    assert_eq!(
-+        fs::read_to_string(dir.path().join("hello.rs")).unwrap(),
-+        "你好 🦀"
-+    );
-+    let read = execute(
-+        &make_call("read_1", "read_file", json!({"path":"hello.rs"})),
-+        dir.path(),
-+        &limits,
-+    )
-+    .await;
-+    assert_eq!(read.output["content"], "你好 🦀");
-+    assert_eq!(read.as_input()["type"], "function_call_output");
-+    assert_eq!(read.as_input()["call_id"], "read_1");
-+    let decoded: serde_json::Value =
-+        serde_json::from_str(read.as_input()["output"].as_str().unwrap()).unwrap();
-+    assert_eq!(decoded["ok"], true);
++fn config(dir: &TempDir) -> Config {
++    test_config(dir.path(), "http://127.0.0.1:9/v1/responses")
 +}
-+#[tokio::test]
-+async fn edit_unique_match_changes_only_the_requested_text() {
-+    let dir = TempDir::new();
-+    let path = dir.path().join("code.rs");
-+    fs::write(&path, "prefix OLD suffix").unwrap();
-+    let result = execute(
-+        &make_call(
-+            "edit_1",
-+            "edit_file",
-+            json!({"path":"code.rs","old_text":"OLD","new_text":"NEW"}),
-+        ),
-+        dir.path(),
-+        &Limits::default(),
-+    )
-+    .await;
-+    assert_eq!(result.output["ok"], true);
-+    assert_eq!(fs::read_to_string(path).unwrap(), "prefix NEW suffix");
++
++async fn run(dir: &TempDir, name: &str, args: Value) -> Value {
++    tools::execute(&make_call("call_1", name, args), &config(dir)).await
 +}
-+#[tokio::test]
-+async fn failed_edits_leave_the_original_file_unchanged() {
-+    let dir = TempDir::new();
-+    let path = dir.path().join("code.rs");
-+    for (before, old, new, error) in [
-+        ("same same", "same", "new", "unique"),
-+        ("aaaa", "aaa", "x", "unique"),
-+        ("before", "missing", "new", "match"),
-+        ("before", "", "new", "empty"),
-+    ] {
-+        fs::write(&path, before).unwrap();
-+        let r = execute(
-+            &make_call(
-+                "edit_1",
-+                "edit_file",
-+                json!({"path":"code.rs","old_text":old,"new_text":new}),
-+            ),
-+            dir.path(),
-+            &Limits::default(),
-+        )
-+        .await;
-+        assert_eq!(r.output["ok"], false);
-+        assert!(
-+            r.output["error"].as_str().unwrap().contains(error),
-+            "{}",
-+            r.output
-+        );
-+        assert_eq!(fs::read_to_string(&path).unwrap(), before);
-+    }
-+}
-+#[tokio::test]
-+async fn oversized_files_and_edits_are_rejected_without_mutation() {
-+    let dir = TempDir::new();
-+    let path = dir.path().join("code.rs");
-+    fs::write(&path, "12345678").unwrap();
-+    let limits = Limits {
-+        file_bytes: 8,
-+        ..Limits::default()
-+    };
-+    let r = execute(
-+        &make_call(
-+            "edit_1",
-+            "edit_file",
-+            json!({"path":"code.rs","old_text":"1","new_text":"TOO-LONG"}),
-+        ),
-+        dir.path(),
-+        &limits,
-+    )
-+    .await;
-+    assert_eq!(r.output["ok"], false);
-+    assert_eq!(fs::read_to_string(&path).unwrap(), "12345678");
-+    let r = execute(
-+        &make_call(
-+            "write_1",
-+            "write_file",
-+            json!({"path":"code.rs","content":"123456789"}),
-+        ),
-+        dir.path(),
-+        &limits,
-+    )
-+    .await;
-+    assert_eq!(r.output["ok"], false);
-+    assert_eq!(fs::read_to_string(&path).unwrap(), "12345678");
-+    fs::write(&path, "123456789").unwrap();
-+    assert_eq!(
-+        execute(
-+            &make_call("r", "read_file", json!({"path":"code.rs"})),
-+            dir.path(),
-+            &limits
-+        )
-+        .await
-+        .output["ok"],
-+        false
-+    );
-+}
-+#[tokio::test]
-+async fn invalid_arguments_paths_and_unknown_tools_return_correlated_errors() {
-+    let dir = TempDir::new();
-+    let cases = [
-+        make_call("a", "read_file", json!({"path":42})),
-+        make_call("b", "read_file", json!({"path":"../outside"})),
-+        make_call("c", "write_file", json!({"path":"/absolute","content":"x"})),
-+        make_call("d", "unknown", json!({})),
-+        make_call("e", "read_file", json!({"path":"missing.rs"})),
-+    ];
-+    for call in cases {
-+        let r = execute(&call, dir.path(), &Limits::default()).await;
-+        assert_eq!(r.output["ok"], false);
-+        assert_eq!(r.as_input()["call_id"], call.call_id);
-+        assert!(r.output["error"].as_str().unwrap().len() > 4);
-+    }
-+    let mut invalid = make_call("f", "read_file", json!({}));
-+    invalid.arguments = "{".into();
-+    assert_eq!(
-+        execute(&invalid, dir.path(), &Limits::default())
-+            .await
-+            .output["ok"],
-+        false
-+    );
-+}
-+#[tokio::test]
-+async fn read_truncation_is_utf8_safe_and_non_utf8_is_an_error() {
-+    let dir = TempDir::new();
-+    fs::write(dir.path().join("text"), "你好🦀").unwrap();
-+    let limits = Limits {
-+        read_output_bytes: 7,
-+        ..Limits::default()
-+    };
-+    let result = execute(
-+        &make_call("r", "read_file", json!({"path":"text"})),
-+        dir.path(),
-+        &limits,
-+    )
-+    .await;
-+    assert_eq!(result.output["content"], "你好");
-+    assert_eq!(result.output["truncated"], true);
-+    assert_eq!(clip_utf8("🦀", 3), (String::new(), true));
-+    fs::write(dir.path().join("binary"), [255u8, 0]).unwrap();
-+    assert_eq!(
-+        execute(
-+            &make_call("r", "read_file", json!({"path":"binary"})),
-+            dir.path(),
-+            &limits
-+        )
-+        .await
-+        .output["ok"],
-+        false
-+    );
-+}
++
 +#[test]
-+fn tool_schemas_have_required_string_arguments_and_strict_objects() {
-+    let defs = schemas();
-+    assert_eq!(defs.len(), 3);
-+    let edit = defs.iter().find(|d| d["name"] == "edit_file").unwrap();
++fn tool_schemas_are_strict_string_objects() {
++    let schemas = tools::schemas();
++    assert!(schemas.iter().all(|s| s["strict"] == true));
++    let edit = schemas.iter().find(|s| s["name"] == "edit_file").unwrap();
 +    assert_eq!(edit["type"], "function");
 +    assert_eq!(edit["strict"], true);
-+    assert_eq!(
-+        edit["parameters"]["required"],
-+        json!(["path", "old_text", "new_text"])
-+    );
++    assert_eq!(edit["parameters"]["required"], json!(["path", "old_text", "new_text"]));
 +    assert_eq!(edit["parameters"]["additionalProperties"], false);
 +    assert_eq!(edit["parameters"]["properties"]["path"]["type"], "string");
 +}
 +
 +#[tokio::test]
-+async fn oversized_utf8_reports_size_instead_of_encoding() {
++async fn write_then_read_roundtrip() {
 +    let dir = TempDir::new();
-+    fs::write(dir.path().join("large"), "你你好").unwrap();
-+    let limits = Limits {
-+        file_bytes: 7,
-+        ..Limits::default()
-+    };
-+    let r = execute(
-+        &make_call("read", "read_file", json!({"path":"large"})),
-+        dir.path(),
-+        &limits,
-+    )
-+    .await;
-+    assert!(
-+        r.output["error"].as_str().unwrap().contains("size"),
-+        "{}",
-+        r.output
-+    );
++    let written = run(&dir, "write_file", json!({"path": "hello.rs", "content": "你好 🦀"})).await;
++    assert_eq!(written["ok"], true);
++    assert_eq!(fs::read_to_string(dir.path().join("hello.rs")).unwrap(), "你好 🦀");
++    let read = run(&dir, "read_file", json!({"path": "hello.rs"})).await;
++    assert_eq!(read["ok"], true);
++    assert_eq!(read["content"], "你好 🦀");
++}
++
++#[tokio::test]
++async fn edit_unique_match_changes_only_the_requested_text() {
++    let dir = TempDir::new();
++    let path = dir.path().join("code.rs");
++    fs::write(&path, "prefix OLD suffix").unwrap();
++    let args = json!({"path": "code.rs", "old_text": "OLD", "new_text": "NEW"});
++    assert_eq!(run(&dir, "edit_file", args).await["ok"], true);
++    assert_eq!(fs::read_to_string(path).unwrap(), "prefix NEW suffix");
++}
++
++#[tokio::test]
++async fn failed_edits_leave_the_original_file_unchanged() {
++    let dir = TempDir::new();
++    let path = dir.path().join("code.rs");
++    for (before, old, error) in [
++        ("same same", "same", "unique"),
++        ("aaaa", "aaa", "unique"),
++        ("before", "missing", "match"),
++        ("before", "", "empty"),
++    ] {
++        fs::write(&path, before).unwrap();
++        let args = json!({"path": "code.rs", "old_text": old, "new_text": "new"});
++        let result = run(&dir, "edit_file", args).await;
++        assert_eq!(result["ok"], false);
++        assert!(result["error"].as_str().unwrap().contains(error), "{result}");
++        assert_eq!(fs::read_to_string(&path).unwrap(), before);
++    }
++}
++
++#[tokio::test]
++async fn size_limit_is_checked_before_decoding_and_before_writing() {
++    let dir = TempDir::new();
++    let large = "你".repeat(30_000);
++    fs::write(dir.path().join("large.txt"), &large).unwrap();
++    let read = run(&dir, "read_file", json!({"path": "large.txt"})).await;
++    assert!(read["error"].as_str().unwrap().contains("size"), "{read}");
++    fs::write(dir.path().join("small.txt"), "small").unwrap();
++    let write = run(&dir, "write_file", json!({"path": "small.txt", "content": large})).await;
++    assert_eq!(write["ok"], false);
++    assert_eq!(fs::read_to_string(dir.path().join("small.txt")).unwrap(), "small");
++}
++
++#[tokio::test]
++async fn read_truncation_is_utf8_safe_and_non_utf8_is_an_error() {
++    let dir = TempDir::new();
++    fs::write(dir.path().join("text"), format!("{}🦀", "a".repeat(8 * 1024 - 1))).unwrap();
++    let read = run(&dir, "read_file", json!({"path": "text"})).await;
++    assert_eq!(read["content"].as_str().unwrap().len(), 8 * 1024 - 1);
++    assert_eq!(read["truncated"], true);
++    assert_eq!(tools::clip("你好🦀", 7), ("你好", true));
++    fs::write(dir.path().join("binary"), [255u8, 0]).unwrap();
++    assert_eq!(run(&dir, "read_file", json!({"path": "binary"})).await["ok"], false);
++}
++
++#[tokio::test]
++async fn bad_arguments_paths_and_unknown_tools_become_tool_errors() {
++    let dir = TempDir::new();
++    for (name, args) in [
++        ("read_file", json!({"path": 42})),
++        ("read_file", json!({"path": "../outside"})),
++        ("write_file", json!({"path": "/absolute", "content": "x"})),
++        ("read_file", json!({"path": "missing.rs"})),
++        ("unknown", json!({})),
++    ] {
++        let result = run(&dir, name, args).await;
++        assert_eq!(result["ok"], false);
++        assert!(!result["error"].as_str().unwrap().is_empty());
++    }
++    let mut invalid = make_call("call_1", "read_file", json!({}));
++    invalid.arguments = "{".into();
++    assert_eq!(tools::execute(&invalid, &config(&dir)).await["ok"], false);
++}
++
++#[tokio::test]
++async fn write_file_rejects_a_fifo_without_blocking() {
++    let dir = TempDir::new();
++    let fifo = dir.path().join("pipe");
++    assert!(std::process::Command::new("mkfifo").arg(&fifo).status().unwrap().success());
++    let result = run(&dir, "write_file", json!({"path": "pipe", "content": "x"})).await;
++    assert!(result["error"].as_str().unwrap().contains("regular file"), "{result}");
 +}

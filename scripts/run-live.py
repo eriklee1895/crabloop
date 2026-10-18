@@ -6,6 +6,7 @@ import difflib
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import signal
@@ -48,8 +49,7 @@ baseline = verify()
 if baseline.returncode == 0:
     raise SystemExit('Fixture unexpectedly passes before repair')
 env = os.environ.copy()
-env.update(CRABLOOP_PROVIDER="openai", OPENAI_API_KEY=key, OPENAI_BASE_URL=base, CRABLOOP_MODEL=model)
-env.pop('CRABLOOP_API_URL', None)
+env.update(OPENAI_API_KEY=key, OPENAI_BASE_URL=base, CRABLOOP_MODEL=model)
 task = 'Read README.md and inspect the source. Fix last_index in lib.rs. Run the existing tests before editing and after the fix. Preserve the public signature and tests.rs. Write NOTES.md describing the change and actual verification. Report only observed results.'
 subprocess.run(['cargo', 'build', '--locked'], cwd=ROOT, check=True, capture_output=True)
 if args.scenario == 'report':
@@ -58,7 +58,7 @@ start = datetime.now(timezone.utc)
 proc = subprocess.Popen([str(ROOT / 'target/debug/crabloop')], env=env, cwd=workspace, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True)
 timed_out = False
 try:
-    stdout, stderr = proc.communicate(input=task, timeout=300)
+    stdout, stderr = proc.communicate(input=task + '\n', timeout=300)
 except subprocess.TimeoutExpired:
     timed_out = True
     os.killpg(proc.pid, signal.SIGKILL)
@@ -78,6 +78,8 @@ record = {
     'original_tests_unchanged': tests_unchanged, 'notes_created': (workspace / 'NOTES.md').exists(),
     'source_diff': ''.join(difflib.unified_diff(original.splitlines(True), actual.splitlines(True), fromfile='before/lib.rs', tofile='after/lib.rs')),
     'workspace': str(workspace.relative_to(ROOT)),
+    'model_requests': len(re.findall(r'turn \d+:', stderr)),
+    'tool_calls': {name: len(re.findall(rf'^\s+→ {name} ', stderr, re.M)) for name in ('read_file', 'write_file', 'edit_file', 'bash')},
 }
 record['passed'] = proc.returncode == 0 and final.returncode == 0 and tests_unchanged and record['notes_created']
 if args.scenario == 'report':
