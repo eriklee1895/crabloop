@@ -3,6 +3,7 @@ use anyhow::{Context, Result, bail, ensure};
 use serde_json::{Map, Value, json};
 use std::{
     fs,
+    io::Read,
     path::{Component, Path, PathBuf},
     process::Stdio,
 };
@@ -99,8 +100,10 @@ fn resolve(workspace: &Path, relative: &str) -> Result<PathBuf> {
 }
 
 fn read(path: &Path) -> Result<String> {
-    ensure!(fs::metadata(path)?.len() <= FILE_BYTES as u64, "file exceeds size limit");
-    Ok(fs::read_to_string(path)?)
+    let mut bytes = Vec::new();
+    fs::File::open(path)?.take(FILE_BYTES as u64 + 1).read_to_end(&mut bytes)?;
+    ensure!(bytes.len() <= FILE_BYTES, "file exceeds size limit");
+    Ok(String::from_utf8(bytes)?)
 }
 
 fn write(path: &Path, text: &str) -> Result<Value> {

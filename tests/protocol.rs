@@ -79,3 +79,41 @@ async fn mixed_phases_keep_only_final_answer_text_and_every_item() {
     assert_eq!(reply.final_text.as_deref(), Some("Done"));
     assert_eq!(reply.output.len(), 2);
 }
+
+#[tokio::test]
+async fn empty_and_duplicate_call_ids_are_rejected() {
+    let mut empty = fixture("two_calls");
+    empty["output"][0]["call_id"] = json!("");
+    let mut duplicate = fixture("two_calls");
+    duplicate["output"][1]["call_id"] = json!("call_1");
+    let mut accepted = Vec::new();
+    for (name, response) in [("empty", empty), ("duplicate", duplicate)] {
+        let server = StubResponses::start(vec![response]);
+        if respond(&server, &[]).await.is_ok() {
+            accepted.push(name);
+        }
+    }
+    assert!(accepted.is_empty(), "accepted invalid call IDs: {accepted:?}");
+}
+
+#[tokio::test]
+async fn only_assistant_output_text_can_be_a_final_answer() {
+    for (role, kind) in [("user", "output_text"), ("assistant", "summary_text")] {
+        let mut response = fixture("text");
+        response["output"][0]["role"] = json!(role);
+        response["output"][0]["content"][0]["type"] = json!(kind);
+        let original = response["output"].as_array().unwrap().clone();
+        let server = StubResponses::start(vec![response]);
+        let reply = respond(&server, &[]).await.unwrap();
+        assert!(reply.final_text.is_none(), "accepted {role}/{kind} as final text");
+        assert_eq!(reply.output, original);
+    }
+}
+
+#[tokio::test]
+async fn output_text_requires_its_text_field() {
+    let mut response = fixture("text");
+    response["output"][0]["content"][0].as_object_mut().unwrap().remove("text");
+    let server = StubResponses::start(vec![response]);
+    assert!(respond(&server, &[]).await.is_err());
+}

@@ -1,5 +1,6 @@
 diff --git a/fixtures/buggy-rust/README.md b/fixtures/buggy-rust/README.md
 new file mode 100644
+index 0000000..d1f1971
 --- /dev/null
 +++ b/fixtures/buggy-rust/README.md
 @@ -0,0 +1,9 @@
@@ -14,6 +15,7 @@ new file mode 100644
 +Also write a short NOTES.md explaining the change and the actual test result.
 diff --git a/fixtures/buggy-rust/lib.rs b/fixtures/buggy-rust/lib.rs
 new file mode 100644
+index 0000000..381aff4
 --- /dev/null
 +++ b/fixtures/buggy-rust/lib.rs
 @@ -0,0 +1,3 @@
@@ -22,6 +24,7 @@ new file mode 100644
 +}
 diff --git a/fixtures/buggy-rust/tests.rs b/fixtures/buggy-rust/tests.rs
 new file mode 100644
+index 0000000..f71bf08
 --- /dev/null
 +++ b/fixtures/buggy-rust/tests.rs
 @@ -0,0 +1,8 @@
@@ -35,6 +38,7 @@ new file mode 100644
 +fn ten_elements_end_at_nine() { assert_eq!(solution::last_index(10), Some(9)); }
 diff --git a/fixtures/local-report/README.md b/fixtures/local-report/README.md
 new file mode 100644
+index 0000000..2c09ce6
 --- /dev/null
 +++ b/fixtures/local-report/README.md
 @@ -0,0 +1,5 @@
@@ -45,6 +49,7 @@ new file mode 100644
 +Also create SUMMARY.md with a short Chinese summary and links to all source files. Preserve every inbox file. This task organizes documents; it does not require changing program code.
 diff --git a/fixtures/local-report/inbox/alpha.md b/fixtures/local-report/inbox/alpha.md
 new file mode 100644
+index 0000000..180618b
 --- /dev/null
 +++ b/fixtures/local-report/inbox/alpha.md
 @@ -0,0 +1,5 @@
@@ -55,6 +60,7 @@ new file mode 100644
 +状态：done
 diff --git a/fixtures/local-report/inbox/beta.md b/fixtures/local-report/inbox/beta.md
 new file mode 100644
+index 0000000..36e2ef0
 --- /dev/null
 +++ b/fixtures/local-report/inbox/beta.md
 @@ -0,0 +1,5 @@
@@ -65,6 +71,7 @@ new file mode 100644
 +状态：pending
 diff --git a/fixtures/local-report/inbox/gamma.md b/fixtures/local-report/inbox/gamma.md
 new file mode 100644
+index 0000000..ee6ccd7
 --- /dev/null
 +++ b/fixtures/local-report/inbox/gamma.md
 @@ -0,0 +1,5 @@
@@ -75,6 +82,7 @@ new file mode 100644
 +状态：done
 diff --git a/fixtures/verifier/verify.rs b/fixtures/verifier/verify.rs
 new file mode 100644
+index 0000000..165654c
 --- /dev/null
 +++ b/fixtures/verifier/verify.rs
 @@ -0,0 +1,9 @@
@@ -89,6 +97,7 @@ new file mode 100644
 +fn largest_length_is_supported() { assert_eq!(last_index(usize::MAX), Some(usize::MAX - 1)); }
 diff --git a/scripts/count-lines.py b/scripts/count-lines.py
 new file mode 100644
+index 0000000..059369e
 --- /dev/null
 +++ b/scripts/count-lines.py
 @@ -0,0 +1,11 @@
@@ -105,6 +114,7 @@ new file mode 100644
 +print(json.dumps({"rule": "all src/**/*.rs; nonblank and non-standalone // comment lines; block comments count", "files": files, "physical": sum(f["physical"] for f in files), "code": sum(f["code"] for f in files)}, indent=2))
 diff --git a/scripts/verify-playground.sh b/scripts/verify-playground.sh
 new file mode 100644
+index 0000000..7789ba9
 --- /dev/null
 +++ b/scripts/verify-playground.sh
 @@ -0,0 +1,12 @@
@@ -122,6 +132,7 @@ new file mode 100644
 +"$verify_tmp/tests"
 diff --git a/scripts/verify-report.py b/scripts/verify-report.py
 new file mode 100644
+index 0000000..2d22c47
 --- /dev/null
 +++ b/scripts/verify-report.py
 @@ -0,0 +1,29 @@
@@ -156,6 +167,7 @@ new file mode 100644
 +print("report verification passed: 3 items, exact facts and counts, all sources preserved")
 diff --git a/src/main.rs b/src/main.rs
 new file mode 100644
+index 0000000..a73c084
 --- /dev/null
 +++ b/src/main.rs
 @@ -0,0 +1,27 @@
@@ -188,6 +200,7 @@ new file mode 100644
 +}
 diff --git a/tests/cli.rs b/tests/cli.rs
 new file mode 100644
+index 0000000..1ea5e7c
 --- /dev/null
 +++ b/tests/cli.rs
 @@ -0,0 +1,42 @@
@@ -234,13 +247,13 @@ new file mode 100644
 +    assert!(result["output"].as_str().unwrap().contains("from cwd"));
 +}
 diff --git a/tests/loop.rs b/tests/loop.rs
+index c6d41a3..c58e914 100644
 --- a/tests/loop.rs
 +++ b/tests/loop.rs
-@@ -114,3 +114,54 @@ async fn request_budget_stops_before_network_access() {
-     assert_eq!(run(config).await.unwrap(), Stop::ContextLimit);
+@@ -115,6 +115,57 @@ async fn request_budget_stops_before_network_access() {
      assert_eq!(server.requests().len(), 0);
  }
-+
+
 +#[tokio::test]
 +async fn scripted_bugfix_loop_uses_all_tools_and_passes_external_verifier() {
 +    let dir = TempDir::new();
@@ -291,8 +304,13 @@ diff --git a/tests/loop.rs b/tests/loop.rs
 +        .unwrap();
 +    assert!(verified.status.success(), "{}", String::from_utf8_lossy(&verified.stderr));
 +}
++
+ #[tokio::test]
+ async fn duplicate_call_ids_never_mutate_the_workspace() {
+     let dir = TempDir::new();
 diff --git a/tests/verify_report_test.py b/tests/verify_report_test.py
 new file mode 100644
+index 0000000..4471f47
 --- /dev/null
 +++ b/tests/verify_report_test.py
 @@ -0,0 +1,45 @@

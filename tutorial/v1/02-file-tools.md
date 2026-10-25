@@ -172,16 +172,18 @@ pub fn clip(text: &str, max_bytes: usize) -> (&str, bool) {
 
 返回的 `&str` 借用原文本，不复制。模型拿到的文字能正常解码，也从 `truncated` 字段知道内容不完整。
 
-文件本身的大小限制是另一件事。读取时先看文件有多大，再尝试 UTF-8 解码；写入前同样检查长度：
+文件本身的大小限制是另一件事。读取时只取上限加一个字节，先判断实际读取内容是否超限，再尝试 UTF-8 解码；写入前同样检查长度：
 
 ```rust
 fn read(path: &Path) -> Result<String> {
-    ensure!(fs::metadata(path)?.len() <= FILE_BYTES as u64, "file exceeds size limit");
-    Ok(fs::read_to_string(path)?)
+    let mut bytes = Vec::new();
+    fs::File::open(path)?.take(FILE_BYTES as u64 + 1).read_to_end(&mut bytes)?;
+    ensure!(bytes.len() <= FILE_BYTES, "file exceeds size limit");
+    Ok(String::from_utf8(bytes)?)
 }
 ```
 
-先判大小，是为了让“文件太大”和“编码损坏”各自得到正确的错误。一个过大的合法中文文件，应该被报告为太大，而不是被误报成编码问题。
+多读一个字节用来识别超限，避免只依靠读取前的 metadata 判断大小。先判实际读取的字节数，是为了让“文件太大”和“编码损坏”各自得到正确的错误。一个过大的合法中文文件，应该被报告为太大，而不是被误报成编码问题。
 
 ```bash
 cargo test --locked --test tools read_truncation_is_utf8_safe_and_non_utf8_is_an_error -- --exact

@@ -1,4 +1,5 @@
 diff --git a/tests/cli.rs b/tests/cli.rs
+index 1ea5e7c..6162ce4 100644
 --- a/tests/cli.rs
 +++ b/tests/cli.rs
 @@ -40,3 +40,16 @@ fn a_stdin_line_runs_tools_in_the_startup_directory() {
@@ -19,13 +20,13 @@ diff --git a/tests/cli.rs b/tests/cli.rs
 +    assert_eq!(second[2]["content"], "second");
 +}
 diff --git a/tests/loop.rs b/tests/loop.rs
+index c58e914..4d4965a 100644
 --- a/tests/loop.rs
 +++ b/tests/loop.rs
-@@ -165,3 +165,24 @@ async fn scripted_bugfix_loop_uses_all_tools_and_passes_external_verifier() {
-         .unwrap();
+@@ -166,6 +166,27 @@ async fn scripted_bugfix_loop_uses_all_tools_and_passes_external_verifier() {
      assert!(verified.status.success(), "{}", String::from_utf8_lossy(&verified.stderr));
  }
-+
+
 +#[tokio::test]
 +async fn followup_replays_previous_answer_and_complete_tool_results() {
 +    let dir = TempDir::new();
@@ -46,3 +47,7 @@ diff --git a/tests/loop.rs b/tests/loop.rs
 +    let result: Value = serde_json::from_str(expected[3]["output"].as_str().unwrap()).unwrap();
 +    assert_eq!(result["content"], "A");
 +}
++
+ #[tokio::test]
+ async fn duplicate_call_ids_never_mutate_the_workspace() {
+     let dir = TempDir::new();

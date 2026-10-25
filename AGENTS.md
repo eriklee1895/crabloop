@@ -6,9 +6,9 @@ CrabLoop is a small coding-agent harness built from scratch in Rust for hands-on
 
 Keep the project focused on a mini coding agent and its Harness; do not reframe it as a Workbench.
 
-- v1: hard cap 400 code lines, sweet spot 300-350. Teach only the hand-written model/tool/feedback/stop loop with four tools; cut everything else to later versions.
-- v2: about 500-600 lines total, adding context management and summary compaction.
-- v3: 1,000+ lines total (full-featured starts here), adding ~/.crabloop, TOML configuration, provider presets/Custom, credentials, and model catalog discovery/cache. Minimal Skills is optional if comfortably within scope.
+- v1: target about 300 lines; size is teaching guidance, not a hard gate. Teach only the hand-written model/tool/feedback/stop loop with four tools; cut everything else to later versions.
+- v2: approximately 500 lines total, adding context management and summary compaction.
+- v3: approximately 1,000 lines total, adding ~/.crabloop, TOML configuration, provider presets/Custom, credentials, and model catalog discovery/cache. Minimal Skills is optional if comfortably within scope.
 - v4: Skills and provider-independent web_fetch/web_search. v5: recoverable JSONL sessions and interruption handling under ~/.crabloop. See docs/roadmap.md; these stages are planned, not implemented.
 - Acceptance includes both coding repairs and general local agentic tasks such as reading source documents and producing a verifiable structured report.
 - Use the OpenAI native Responses API and a hand-written agent loop.
@@ -18,13 +18,13 @@ Keep the project focused on a mini coding agent and its Harness; do not reframe 
 
 The only v1 learning code is milestone/v1. Six additive tutorial patches (one per chapter 01-06) rebuild the same src tree from an empty directory; scripts/check-lessons.py verifies each stage (fmt + tests) and that every patched file equals the working tree. Historical tags preserve older steps and evidence, not alternative learning entries.
 
-v1 has 304 code / 350 physical lines in four files: main.rs (stdin entry, owns history), lib.rs (Config, Stop, run_turn), model.rs (request/respond, serde Response/Item, raw output kept for replay), tools.rs (schemas, execute, four tools). examples/probe.rs sends one request for chapter 01. No Session, editor, persistence, SSE, .env or provider presets.
+v1 has 324 code / 370 physical lines in four files: main.rs (stdin entry, owns history), lib.rs (Config, Stop, run_turn), model.rs (request/respond, serde Response/Item, raw output kept for replay; call IDs validated before tools), tools.rs (schemas, execute, four tools). examples/probe.rs sends one request for chapter 01. No Session, editor, persistence, SSE, .env or provider presets.
 
 Each non-empty stdin line is one task, terminal or pipe alike; main keeps one Vec<Value> until EOF and run_turn borrows it. stdout carries only final answers; stderr shows the crab> prompt, `turn N` and one `→ name args · ok=` line per tool. MaxTurns/ContextLimit exit with code 2; errors end the process. Limits: 16 turns per task, request 4 MiB, output 131,072 tokens, file 64 KiB, read 8 KiB, pipes 4 KiB each, bash 30 s.
 
 Config is OPENAI_API_KEY, OPENAI_BASE_URL (default https://api.openai.com/v1) and CRABLOOP_MODEL (required); workspace is cwd; arguments are ignored. DeepSeek: base https://api.deepseek.com, model deepseek-flash. The bash child does not inherit OPENAI_API_KEY. scripts/run-live.py reads .env for the driver only. Never execute or print .env contents.
 
-Offline baseline: 29 Rust + 6 Python tests, fmt/clippy, check-lessons. Live DeepSeek evidence for the slim version: evidence/v1/slim-acceptance.md (docs/devlog/38-v1-slim-live.md). Code strings/comments are English; tutorials are Chinese. CLI Help remains planned in docs/cli-help-plan.md. Read docs/v1-scope.md for scope; docs/design.md and docs/plan.md preserve the original learning sequence.
+Offline baseline: 33 Rust + 6 Python tests, fmt/clippy, check-lessons. Live DeepSeek evidence for the slim version: evidence/v1/slim-acceptance.md (docs/devlog/38-v1-slim-live.md). Code strings/comments are English; tutorials are Chinese. CLI Help remains planned in docs/cli-help-plan.md. Read docs/v1-scope.md for scope; docs/design.md and docs/plan.md preserve the original learning sequence.
 
 ## How to develop
 

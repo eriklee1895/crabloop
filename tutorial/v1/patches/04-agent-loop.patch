@@ -1,14 +1,15 @@
 diff --git a/src/lib.rs b/src/lib.rs
+index c9c232c..c9118eb 100644
 --- a/src/lib.rs
 +++ b/src/lib.rs
 @@ -2,6 +2,7 @@ pub mod model;
  pub mod tools;
- 
+
  use anyhow::{Context, Result};
 +use serde_json::{Value, json};
  use std::path::PathBuf;
  use std::time::Duration;
- 
+
 @@ -13,6 +14,8 @@ pub struct Config {
      pub api_key: String,
      pub model: String,
@@ -17,7 +18,7 @@ diff --git a/src/lib.rs b/src/lib.rs
 +    pub request_bytes: usize,
      pub bash_timeout: Duration,
  }
- 
+
 @@ -26,7 +29,51 @@ impl Config {
              api_key: var("OPENAI_API_KEY").context("OPENAI_API_KEY is required")?,
              model: var("CRABLOOP_MODEL").context("CRABLOOP_MODEL is required")?,
@@ -71,6 +72,7 @@ diff --git a/src/lib.rs b/src/lib.rs
 +    Ok(Stop::MaxTurns)
 +}
 diff --git a/tests/common/mod.rs b/tests/common/mod.rs
+index 2738265..987a801 100644
 --- a/tests/common/mod.rs
 +++ b/tests/common/mod.rs
 @@ -22,6 +22,8 @@ pub fn test_config(workspace: &Path, endpoint: &str) -> Config {
@@ -84,9 +86,10 @@ diff --git a/tests/common/mod.rs b/tests/common/mod.rs
  }
 diff --git a/tests/loop.rs b/tests/loop.rs
 new file mode 100644
+index 0000000..c6d41a3
 --- /dev/null
 +++ b/tests/loop.rs
-@@ -0,0 +1,116 @@
+@@ -0,0 +1,131 @@
 +mod common;
 +use common::{StubResponses, TempDir, fixture, test_config};
 +use crabloop::{Config, Stop, run_turn};
@@ -202,4 +205,19 @@ new file mode 100644
 +    config.request_bytes = 1;
 +    assert_eq!(run(config).await.unwrap(), Stop::ContextLimit);
 +    assert_eq!(server.requests().len(), 0);
++}
++
++#[tokio::test]
++async fn duplicate_call_ids_never_mutate_the_workspace() {
++    let dir = TempDir::new();
++    let path = dir.path().join("lib.rs");
++    fs::write(&path, "ORIGINAL").unwrap();
++    let mut response =
++        call_reply("shared", "write_file", json!({"path":"lib.rs","content":"FIRST"}));
++    let second = call_reply("shared", "write_file", json!({"path":"lib.rs","content":"SECOND"}));
++    response["output"].as_array_mut().unwrap().push(second["output"][0].clone());
++    let server = StubResponses::start(vec![response]);
++    assert!(run(test_config(dir.path(), server.endpoint())).await.is_err());
++    assert_eq!(fs::read_to_string(path).unwrap(), "ORIGINAL");
++    assert_eq!(server.requests().len(), 1);
 +}

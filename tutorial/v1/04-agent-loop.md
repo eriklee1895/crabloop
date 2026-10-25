@@ -147,6 +147,8 @@ cargo test --locked --test loop two_calls_then_final_preserves_ids_and_returns_b
 
 恢复这段代码，再运行一次测试，确认重新通过后继续。
 
+协议错误需要在动作开始前处理。再运行 `cargo test --locked --test loop duplicate_call_ids_never_mutate_the_workspace -- --exact`：服务返回两个同 ID 的写入调用，程序必须拒绝整份响应，原文件保持不变。若等到写入以后才发现结果无法关联，就已经太晚了。
+
 ## 当工具没有做成，回路也要接着走
 
 读文件成功时，结果里有内容。编辑失败时，结果里会有什么？我们用第二个实验追一遍。

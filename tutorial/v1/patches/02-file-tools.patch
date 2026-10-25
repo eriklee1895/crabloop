@@ -1,16 +1,18 @@
 diff --git a/src/lib.rs b/src/lib.rs
+index 81f2a4d..3391d4c 100644
 --- a/src/lib.rs
 +++ b/src/lib.rs
 @@ -1,4 +1,5 @@
  pub mod model;
 +pub mod tools;
- 
+
  use anyhow::{Context, Result};
  use std::path::PathBuf;
 diff --git a/src/model.rs b/src/model.rs
+index 45d24d6..cf1d238 100644
 --- a/src/model.rs
 +++ b/src/model.rs
-@@ -47,6 +47,7 @@ pub fn request(config: &Config, input: &[Value]) -> Value {
+@@ -54,6 +54,7 @@ pub fn request(config: &Config, input: &[Value]) -> Value {
          "model": config.model,
          "instructions": INSTRUCTIONS,
          "input": input,
@@ -20,14 +22,16 @@ diff --git a/src/model.rs b/src/model.rs
          "max_output_tokens": 131_072
 diff --git a/src/tools.rs b/src/tools.rs
 new file mode 100644
+index 0000000..4905884
 --- /dev/null
 +++ b/src/tools.rs
-@@ -0,0 +1,105 @@
+@@ -0,0 +1,108 @@
 +use crate::{Config, model::ToolCall};
 +use anyhow::{Context, Result, bail, ensure};
 +use serde_json::{Map, Value, json};
 +use std::{
 +    fs,
++    io::Read,
 +    path::{Component, Path, PathBuf},
 +};
 +
@@ -119,8 +123,10 @@ new file mode 100644
 +}
 +
 +fn read(path: &Path) -> Result<String> {
-+    ensure!(fs::metadata(path)?.len() <= FILE_BYTES as u64, "file exceeds size limit");
-+    Ok(fs::read_to_string(path)?)
++    let mut bytes = Vec::new();
++    fs::File::open(path)?.take(FILE_BYTES as u64 + 1).read_to_end(&mut bytes)?;
++    ensure!(bytes.len() <= FILE_BYTES, "file exceeds size limit");
++    Ok(String::from_utf8(bytes)?)
 +}
 +
 +fn write(path: &Path, text: &str) -> Result<Value> {
@@ -130,6 +136,7 @@ new file mode 100644
 +}
 diff --git a/tests/tools.rs b/tests/tools.rs
 new file mode 100644
+index 0000000..f06bc4f
 --- /dev/null
 +++ b/tests/tools.rs
 @@ -0,0 +1,118 @@

@@ -8,9 +8,9 @@
 
 | 版本 | 范围预算 | 核心问题 | 内容与一个代表任务 |
 |---|---:|---|---|
-| v1 | 不超过 400 行，约 300 行为宜 | 模型怎样行动并依据反馈调整？ | Responses + read_file/write_file/edit_file/bash；修复函数，再做一次多文件资料整理 |
-| v2 | 约 500–600 行 | 历史变长后，下一轮看到什么？ | 根 AGENTS.md、完整交互组、输入预算、摘要、JSONL 运行记录；小预算下完成任务 |
-| v3 | 1000 行以上 | 怎样成为不用反复配置的个人 CLI？ | 基础 SSE、`~/.crabloop`、TOML、凭证、provider 预置/Custom、模型目录与缓存；按独立增量学习 |
+| v1 | 目标约 300 行，规模仅作参考 | 模型怎样行动并依据反馈调整？ | Responses + read_file/write_file/edit_file/bash；修复函数，再做一次多文件资料整理 |
+| v2 | 约 500 行 | 历史变长后，下一轮看到什么？ | 根 AGENTS.md、完整交互组、输入预算、摘要、JSONL 运行记录；小预算下完成任务 |
+| v3 | 约 1000 行 | 怎样成为不用反复配置的个人 CLI？ | 基础 SSE、`~/.crabloop`、TOML、凭证、provider 预置/Custom、模型目录与缓存；按独立增量学习 |
 | v4 | 按功能估算 | 怎样复用工作方法，并查阅外部资料？ | Skills 最小支持、web_fetch、web_search；查官方资料，保存带来源的比较报告 |
 | v5 | 按功能估算 | 进程退出后，怎样知道做到哪里并继续？ | JSONL sessions、list/show/resume、压缩状态重建、取消与未完成操作；中断后核对并继续 |
 

@@ -137,7 +137,7 @@ struct Response {
 #[serde(tag = "type", rename_all = "snake_case")]
 enum Item {
     FunctionCall(ToolCall),
-    Message { content: Vec<Content>, phase: Option<String> },
+    Message { role: String, content: Vec<Content>, phase: Option<String> },
     #[serde(other)]
     Other,
 }
@@ -145,15 +145,37 @@ enum Item {
 
 `#[serde(tag = "type")]` 让 serde 按每一项的 `type` 字段选择分支：`function_call` 变成 `Item::FunctionCall`，`message` 变成 `Item::Message`，其他任何类型都落进 `Other`。这几行几乎就是上面那张图的 Rust 写法。
 
-`respond` 随后逐项匹配：
+message 内的 content 也按 `type` 区分，只把 `output_text` 的 `text` 当作文字。该字段缺失时返回解析错误；其他 content 项仍随原始 output 保留：
 
 ```rust
+#[derive(Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+enum Content {
+    OutputText { text: String },
+    #[serde(other)]
+    Other,
+}
+```
+
+`respond` 随后逐项匹配，只从 assistant 的最终 message 中收集文字。同一响应中的工具调用 ID 必须非空且唯一：
+
+```rust
+let mut ids = HashSet::new();
 for item in &response.output {
     match Item::deserialize(item)? {
-        Item::FunctionCall(call) => calls.push(call),
-        Item::Message { content, phase } => {
-            if phase.as_deref().is_none_or(|p| p == "final_answer") {
-                final_text.extend(content.into_iter().filter_map(|c| c.text));
+        Item::FunctionCall(call) => {
+            ensure!(
+                !call.call_id.trim().is_empty() && ids.insert(call.call_id.clone()),
+                "invalid or duplicate call_id"
+            );
+            calls.push(call);
+        }
+        Item::Message { role, content, phase } => {
+            if role == "assistant" && phase.as_deref().is_none_or(|p| p == "final_answer") {
+                final_text.extend(content.into_iter().filter_map(|part| match part {
+                    Content::OutputText { text } => Some(text),
+                    Content::Other => None,
+                }));
             }
         }
         Item::Other => {}
@@ -202,7 +224,13 @@ flowchart LR
     C -. 用同一个 call_id 关联 .-> R
 ```
 
-如果一个 `function_call` 缺少 `call_id`，`Item::deserialize` 会直接失败，`respond` 返回错误：没有 `call_id` 的调用，结果无处可接，不能执行。
+如果一个 `function_call` 缺少 `call_id`，`Item::deserialize` 会直接失败。空白或重复 ID 则由后面的检查拒绝。结果需要明确对应某个调用，因此这些检查放在执行工具之前。
+
+```bash
+cargo test --locked --test protocol empty_and_duplicate_call_ids_are_rejected -- --exact
+cargo test --locked --test protocol only_assistant_output_text_can_be_a_final_answer -- --exact
+cargo test --locked --test protocol output_text_requires_its_text_field -- --exact
+```
 
 ## 先确认完整，再决定做什么
 

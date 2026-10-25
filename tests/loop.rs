@@ -186,3 +186,18 @@ async fn followup_replays_previous_answer_and_complete_tool_results() {
     let result: Value = serde_json::from_str(expected[3]["output"].as_str().unwrap()).unwrap();
     assert_eq!(result["content"], "A");
 }
+
+#[tokio::test]
+async fn duplicate_call_ids_never_mutate_the_workspace() {
+    let dir = TempDir::new();
+    let path = dir.path().join("lib.rs");
+    fs::write(&path, "ORIGINAL").unwrap();
+    let mut response =
+        call_reply("shared", "write_file", json!({"path":"lib.rs","content":"FIRST"}));
+    let second = call_reply("shared", "write_file", json!({"path":"lib.rs","content":"SECOND"}));
+    response["output"].as_array_mut().unwrap().push(second["output"][0].clone());
+    let server = StubResponses::start(vec![response]);
+    assert!(run(test_config(dir.path(), server.endpoint())).await.is_err());
+    assert_eq!(fs::read_to_string(path).unwrap(), "ORIGINAL");
+    assert_eq!(server.requests().len(), 1);
+}

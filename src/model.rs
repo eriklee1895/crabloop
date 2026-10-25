@@ -3,6 +3,7 @@ use anyhow::{Result, ensure};
 use reqwest::Client;
 use serde::Deserialize;
 use serde_json::{Value, json};
+use std::collections::HashSet;
 
 #[derive(Debug, Deserialize)]
 pub struct ToolCall {
@@ -30,6 +31,7 @@ struct Response {
 enum Item {
     FunctionCall(ToolCall),
     Message {
+        role: String,
         content: Vec<Content>,
         phase: Option<String>,
     },
@@ -38,8 +40,13 @@ enum Item {
 }
 
 #[derive(Deserialize)]
-struct Content {
-    text: Option<String>,
+#[serde(tag = "type", rename_all = "snake_case")]
+enum Content {
+    OutputText {
+        text: String,
+    },
+    #[serde(other)]
+    Other,
 }
 
 pub fn request(config: &Config, input: &[Value]) -> Value {
@@ -68,13 +75,23 @@ pub async fn respond(client: &Client, config: &Config, body: &Value) -> Result<R
     ensure!(!response.output.is_empty(), "response has no output");
 
     let mut calls = Vec::new();
+    let mut ids = HashSet::new();
     let mut final_text = String::new();
     for item in &response.output {
         match Item::deserialize(item)? {
-            Item::FunctionCall(call) => calls.push(call),
-            Item::Message { content, phase } => {
-                if phase.as_deref().is_none_or(|p| p == "final_answer") {
-                    final_text.extend(content.into_iter().filter_map(|c| c.text));
+            Item::FunctionCall(call) => {
+                ensure!(
+                    !call.call_id.trim().is_empty() && ids.insert(call.call_id.clone()),
+                    "invalid or duplicate call_id"
+                );
+                calls.push(call);
+            }
+            Item::Message { role, content, phase } => {
+                if role == "assistant" && phase.as_deref().is_none_or(|p| p == "final_answer") {
+                    final_text.extend(content.into_iter().filter_map(|part| match part {
+                        Content::OutputText { text } => Some(text),
+                        Content::Other => None,
+                    }));
                 }
             }
             Item::Other => {}

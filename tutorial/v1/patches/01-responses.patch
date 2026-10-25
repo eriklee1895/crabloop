@@ -1,5 +1,6 @@
 diff --git a/.gitignore b/.gitignore
 new file mode 100644
+index 0000000..2dd7390
 --- /dev/null
 +++ b/.gitignore
 @@ -0,0 +1,19 @@
@@ -24,6 +25,7 @@ new file mode 100644
 +*.pyc
 diff --git a/Cargo.toml b/Cargo.toml
 new file mode 100644
+index 0000000..7562ca6
 --- /dev/null
 +++ b/Cargo.toml
 @@ -0,0 +1,15 @@
@@ -44,6 +46,7 @@ new file mode 100644
 +tokio = { version = "=1.53.2", features = ["macros", "rt-multi-thread", "process", "io-util", "time"] }
 diff --git a/examples/probe.rs b/examples/probe.rs
 new file mode 100644
+index 0000000..14080c9
 --- /dev/null
 +++ b/examples/probe.rs
 @@ -0,0 +1,19 @@
@@ -68,6 +71,7 @@ new file mode 100644
 +}
 diff --git a/rust-toolchain.toml b/rust-toolchain.toml
 new file mode 100644
+index 0000000..e77caba
 --- /dev/null
 +++ b/rust-toolchain.toml
 @@ -0,0 +1,4 @@
@@ -77,6 +81,7 @@ new file mode 100644
 +components = ["rustfmt", "clippy"]
 diff --git a/rustfmt.toml b/rustfmt.toml
 new file mode 100644
+index 0000000..8635cf9
 --- /dev/null
 +++ b/rustfmt.toml
 @@ -0,0 +1,2 @@
@@ -84,6 +89,7 @@ new file mode 100644
 +use_small_heuristics = "Max"
 diff --git a/src/lib.rs b/src/lib.rs
 new file mode 100644
+index 0000000..81f2a4d
 --- /dev/null
 +++ b/src/lib.rs
 @@ -0,0 +1,28 @@
@@ -117,14 +123,16 @@ new file mode 100644
 +}
 diff --git a/src/model.rs b/src/model.rs
 new file mode 100644
+index 0000000..45d24d6
 --- /dev/null
 +++ b/src/model.rs
-@@ -0,0 +1,85 @@
+@@ -0,0 +1,102 @@
 +use crate::{Config, INSTRUCTIONS};
 +use anyhow::{Result, ensure};
 +use reqwest::Client;
 +use serde::Deserialize;
 +use serde_json::{Value, json};
++use std::collections::HashSet;
 +
 +#[derive(Debug, Deserialize)]
 +pub struct ToolCall {
@@ -152,6 +160,7 @@ new file mode 100644
 +enum Item {
 +    FunctionCall(ToolCall),
 +    Message {
++        role: String,
 +        content: Vec<Content>,
 +        phase: Option<String>,
 +    },
@@ -160,8 +169,13 @@ new file mode 100644
 +}
 +
 +#[derive(Deserialize)]
-+struct Content {
-+    text: Option<String>,
++#[serde(tag = "type", rename_all = "snake_case")]
++enum Content {
++    OutputText {
++        text: String,
++    },
++    #[serde(other)]
++    Other,
 +}
 +
 +pub fn request(config: &Config, input: &[Value]) -> Value {
@@ -189,13 +203,23 @@ new file mode 100644
 +    ensure!(!response.output.is_empty(), "response has no output");
 +
 +    let mut calls = Vec::new();
++    let mut ids = HashSet::new();
 +    let mut final_text = String::new();
 +    for item in &response.output {
 +        match Item::deserialize(item)? {
-+            Item::FunctionCall(call) => calls.push(call),
-+            Item::Message { content, phase } => {
-+                if phase.as_deref().is_none_or(|p| p == "final_answer") {
-+                    final_text.extend(content.into_iter().filter_map(|c| c.text));
++            Item::FunctionCall(call) => {
++                ensure!(
++                    !call.call_id.trim().is_empty() && ids.insert(call.call_id.clone()),
++                    "invalid or duplicate call_id"
++                );
++                calls.push(call);
++            }
++            Item::Message { role, content, phase } => {
++                if role == "assistant" && phase.as_deref().is_none_or(|p| p == "final_answer") {
++                    final_text.extend(content.into_iter().filter_map(|part| match part {
++                        Content::OutputText { text } => Some(text),
++                        Content::Other => None,
++                    }));
 +                }
 +            }
 +            Item::Other => {}
@@ -207,6 +231,7 @@ new file mode 100644
 +}
 diff --git a/tests/common/mod.rs b/tests/common/mod.rs
 new file mode 100644
+index 0000000..a11673c
 --- /dev/null
 +++ b/tests/common/mod.rs
 @@ -0,0 +1,162 @@
@@ -374,6 +399,7 @@ new file mode 100644
 +}
 diff --git a/tests/fixtures/responses/bad_call_id.json b/tests/fixtures/responses/bad_call_id.json
 new file mode 100644
+index 0000000..f9e1733
 --- /dev/null
 +++ b/tests/fixtures/responses/bad_call_id.json
 @@ -0,0 +1,23 @@
@@ -402,6 +428,7 @@ new file mode 100644
 +}
 diff --git a/tests/fixtures/responses/commentary.json b/tests/fixtures/responses/commentary.json
 new file mode 100644
+index 0000000..418953a
 --- /dev/null
 +++ b/tests/fixtures/responses/commentary.json
 @@ -0,0 +1,30 @@
@@ -437,6 +464,7 @@ new file mode 100644
 +}
 diff --git a/tests/fixtures/responses/incomplete.json b/tests/fixtures/responses/incomplete.json
 new file mode 100644
+index 0000000..5c27ce6
 --- /dev/null
 +++ b/tests/fixtures/responses/incomplete.json
 @@ -0,0 +1,26 @@
@@ -468,6 +496,7 @@ new file mode 100644
 +}
 diff --git a/tests/fixtures/responses/reasoning.json b/tests/fixtures/responses/reasoning.json
 new file mode 100644
+index 0000000..ea35b8b
 --- /dev/null
 +++ b/tests/fixtures/responses/reasoning.json
 @@ -0,0 +1,30 @@
@@ -503,6 +532,7 @@ new file mode 100644
 +}
 diff --git a/tests/fixtures/responses/text.json b/tests/fixtures/responses/text.json
 new file mode 100644
+index 0000000..293131e
 --- /dev/null
 +++ b/tests/fixtures/responses/text.json
 @@ -0,0 +1,30 @@
@@ -538,6 +568,7 @@ new file mode 100644
 +}
 diff --git a/tests/fixtures/responses/two_calls.json b/tests/fixtures/responses/two_calls.json
 new file mode 100644
+index 0000000..a2e0bcd
 --- /dev/null
 +++ b/tests/fixtures/responses/two_calls.json
 @@ -0,0 +1,32 @@
@@ -575,9 +606,10 @@ new file mode 100644
 +}
 diff --git a/tests/protocol.rs b/tests/protocol.rs
 new file mode 100644
+index 0000000..8a2ad2e
 --- /dev/null
 +++ b/tests/protocol.rs
-@@ -0,0 +1,81 @@
+@@ -0,0 +1,119 @@
 +mod common;
 +use common::{StubResponses, fixture};
 +use crabloop::{Config, model};
@@ -658,4 +690,42 @@ new file mode 100644
 +    let reply = respond(&server, &[]).await.unwrap();
 +    assert_eq!(reply.final_text.as_deref(), Some("Done"));
 +    assert_eq!(reply.output.len(), 2);
++}
++
++#[tokio::test]
++async fn empty_and_duplicate_call_ids_are_rejected() {
++    let mut empty = fixture("two_calls");
++    empty["output"][0]["call_id"] = json!("");
++    let mut duplicate = fixture("two_calls");
++    duplicate["output"][1]["call_id"] = json!("call_1");
++    let mut accepted = Vec::new();
++    for (name, response) in [("empty", empty), ("duplicate", duplicate)] {
++        let server = StubResponses::start(vec![response]);
++        if respond(&server, &[]).await.is_ok() {
++            accepted.push(name);
++        }
++    }
++    assert!(accepted.is_empty(), "accepted invalid call IDs: {accepted:?}");
++}
++
++#[tokio::test]
++async fn only_assistant_output_text_can_be_a_final_answer() {
++    for (role, kind) in [("user", "output_text"), ("assistant", "summary_text")] {
++        let mut response = fixture("text");
++        response["output"][0]["role"] = json!(role);
++        response["output"][0]["content"][0]["type"] = json!(kind);
++        let original = response["output"].as_array().unwrap().clone();
++        let server = StubResponses::start(vec![response]);
++        let reply = respond(&server, &[]).await.unwrap();
++        assert!(reply.final_text.is_none(), "accepted {role}/{kind} as final text");
++        assert_eq!(reply.output, original);
++    }
++}
++
++#[tokio::test]
++async fn output_text_requires_its_text_field() {
++    let mut response = fixture("text");
++    response["output"][0]["content"][0].as_object_mut().unwrap().remove("text");
++    let server = StubResponses::start(vec![response]);
++    assert!(respond(&server, &[]).await.is_err());
 +}
