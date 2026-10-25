@@ -2,6 +2,13 @@
 
 需求、排期与完成状态统一维护于本表；详细设计见 [roadmap](roadmap.md)。
 
+## 当前主线调整（2026-10-25）
+
+- [x] v1 GA 复核：合并后源码通过离线、DeepSeek 修复/报告/连续任务及 PTY 检查；[证据](https://github.com/eriklee1895/crabloop/blob/milestone/v1/evidence/v1/ga-current.md)。
+- [x] 删除本地与远端 milestone/v2，保留历史 v2 标签。
+- [ ] 确认 [main 重整建议](git-workflow.md)后，建立与 v1 GA 对齐的基线。
+- [ ] 在 main 分批增加 context state、投影与 compaction，完成任务和教学验收后再建立 milestone/v2。
+
 ## 维护方式
 
 - 新需求记录稳定编号、描述、目标迭代和设计链接。

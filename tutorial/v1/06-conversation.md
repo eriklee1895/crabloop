@@ -147,4 +147,4 @@ python3 -m unittest discover -s tests -p 'chat_test.py'
 
 更长的对话还有一个自然结果：每轮发送的历史越来越多。代码读了一遍，测试跑了几轮，又追加了几条追问，早期内容是否还要全部发送？
 
-到这里，v1 的学习路线就完整了：从一次请求，到四个工具，到行动循环，再到同一进程里的连续提问。下一阶段进入 [v2 的上下文管理](https://github.com/eriklee1895/crabloop/tree/milestone/v2/tutorial/v2)，研究怎样在保留必要事实的同时整理历史。按 v2 各章指定的代码基线继续即可。
+到这里，v1 的学习路线就完整了：从一次请求，到四个工具，到行动循环，再到同一进程里的连续提问。下一阶段进入 [v2 的上下文管理](https://github.com/eriklee1895/crabloop/tree/v2/tutorial/v2)，研究怎样在保留必要事实的同时整理历史。按 v2 各章指定的代码基线继续即可。

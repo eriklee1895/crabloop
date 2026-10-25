@@ -19,7 +19,7 @@ v2-v3: learn Agent fundamentals in small, readable code; defer reliability harde
 
 ## Current state and layout
 
-V1: milestone/v1, 436/495; terminal chat with shared history, piped single task, crab banner/crab>, no args. Tool name/status; no success output or trace option. Help: docs/cli-help-plan.md. Debug: docs/debugging.md. Brand: docs/assets/README.md.
+V1: milestone/v1, 324/370; GA runtime 9a8077e, three env vars, one task per stdin line, shared history. Current GA: milestone/v1:evidence/v1/ga-current.md.
 
 Historical v1: 314/319; v2: 504/511. V1 GA: 397/402, 43 Rust + 4 Python with live repair/report and PTY; evidence/v1/ga-review.md. Main: 853/878, 65 Rust + 6 Python. Counts=code/physical; preserve historical evidence.
 
@@ -78,7 +78,7 @@ Baseline: cargo fmt --check, cargo clippy --locked --all-targets -- -D warnings,
 
 Distinguish deterministic protocol tests, real local tool execution, and live-model runs. Report only what the actual evidence establishes.
 
-Commit Cargo.lock. Verify, merge and push each iteration to main; preserve teaching commits. Keep main, milestone/* and immutable v*/step-* tags. Develop on short-lived codex/* branches; remove them after commit-retention checks. No routine history rewriting. Line counts are optional reports, not gates. Keep one learning branch per major stage; see docs/git-workflow.md.
+Commit Cargo.lock. Verify, merge and push each iteration to main; preserve teaching commits. Keep main and milestone/v1. Create milestone/v2 only after v2 is validated on main; its old v2 tag is historical. Develop on short-lived codex/* branches; remove them after commit-retention checks. No routine history rewriting. Line counts are optional reports, not gates. The proposed main baseline preserves old main history and continues from v1 GA; see docs/git-workflow.md.
 
 Use rustfmt (100 columns, small heuristics Max); expand protocol JSON for teaching. Separate items and logical phases with blank lines. Count all src/**/*.rs; retain historical counts. Never hide runtime code in scripts or docs.
 

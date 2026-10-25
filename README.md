@@ -39,11 +39,10 @@ cargo run -- -p "检查 README，说明这个项目能做什么"
 
 | 分支 | 内容 | 入口 |
 |---|---|---|
-| [milestone/v1](https://github.com/eriklee1895/crabloop/tree/milestone/v1) | 模型、四工具与反馈循环 | `cargo run` 终端连续对话；管道输入单任务 |
-| [milestone/v2](https://github.com/eriklee1895/crabloop/tree/milestone/v2) | 上下文管理与摘要压缩 | 按 v2 教程指定的基线和命令运行 |
-| main | 当前完整实现：四工具、多轮对话与上下文压缩 | `cargo run` 聊天，`-p` 单次执行 |
+| [milestone/v1](https://github.com/eriklee1895/crabloop/tree/milestone/v1) | 模型、四工具与反馈循环 | 每个非空 stdin 行一个任务，保留进程内历史 |
+| main | 早期实验实现，待从 v1 GA 建立新基线 | `cargo run` 聊天，`-p` 单次执行 |
 
-从[中文教程](tutorial/README.md)进入 v1 的 00–06 章，学习最小循环与连续对话，再阅读 [v2 的 context 管理与 compaction](tutorial/v2/06-context-projection.md)。也可以用[七个代码增量](tutorial/v1/patches/README.md)从空目录重建 v1。
+从 [v1 中文教程](https://github.com/eriklee1895/crabloop/tree/milestone/v1/tutorial)学习最小循环与连续任务，也可以用[六个代码增量](https://github.com/eriklee1895/crabloop/tree/milestone/v1/tutorial/v1/patches)从空目录重建。v2 将在 main 从 v1 分批演进，验收满意后再建立 milestone/v2；见[演进建议](docs/git-workflow.md)。
 
 后续版本计划加入 TOML 配置、流式输出、Skills、联网工具和会话恢复，安排见[路线图](docs/roadmap.md)。这些能力尚未实现。
 
