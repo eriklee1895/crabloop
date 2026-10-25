@@ -1,37 +1,96 @@
 # 02：让一个工具调用真正读到文件
 
-上一章里，模型可以返回一张动作单：工具叫 `read_file`，参数里写着文件路径。现在我们把模型暂时放在一边，亲手实现接单的那段 Rust 代码。
+上一章里，模型可以返回一张动作单：工具叫 `read_file`，参数里写着文件路径。可这张单子交到程序手里以后，什么也没有发生。
 
-目标很具体：给它一个真实文件，拿回内容；再给它一次含糊的编辑，确认它会拒绝，而且没有把文件改坏。
+这一章我们亲手实现接单的那段 Rust 代码。目标很具体：给它一个真实文件，拿回内容；再给它一次含糊的编辑，确认它会拒绝，而且没有把文件改坏。
 
-> 本章从 `step-01-responses` 走到 `step-02-file-tools`。工具入口是 `src/tools.rs` 的 `execute`，结果暂时用 `ToolResult` 包装；第 05 章会整理为最终接口。
+## 先让模型看见工具
 
-## 先写进去，再读回来
-
-在练习目录应用[本章完整增量](patches/02-file-tools.patch)，它补上 `pub mod tools`、三个文件工具及测试。补丁起点是上一章的练习工程，路径设置见[增量入口](patches/README.md)。
+在练习目录应用[本章完整增量](patches/02-file-tools.patch)。它新增 `src/tools.rs` 和对应测试，并在 `src/lib.rs` 加上 `pub mod tools;`。
 
 ```bash
 git apply --check "$CRABLOOP_SOURCE/tutorial/v1/patches/02-file-tools.patch"
 git apply "$CRABLOOP_SOURCE/tutorial/v1/patches/02-file-tools.patch"
-cargo test --locked --test tools read_write_roundtrip_and_output_correlation -- --exact
+cargo test --locked --test tools
 ```
 
-这个测试会在临时目录里创建 `hello.rs`，写入“你好 🦀”，再通过 `read_file` 读回来。它还直接读取磁盘，核对写入确实发生；随后检查工具结果里的 `call_id`，确认结果能够接回原调用。
+`src/model.rs` 的 `request` 里也多了一行：
 
-先从这条顺利的路径开始看代码。`execute` 收到 `ToolCall` 后，把字符串形式的参数解析成 JSON，再从中提取字符串字段：
+```rust
+"tools": crate::tools::schemas(),
+```
+
+`schemas` 向模型说明工具叫什么、接受哪些字段。每个工具都是一个 `function`，参数都是字符串，全部必填，并设置 `strict: true` 与 `additionalProperties: false`，让模型按约定的形状填写参数。
+
+现在可以用上一章的探针做一个小实验。沿用那三个环境变量，在练习目录运行：
+
+```bash
+cargo run --locked --example probe -- "读取 Cargo.toml，告诉我包名"
+```
+
+这是会访问真实模型的手动实验，模型的选择可能不同。多数时候，你会在打印的 `output` 里看到一个 `function_call`，名字是 `read_file`，参数里写着 `Cargo.toml`；探针最后报告 `tool calls: 1`、`final text: None`。
+
+模型提出了动作，可是 `Cargo.toml` 没有被任何人读过。探针只请求一次就结束了。接下来写的，就是真正去读的那段代码。
+
+## 先写进去，再读回来
+
+先从一条顺利的路径开始：
+
+```bash
+cargo test --locked --test tools write_then_read_roundtrip -- --exact
+```
+
+这个测试在临时目录里通过 `write_file` 写入“你好 🦀”，再直接读取磁盘核对写入确实发生，最后通过 `read_file` 把内容读回来。
+
+所有工具调用都从 `tools::execute` 进入。它把内部的 `Result` 收成一份 JSON：
+
+```rust
+pub async fn execute(call: &ToolCall, config: &Config) -> Value {
+    dispatch(call, config)
+        .await
+        .unwrap_or_else(|error| json!({"ok": false, "error": format!("{error:#}")}))
+}
+```
+
+`execute` 永远返回一个 `Value`，不会让工具失败变成整个程序的错误。成功时是 `{"ok": true, ...}`，失败时是 `{"ok": false, "error": "..."}`。这份结果稍后会原样交给模型，让它根据错误原因调整下一步。
+
+真正的分派在 `dispatch` 中。它先把字符串形式的参数解析成 JSON，再按工具名选择分支：
 
 ```rust
 let args: Value = serde_json::from_str(&call.arguments)?;
-let arg = |key: &str| {
-    args[key].as_str().with_context(|| format!("{key} must be a string"))
-};
+let arg = |key: &str| args[key].as_str().with_context(|| format!("{key} must be a string"));
+let path = || resolve(&config.workspace, arg("path")?);
+
+match call.name.as_str() {
+    "read_file" => {
+        let text = read(&path()?)?;
+        let (content, truncated) = clip(&text, READ_BYTES);
+        Ok(json!({"ok": true, "content": content, "truncated": truncated}))
+    }
+    "write_file" => write(&path()?, arg("content")?),
+    // edit_file 见下一节
+    name => bail!("unknown tool: {name}"),
+}
 ```
 
-这个小闭包会反复用到：`read_file` 要 `path`，`write_file` 还要 `content`，`edit_file` 则要 `old_text` 与 `new_text`。字段不存在或类型不对，就返回错误。
+`arg` 从参数里取一个字符串字段，字段不存在或类型不对就返回错误。它返回借用的 `&str`，文本仍由 `args` 持有，不必为了取一个参数就复制整段字符串。`match` 的每个分支对应 `schemas` 里的一个工具，读代码时可以一一对上。
 
-这里拿到的是借用的 `str`，文本仍由 `args` 持有。只要这次执行还没结束，`args` 也还在，不必为了取一个参数就复制整段字符串。
+`path` 把参数交给 `resolve`，相对于工作目录解析：
 
-路径相对于工作目录解析。绝对路径和 `..` 会被拒绝，让 `path` 的含义保持明确；符号链接和 Bash 等执行能力仍有另外的边界，这个检查不能当作操作系统沙箱。
+```rust
+fn resolve(workspace: &Path, relative: &str) -> Result<PathBuf> {
+    let relative = Path::new(relative);
+    ensure!(
+        !relative.is_absolute() && !relative.components().any(|c| c == Component::ParentDir),
+        "path must be relative without parent traversal"
+    );
+    let path = workspace.join(relative);
+    ensure!(!path.exists() || path.is_file(), "path must be a regular file");
+    Ok(path)
+}
+```
+
+绝对路径和 `..` 会被拒绝，让 `path` 的含义保持明确；目录、管道这类不是普通文件的路径也会被拒绝，避免读写时卡住。符号链接和 Bash 等执行能力仍有另外的边界，这个检查是路径约定，不能当作操作系统沙箱。
 
 ## 只想改一处，为什么不能直接替换
 
@@ -51,14 +110,18 @@ prefix NEW suffix
 
 如果 `OLD` 只出现一次，改动位置很清楚。现在换一个文件，内容是 `same same`。模型要求把 `same` 改成 `new`，究竟应该改左边还是右边？
 
-我们的处理是把这个歧义交回去，让调用者提供更具体的片段。进入编辑分支后，文件已读到内存，接下来这样判断：
+我们的处理是把这个歧义交回去，让调用者提供更具体的片段。`edit_file` 分支这样判断：
 
 ```rust
-let old = arg("old_text")?;
-ensure!(!old.is_empty(), "old_text must not be empty");
-let start = text.find(old).context("old_text did not match; read the file again")?;
-ensure!(text.rfind(old) == Some(start), "old_text must have a unique match");
-text.replace_range(start..start + old.len(), arg("new_text")?);
+"edit_file" => {
+    let (path, old) = (path()?, arg("old_text")?);
+    ensure!(!old.is_empty(), "old_text must not be empty");
+    let mut text = read(&path)?;
+    let start = text.find(old).context("old_text did not match; read the file again")?;
+    ensure!(text.rfind(old) == Some(start), "old_text must have a unique match");
+    text.replace_range(start..start + old.len(), arg("new_text")?);
+    write(&path, &text)
+}
 ```
 
 `find` 与 `rfind` 分别寻找最前和最后的匹配位置。两者相同，才说明位置唯一；重叠的匹配也会被发现，例如在 `aaaa` 中寻找 `aaa`。
@@ -98,36 +161,45 @@ cargo test --locked --test tools failed_edits_leave_the_original_file_unchanged 
 合法截断：   你好
 ```
 
-`clip_utf8` 因此会退回到合法边界，并告诉调用者 `truncated = true`。模型拿到的文字能正常解码，也知道内容被截断了。
-
-文件本身的大小限制是另一件事。读取时先拿有上限的字节，判断是否超限，然后才尝试 UTF-8 解码。下面摘出读取分支，最后一行把字符串交给外层：
+标准库的 `floor_char_boundary` 正好回答“不超过这个字节数的最后一个字符边界在哪里”。`clip` 用它截取，并告诉调用者是否截断：
 
 ```rust
-let mut bytes = Vec::new();
-fs::File::open(&path)?
-    .take(limits.file_bytes as u64 + 1)
-    .read_to_end(&mut bytes)?;
-ensure!(bytes.len() <= limits.file_bytes, "file exceeds size limit");
-String::from_utf8(bytes)?
+pub fn clip(text: &str, max_bytes: usize) -> (&str, bool) {
+    let end = text.floor_char_boundary(max_bytes);
+    (&text[..end], end < text.len())
+}
 ```
 
-多读一个字节，是为了分清“刚好到上限”和“其实还有更多”。如果先解码一个被大小限制切断的片段，就可能把过大的合法中文文件误报成编码损坏。
+返回的 `&str` 借用原文本，不复制。模型拿到的文字能正常解码，也从 `truncated` 字段知道内容不完整。
+
+文件本身的大小限制是另一件事。读取时只取上限加一个字节，先判断实际读取内容是否超限，再尝试 UTF-8 解码；写入前同样检查长度：
+
+```rust
+fn read(path: &Path) -> Result<String> {
+    let mut bytes = Vec::new();
+    fs::File::open(path)?.take(FILE_BYTES as u64 + 1).read_to_end(&mut bytes)?;
+    ensure!(bytes.len() <= FILE_BYTES, "file exceeds size limit");
+    Ok(String::from_utf8(bytes)?)
+}
+```
+
+多读一个字节用来识别超限，避免只依靠读取前的 metadata 判断大小。先判实际读取的字节数，是为了让“文件太大”和“编码损坏”各自得到正确的错误。一个过大的合法中文文件，应该被报告为太大，而不是被误报成编码问题。
 
 ```bash
 cargo test --locked --test tools read_truncation_is_utf8_safe_and_non_utf8_is_an_error -- --exact
-cargo test --locked --test tools oversized_utf8_reports_size_instead_of_encoding -- --exact
+cargo test --locked --test tools size_limit_is_checked_before_decoding_and_before_writing -- --exact
 ```
 
-前一个实验检查合法截断与真正的非法编码；后一个把“你你好”放进更小的文件预算中，确认报告的是大小错误。这样，读者和模型才有机会根据错误内容采取正确的下一步。
+前一个实验检查合法截断与真正的非法编码；后一个用一个超过 64 KiB 的中文文件，确认报告的是大小错误，过大的写入也不会改动原文件。这样，模型才有机会根据错误内容采取正确的下一步。
 
 ## 把成功和失败都变成结果
 
-工具内部用 `Result` 传播错误。外层 `execute` 把可修正的失败收成 JSON，再与原始 `call_id` 一起返回：成功结果可以包含文件内容，失败结果则包含原因。
+再运行一次全部文件工具测试：
 
-本阶段的 `ToolResult::as_input` 会把它包装成 `function_call_output`。下一章还要增加 Bash，到了第 04 章，我们才把这些结果统一接回模型。
+```bash
+cargo test --locked --test tools
+```
 
-`schemas` 则向模型说明工具叫什么、接受哪些字段。工具说明和执行时校验都需要：声明参数应该是字符串，并不代表所有实际输入都一定符合要求。
+其中 `bad_arguments_paths_and_unknown_tools_become_tool_errors` 把错误的参数类型、`..` 路径、绝对路径、不存在的文件、未知工具名和无法解析的参数 JSON 都交给 `execute`。每一种都得到 `ok: false` 和一句原因，没有一种让程序退出。
 
-最后运行 `cargo test --locked --test tools`。试着解释：一次编辑为什么被拒绝，原文件何时才会改变，返回的 `call_id` 又从哪里来。随后进入[第 03 章：让测试作为一个真实进程运行](03-bash.md)。
-
-本章固定源码见 [`step-02-file-tools` 的 tools.rs](https://github.com/eriklee1895/crabloop/blob/step-02-file-tools/src/tools.rs)。
+现在工具能读、能写、能精确地改，却还没有办法确认改完以后程序是否真的正确。试着解释：一次编辑为什么被拒绝，原文件何时才会改变，`execute` 为什么从不返回 `Err`。随后进入[第 03 章：让测试作为一个真实进程运行](03-bash.md)。

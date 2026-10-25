@@ -7,8 +7,10 @@ root = Path(__file__).resolve().parents[1]
 workspace = Path(sys.argv[1])
 try:
     data = json.loads((workspace / "report.json").read_text())
+    # Owner names exactly as written in fixtures/local-report/inbox (Chinese characters).
+    facts = [("alpha", "\u6797", "done"), ("beta", "\u9648", "pending"), ("gamma", "\u5468", "done")]
     expected = [{"id": ident, "owner": owner, "status": status, "source": f"inbox/{ident}.md"}
-                for ident, owner, status in [("alpha", "Lin", "done"), ("beta", "Chen", "pending"), ("gamma", "Zhou", "done")]]
+                for ident, owner, status in facts]
     actual = [{key: item[key] for key in ("id", "owner", "status", "source")} for item in data["items"]]
     assert actual == expected, "item facts or sources do not match"
     counts = data["counts"]
