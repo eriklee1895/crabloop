@@ -24,7 +24,7 @@ Each non-empty stdin line is one task, terminal or pipe alike; main keeps one Ve
 
 Config is OPENAI_API_KEY, OPENAI_BASE_URL (default https://api.openai.com/v1) and CRABLOOP_MODEL (required); workspace is cwd; arguments are ignored. DeepSeek: base https://api.deepseek.com, model deepseek-flash. The bash child does not inherit OPENAI_API_KEY. scripts/run-live.py reads .env for the driver only. Never execute or print .env contents.
 
-Offline baseline: 33 Rust + 6 Python tests, fmt/clippy, check-lessons. Live DeepSeek evidence for the slim version: evidence/v1/slim-acceptance.md (docs/devlog/38-v1-slim-live.md). Code strings/comments are English; tutorials are Chinese. CLI Help remains planned in docs/cli-help-plan.md. Read docs/v1-scope.md for scope; docs/design.md and docs/plan.md preserve the original learning sequence.
+Offline baseline: 33 Rust + 6 Python tests, fmt/clippy, check-lessons. Current GA review and fresh DeepSeek/PTY evidence: evidence/v1/ga-current.md (runtime 9a8077e). Earlier evidence: evidence/v1/slim-acceptance.md. Code strings/comments are English; tutorials are Chinese. CLI Help remains planned in docs/cli-help-plan.md. Read docs/v1-scope.md for scope; docs/design.md and docs/plan.md preserve the original learning sequence.
 
 ## How to develop
 
@@ -68,7 +68,7 @@ Once the Cargo package exists, use cargo fmt --check, cargo clippy --locked --al
 
 Distinguish deterministic protocol tests, real local tool execution, and live-model runs. Report only what the actual evidence establishes.
 
-Commit Cargo.lock. The user authorizes verified increments to be committed and pushed, with main holding the latest validated tree. The user requested one v1 branch: milestone/v1 is the small teaching core with in-process terminal chat. Keep main and milestone/v2 separately, and preserve historical v1/v2 and step tags. Do not create another interaction-version branch/tag or merge this older backend over main.
+Commit Cargo.lock. The user authorizes verified increments to be committed and pushed, with main holding the latest validated tree. The user requested one v1 branch: milestone/v1 is the small teaching core with in-process terminal chat. Keep main and milestone/v1; create milestone/v2 only after v2 is validated on main. The old v2 branch is deleted; retain its immutable v2 tag. The proposed main rebuild starts from v1 GA and preserves old main history, then adds v2 in small verified increments. Do not add another v1 learning branch.
 
 Separate top-level items and logical phases within functions with one blank line; keep related statements together. Blank lines do not count toward the code-line budget. Formatting uses rustfmt with max_width = 100 and use_small_heuristics = Max; expand protocol JSON for teaching clarity. Count all src/**/*.rs under this same public style for every milestone; never hide runtime code in scripts or documentation.
 

@@ -9,3 +9,7 @@
 - [ ] 候选（v3，随 TOML 配置一起）：工具安全边界，包括 bash 的 clean env / env allowlist、command approval 和 workspace isolation。v1 有意不做，只在 README 和第 03 章提示风险。
 - [ ] v3：`.env`/TOML 配置、provider 预置与凭证；届时再考虑启动信息与更详细的工具状态显示。
 - [ ] 后续独立 CLI Help 迭代：层次、排版、高亮多色、纯文本退化和参数声明一致性。[设计边界](cli-help-plan.md)
+
+- [x] 2026-10-25：合并后 v1 的 GA 复核通过，补充真实修复、报告、连续任务和 PTY 证据；见 [GA 复核](../evidence/v1/ga-current.md)。
+- [x] 删除过早创建的 milestone/v2，保留历史 v2 标签。
+- [ ] 确认 main 重整方案后，以 v1 GA 建立 main 基线，分批加入 context 与 compaction，满意后再建立新的 milestone/v2。

@@ -39,4 +39,4 @@ export OPENAI_BASE_URL=https://api.deepseek.com   # 使用 OpenAI 时省略
 export CRABLOOP_MODEL=deepseek-flash
 ```
 
-读完以后，可以继续学习 [v2 的上下文管理](https://github.com/eriklee1895/crabloop/tree/milestone/v2/tutorial/v2)：历史越来越长时，下一轮究竟应该看见什么？届时按 v2 各章指定的代码基线继续。
+下一阶段计划在 main 从这份 v1 逐步增加 context 与 compaction，验收后再创建 milestone/v2。旧版 [v2 教程](https://github.com/eriklee1895/crabloop/tree/v2/tutorial/v2)保留为历史参考。

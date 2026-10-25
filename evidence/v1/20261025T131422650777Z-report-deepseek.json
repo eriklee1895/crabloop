@@ -1,0 +1,28 @@
+{
+  "date_utc": "2026-10-25T13:14:23.012538+00:00",
+  "scenario": "report",
+  "source_commit": "9a8077e79fa1c47e94ee6cb0b0c0760e5c37f39f",
+  "source_sha256": {
+    "src/lib.rs": "627aa3ae76bf093dda76a2df7cee080cb56080cabceb469a8bda3ef20a1fa484",
+    "src/main.rs": "ab73baca389ed9b3fee8d448e3f95dbb63ac65d8816089fa85199ec4d0efb005",
+    "src/model.rs": "e740da530a170bab50ff8e8ae9c7569a55fe1474f6cd02bb982e5d767bedbc60",
+    "src/tools.rs": "c5063c631b32c81499309671667f18e7cb6afd2e0509e4843b00ab6112b41a8f"
+  },
+  "stage": "v1",
+  "provider": "deepseek",
+  "model": "deepseek-flash",
+  "elapsed_seconds": 13.0,
+  "agent_exit_code": 0,
+  "driver_timeout": false,
+  "baseline_verifier_exit_code": 1,
+  "final_verifier_exit_code": 0,
+  "workspace": "playground/v1-report-deepseek-20261025T131422650777Z",
+  "model_requests": 7,
+  "tool_calls": {
+    "read_file": 4,
+    "write_file": 2,
+    "edit_file": 0,
+    "bash": 4
+  },
+  "passed": true
+}
