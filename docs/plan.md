@@ -1,5 +1,7 @@
 # CrabLoop v1 → v2 Implementation Plan
 
+> 版本说明（2026-10-12）：本文保留原始 v1 → v2 设计与历史命令。当前 milestone/v1 已收敛为 389 行的单任务循环，工作区为 cwd，入口为 cargo run 后输入任务或 stdin 管道；以[教学边界](v1-scope.md)和[收敛记录](devlog/08-v1-reduction.md)为准。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 让学习者亲手用约 300 行 Rust 实现四工具 coding agent，再增加约 200 行上下文管理与压缩，掌握可迁移的 harness 基础。
@@ -10,16 +12,14 @@
 
 **Spec:** [设计说明](design.md)。本文保留原 v1/v2 的实施顺序和阶段接口；当前状态见 [AGENTS.md](../AGENTS.md)，后续安排见 [roadmap](roadmap.md)。
 
-2026-10-12 增补：基础多轮终端体验提前实现，`-p` 保留单次任务。本文的单次 Run 和行数描述属于原 v1/v2 快照；当前 Session 与交互增量见[交互实施记录](interactive-plan.md)，原始标签不移动。
-
 ## Global Constraints
 
 - 模型接入使用 OpenAI 原生 Responses API。公开工具名固定为 read_file、write_file、edit_file、bash。
 - 每次请求由客户端显式发送 input；store 为 false，不传 previous_response_id 或 conversation。
 - Rust 1.94.0，edition 2024；依赖按设计说明固定精确版本，提交 Cargo.lock 后使用 locked 构建。
-- 主模型轮数 16；HTTP 超时 60 秒；Bash 超时 30 秒；main 主调用 max_output_tokens 为 32,768；当前 v1 为 131,072，摘要至少 4,096，为推理与正文留出额度。
+- 主模型轮数 16；HTTP 超时 60 秒；Bash 超时 30 秒；max_output_tokens 为 131,072。
 - 文件上限 65,536 字节，read_file 输出上限 8,192 字节，Bash stdout/stderr 各捕获最多 4,096 原始字节。
-- main 与当前 v1 请求上限为 4 MiB；main 触发阈值为 3 MiB、保留最近 2 组，摘要上限 min(16,384，hard/8)。历史 v1/v2 标签保留原预算。
+- 当前 v1 请求上限为 4 MiB，输出上限为 131,072 tokens；历史 v1/v2 标签保留原预算。历史 v2 默认 49,152 字节、触发阈值 36,864 字节、保留最近 2 组，摘要上限 min(4,096，hard/8)。
 - v2 的 CRABLOOP_CONTEXT_BYTES 最小 4,096；根目录 AGENTS.md 上限 8,192 UTF-8 字节。
 - 规模参考：v1 约 300 行，v2 约 500 行；源码使用正常 rustfmt 排版。
 - 先完成 v1 并保留 tag，再扩展 v2；不在两版中添加设计说明列出的选修能力。
@@ -187,11 +187,11 @@ Task 5 收束时取消了只包装配置的 ModelClient 和只包装回传的 To
 
 **Interfaces:** ContextPolicy { hard_bytes: usize, soft_bytes: usize, summary_bytes: usize, keep_rounds: usize }；ContextPolicy::new(hard_bytes: usize) -> Result<Self> 按全局规则派生值。ContextState { instructions: String, task: String, summary: Option<String>, rounds: Vec<Vec<Value>> }；new(instructions: String, task: String) -> Self、append_round(&mut self, round: Vec<Value>) -> Result<()>、input(&self) -> Vec<Value>、request_bytes(config: &Config, instructions: &str, input: &[Value], tools: &[Value]) -> usize。Journal::create(path: &Path) -> io::Result<Self>、record(&mut self, kind: &str, data: &Value) -> io::Result<()>。
 
-- [x] Step 1：写 complete_round_preserves_all_items、rejects_orphan_result、fixed_task_and_agents_survive_projection、request_bytes_includes_tools_and_ciphertext、journal_is_append_only、invalid_budget_rejected、invalid_agents_rejected。覆盖缺失 AGENTS 跳过、存在但非 UTF-8/超限失败、hard 小于 4,096 失败。
-- [x] Step 2：运行 cargo test --test context，确认预期失败。
-- [x] Step 3：实现纯投影与 byte 预算；根目录 AGENTS.md 加入每次 instructions，任务原文固定保留。先仅支持预算不足时停止，尚不实现摘要。
-- [x] Step 4：实现 JSONL，每次请求、响应、工具意图/结果及停止都追加并 flush；日志新建于 .crabloop/run-TIMESTAMP-PID.jsonl，创建失败就结束。记录可包括 usage，但不得包含 Authorization。
-- [x] Step 5：运行 cargo test --locked --test context 与原 v1 回归；检查 log 事件数量不因输入裁剪减少，原任务与指令未变化：
+- [ ] Step 1：写 complete_round_preserves_all_items、rejects_orphan_result、fixed_task_and_agents_survive_projection、request_bytes_includes_tools_and_ciphertext、journal_is_append_only、invalid_budget_rejected、invalid_agents_rejected。覆盖缺失 AGENTS 跳过、存在但非 UTF-8/超限失败、hard 小于 4,096 失败。
+- [ ] Step 2：运行 cargo test --test context，确认预期失败。
+- [ ] Step 3：实现纯投影与 byte 预算；根目录 AGENTS.md 加入每次 instructions，任务原文固定保留。先仅支持预算不足时停止，尚不实现摘要。
+- [ ] Step 4：实现 JSONL，每次请求、响应、工具意图/结果及停止都追加并 flush；日志新建于 .crabloop/run-TIMESTAMP-PID.jsonl，创建失败就结束。记录可包括 usage，但不得包含 Authorization。
+- [ ] Step 5：运行 cargo test --locked --test context 与原 v1 回归；检查 log 事件数量不因输入裁剪减少，原任务与指令未变化：
 
 ```rust
 assert_eq!(state.input()[0]["content"], original_task);
@@ -199,18 +199,18 @@ assert_eq!(after_journal_events, before_journal_events);
 assert!(projected_request_bytes < full_request_bytes);
 ```
 
-- [x] Step 6：做一次只保留最近完整组的离线投影实验，故意删掉早期测试信息，记录损失；本地提交 feat: separate history records from model context。
+- [ ] Step 6：做一次只保留最近完整组的离线投影实验，故意删掉早期测试信息，记录损失；本地提交 feat: separate history records from model context。
 
 ## Task 7: 预算触发的手写摘要，站点 07
 
 **Files:** Modify src/context.rs、src/lib.rs；Create tests/compaction.rs、tutorial/v2/07-compaction.md、docs/devlog/07-compaction.md。
 
-**Interfaces:** async ContextState::prepare(&mut self, client: &reqwest::Client, config: &Config, tools: &[Value], policy: &ContextPolicy, journal: &mut Journal) -> Result<Option<Vec<Value>>>；Some 返回可直接用于下一次主请求的 input，None 表示预算停止。摘要调用继续使用 model::request/respond，但 tools 为空；Run 内记录主调用数与摘要调用数。
+**Interfaces:** async ContextState::prepare(&mut self, client: &reqwest::Client, config: &Config, tools: &[Value], policy: &ContextPolicy, journal: &mut Journal) -> Result<Vec<Value>>；返回可直接用于下一次主请求的 input。摘要调用继续使用 model::request/respond，但 tools 为空；Run 内记录主调用数与摘要调用数。
 
-- [x] Step 1：写 below_threshold_skips_summary、compaction_preserves_recent_two_rounds、summary_request_has_own_budget、oversized_tail_stops、empty_or_incomplete_summary_is_rejected、failed_summary_does_not_commit、summary_does_not_execute_tools。stub 的有效摘要使用已完成、修改文件、验证结果、剩余工作、不确定事项五段。
-- [x] Step 2：运行 cargo test --test compaction，确认预期失败。
-- [x] Step 3：按设计说明六步实现 prepare；总结较早前缀和上一份摘要，原任务/AGENTS 不交给摘要替代，先验证新输入再提交。密文 reasoning 保持不透明，随完整组处理。
-- [x] Step 4：运行 cargo test --locked --test compaction；验证失败的原状态和成功候选：
+- [ ] Step 1：写 below_threshold_skips_summary、compaction_preserves_recent_two_rounds、summary_request_has_own_budget、oversized_tail_stops、empty_or_incomplete_summary_is_rejected、failed_summary_does_not_commit、summary_does_not_execute_tools。stub 的有效摘要使用已完成、修改文件、验证结果、剩余工作、不确定事项五段。
+- [ ] Step 2：运行 cargo test --test compaction，确认预期失败。
+- [ ] Step 3：按设计说明六步实现 prepare；总结较早前缀和上一份摘要，原任务/AGENTS 不交给摘要替代，先验证新输入再提交。密文 reasoning 保持不透明，随完整组处理。
+- [ ] Step 4：运行 cargo test --locked --test compaction；验证失败的原状态和成功候选：
 
 ```rust
 assert_eq!(failed_state.input(), before_input);
@@ -219,8 +219,8 @@ assert!(compacted_request_bytes < policy.soft_bytes);
 assert_eq!(summary_request["tools"], serde_json::json!([]));
 ```
 
-- [x] Step 5：主 loop 在每次主请求前调用 prepare；一轮最多摘要一次，累计最多 15 次，日志区分 main/summary usage、压缩前后 bytes 和失败原因。原请求预算保护继续保留。
-- [x] Step 6：回归 cargo test --locked，完成强制小预算实验并本地提交 feat: add bounded context compaction。
+- [ ] Step 5：主 loop 在每次主请求前调用 prepare；一轮最多摘要一次，累计最多 15 次，日志区分 main/summary usage、压缩前后 bytes 和失败原因。原请求预算保护继续保留。
+- [ ] Step 6：回归 cargo test --locked，完成强制小预算实验并本地提交 feat: add bounded context compaction。
 
 ## Task 8: 协议与事实保留对照，站点 08
 
@@ -228,12 +228,12 @@ assert_eq!(summary_request["tools"], serde_json::json!([]));
 
 **Interfaces:** 对同一份 history 构造完整输入、最近两组输入、摘要+最近两组输入；利用已有 request_bytes、ContextState 和 fake Responses。五段摘要的结构检查由程序完成；语义核验由 fixture 断言和真实运行人工复核分别承担。
 
-- [x] Step 1：构造含早期测试失败、未完成修改、最新两个调用组的固定 history；把 faithful_summary 与故意写成“测试通过”的 misleading_summary 分别送入实验。
-- [x] Step 2：写 context_comparison_preserves_protocol 与 misleading_summary_fails_semantic_verifier；独立断言早期测试仍为 failed、未运行测试仍为 not_run、剩余任务仍 pending。预期：误导摘要可满足五段结构，却必须被事实核验判为失败。
-- [x] Step 3：运行 cargo test --locked --test context --test compaction；保存三方案的输入 bytes、调用/结果关联检查和事实核验表，不把 fake summary 结果当成模型压缩质量。
-- [x] Step 4：真实模型实验先以 CRABLOOP_CONTEXT_BYTES=8,192 起步，测量固定输入、最近两组和摘要预留的大小；必要时按 16,384 → 32,768 → 49,152 校准，选择候选输入装得下且完整历史能触发整理的预算。使用多轮任务触发至少一次压缩，记录摘要请求、前后输入、usage、最终差异和测试结果。若仍装不下，记录明确停止，不删除半组“凑成功”。
-- [x] Step 5：复核五类信息：任务约束、修改文件、测试结果、剩余工作、不确定事项。对照至少一次无压缩运行；费用/时延只记录实测，不预设压缩更便宜。
-- [x] Step 6：把一次损失案例与修正建议写入 08，保留原始证据；本地提交 test: verify context projection and compaction behavior。
+- [ ] Step 1：构造含早期测试失败、未完成修改、最新两个调用组的固定 history；把 faithful_summary 与故意写成“测试通过”的 misleading_summary 分别送入实验。
+- [ ] Step 2：写 context_comparison_preserves_protocol 与 misleading_summary_fails_semantic_verifier；独立断言早期测试仍为 failed、未运行测试仍为 not_run、剩余任务仍 pending。预期：误导摘要可满足五段结构，却必须被事实核验判为失败。
+- [ ] Step 3：运行 cargo test --locked --test context --test compaction；保存三方案的输入 bytes、调用/结果关联检查和事实核验表，不把 fake summary 结果当成模型压缩质量。
+- [ ] Step 4：真实模型实验先以 CRABLOOP_CONTEXT_BYTES=8,192 起步，测量固定输入、最近两组和摘要预留的大小；必要时按 16,384 → 131,072 → 49,152 校准，选择候选输入装得下且完整历史能触发整理的预算。使用多轮任务触发至少一次压缩，记录摘要请求、前后输入、usage、最终差异和测试结果。若仍装不下，记录明确停止，不删除半组“凑成功”。
+- [ ] Step 5：复核五类信息：任务约束、修改文件、测试结果、剩余工作、不确定事项。对照至少一次无压缩运行；费用/时延只记录实测，不预设压缩更便宜。
+- [ ] Step 6：把一次损失案例与修正建议写入 08，保留原始证据；本地提交 test: verify context projection and compaction behavior。
 
 ## Task 9: v2 综合验收与重建练习，站点 09
 
@@ -241,11 +241,11 @@ assert_eq!(summary_request["tools"], serde_json::json!([]));
 
 **Interfaces:** 不增加运行时能力；沿用 v1 的外部 verifier、v2 journal 和 context 比较方法。
 
-- [x] Step 1：在新的 playground 副本中运行强制压缩修复任务；确认日志至少一条成功压缩，原任务/AGENTS 固定保留，独立 verifier 通过；单独记录未通过或模型误报完成的情况。
-- [x] Step 2：运行 cargo fmt --check、cargo clippy --locked --all-targets -- -D warnings、cargo test --locked、python3 scripts/count-lines.py，以及对应 playground 的外部验收。
-- [x] Step 3：填写 evidence/v2/acceptance.md：实际源代码行数、协议测试、Bash/文件真实测试、压缩次数与输入大小、真实模型 ID/日期、外部验收和已知局限。记录层、运行机制与模型任务结果分别给结论。
-- [x] Step 4：完成重建练习：不看参考代码，在单独 scratch 目录重写 v1 loop；沿一个 v2 日志解释历史在哪里、每轮输入是什么、失败怎样改变动作、压缩丢失了什么。该练习不修改冻结版本。
-- [x] Step 5：本地提交 milestone: finish v2，并创建 v2 tag。后续选修一次只选一个：原生 compaction 对照、Streaming/取消、会话恢复、进程树治理、MCP 或只读 subagent。
+- [ ] Step 1：在新的 playground 副本中运行强制压缩修复任务；确认日志至少一条成功压缩，原任务/AGENTS 固定保留，独立 verifier 通过；单独记录未通过或模型误报完成的情况。
+- [ ] Step 2：运行 cargo fmt --check、cargo clippy --locked --all-targets -- -D warnings、cargo test --locked、python3 scripts/count-lines.py，以及对应 playground 的外部验收。
+- [ ] Step 3：填写 evidence/v2/acceptance.md：实际源代码行数、协议测试、Bash/文件真实测试、压缩次数与输入大小、真实模型 ID/日期、外部验收和已知局限。记录层、运行机制与模型任务结果分别给结论。
+- [ ] Step 4：完成重建练习：不看参考代码，在单独 scratch 目录重写 v1 loop；沿一个 v2 日志解释历史在哪里、每轮输入是什么、失败怎样改变动作、压缩丢失了什么。该练习不修改冻结版本。
+- [ ] Step 5：本地提交 milestone: finish v2，并创建 v2 tag。后续选修一次只选一个：原生 compaction 对照、Streaming/取消、会话恢复、进程树治理、MCP 或只读 subagent。
 
 ## 两个版本的完成门槛
 

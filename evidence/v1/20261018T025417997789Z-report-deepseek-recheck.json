@@ -1,0 +1,11 @@
+{
+  "original_report": "evidence/v1/20261018T025417997789Z-report-deepseek.json",
+  "model": "deepseek-flash",
+  "scenario": "report",
+  "recheck_without_new_model_call": true,
+  "model_output_unchanged": true,
+  "verifier_exit_code": 0,
+  "passed": true,
+  "reason": "Checker expected romanized owners (Lin/Chen/Zhou) since commit a9311b4, but the fixture inbox names the owners in Chinese; the model copied them correctly. Checker now expects the fixture text and a test ties both together.",
+  "verifier_sha256": "1ef5473ff03a98cb06a6e2bb6f035c72fe45403852da33b54305a42370c6b76c"
+}

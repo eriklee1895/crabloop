@@ -6,6 +6,7 @@ import difflib
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import signal
@@ -14,9 +15,7 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser()
 parser.add_argument('--provider', choices=['deepseek', 'luna'], default='deepseek')
-parser.add_argument('--stage', choices=['v1', 'v2'], default='v1')
-parser.add_argument('--context-bytes', type=int)
-parser.add_argument('--require-compaction', action='store_true')
+parser.add_argument('--stage', choices=['v1'], default='v1')
 parser.add_argument('--scenario', choices=['coding', 'report'], default='coding')
 args = parser.parse_args()
 settings = dict(os.environ)
@@ -51,18 +50,15 @@ if baseline.returncode == 0:
     raise SystemExit('Fixture unexpectedly passes before repair')
 env = os.environ.copy()
 env.update(OPENAI_API_KEY=key, OPENAI_BASE_URL=base, CRABLOOP_MODEL=model)
-env.pop('CRABLOOP_API_URL', None)
-if args.context_bytes is not None:
-    env['CRABLOOP_CONTEXT_BYTES'] = str(args.context_bytes)
-task = 'Read README.md and inspect the source. Fix last_index in lib.rs. Run the existing tests before editing and after the fix. Preserve the public signature and tests.rs. Write a short NOTES.md (about five lines) describing the change and actual verification. Then finish; no extra baseline reconstruction or unrelated checks. Report only observed results.'
+task = 'Read README.md and inspect the source. Fix last_index in lib.rs. Run the existing tests before editing and after the fix. Preserve the public signature and tests.rs. Write NOTES.md describing the change and actual verification. Report only observed results.'
 subprocess.run(['cargo', 'build', '--locked'], cwd=ROOT, check=True, capture_output=True)
 if args.scenario == 'report':
     task = 'Follow README.md: inspect all inbox documents, produce report.json with exact facts, source paths and counts, and a Chinese SUMMARY.md citing every source. Preserve the original inbox files. Verify your output against the input documents before reporting completion.'
 start = datetime.now(timezone.utc)
-proc = subprocess.Popen([str(ROOT / 'target/debug/crabloop'), '--workspace', str(workspace), task], env=env, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True)
+proc = subprocess.Popen([str(ROOT / 'target/debug/crabloop')], env=env, cwd=workspace, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True)
 timed_out = False
 try:
-    stdout, stderr = proc.communicate(timeout=300)
+    stdout, stderr = proc.communicate(input=task + '\n', timeout=300)
 except subprocess.TimeoutExpired:
     timed_out = True
     os.killpg(proc.pid, signal.SIGKILL)
@@ -70,12 +66,6 @@ except subprocess.TimeoutExpired:
 (raw_dir / 'stdout.txt').write_text(stdout)
 (raw_dir / 'stderr.txt').write_text(stderr)
 final = verify()
-events = []
-for line in stderr.splitlines():
-    if line.startswith('tool '):
-        events.append(json.loads(line[5:]))
-failed_test_seen = any(e['name'] == 'bash' and 'test result: FAILED' in e['result'].get('stdout', '') for e in events)
-passed_test_seen = any(e['name'] == 'bash' and 'test result: ok.' in e['result'].get('stdout', '') for e in events)
 original = (ROOT / 'fixtures/buggy-rust/lib.rs').read_text() if args.scenario == 'coding' else ''
 actual = (workspace / 'lib.rs').read_text() if (workspace / 'lib.rs').is_file() else ''
 tests_unchanged = (workspace / 'tests.rs').is_file() and (workspace / 'tests.rs').read_bytes() == (ROOT / 'fixtures/buggy-rust/tests.rs').read_bytes()
@@ -85,32 +75,17 @@ record = {
     'elapsed_seconds': round((datetime.now(timezone.utc) - start).total_seconds(), 2),
     'agent_exit_code': proc.returncode, 'driver_timeout': timed_out,
     'baseline_verifier_exit_code': baseline.returncode, 'final_verifier_exit_code': final.returncode,
-    'original_tests_unchanged': tests_unchanged, 'failed_test_seen': failed_test_seen,
-    'passed_test_seen': passed_test_seen, 'notes_created': (workspace / 'NOTES.md').exists(),
-    'tool_events': [{'call_id': e['call_id'], 'name': e['name'], 'ok': e['result'].get('ok'), 'exit_code': e['result'].get('exit_code')} for e in events],
+    'original_tests_unchanged': tests_unchanged, 'notes_created': (workspace / 'NOTES.md').exists(),
     'source_diff': ''.join(difflib.unified_diff(original.splitlines(True), actual.splitlines(True), fromfile='before/lib.rs', tofile='after/lib.rs')),
     'workspace': str(workspace.relative_to(ROOT)),
+    'model_requests': len(re.findall(r'turn \d+:', stderr)),
+    'tool_calls': {name: len(re.findall(rf'^\s+→ {name} ', stderr, re.M)) for name in ('read_file', 'write_file', 'edit_file', 'bash')},
 }
-record['passed'] = proc.returncode == 0 and final.returncode == 0 and tests_unchanged and failed_test_seen and passed_test_seen and record['notes_created']
+record['passed'] = proc.returncode == 0 and final.returncode == 0 and tests_unchanged and record['notes_created']
 if args.scenario == 'report':
     record['passed'] = proc.returncode == 0 and final.returncode == 0
-    for field in ('original_tests_unchanged','failed_test_seen','passed_test_seen','notes_created','source_diff'):
+    for field in ('original_tests_unchanged','notes_created','source_diff'):
         record.pop(field, None)
-record['task_passed'] = record['passed']
-record['required_compaction'] = args.require_compaction
-if args.stage == 'v2':
-    journals = sorted((workspace / '.crabloop').glob('run-*.jsonl'))
-    journal_events = [json.loads(line) for path in journals for line in path.read_text().splitlines()]
-    record['context_bytes'] = int(env.get('CRABLOOP_CONTEXT_BYTES', '4194304'))
-    record['compactions'] = [e['data'] for e in journal_events if e['kind'] == 'compaction']
-    record['requests'] = [{'kind': e['kind'], 'bytes': len(json.dumps(e['data'], ensure_ascii=False, separators=(',', ':')).encode())} for e in journal_events if e['kind'] in ('request', 'summary_request')]
-    record['usage'] = [{'kind': e['kind'], 'usage': e['data'].get('usage')} for e in journal_events if e['kind'] in ('response', 'summary_response')]
-    record['stop_events'] = [e for e in journal_events if e['kind'] in ('stop', 'error')]
-    record['fixed_task_preserved'] = all(e['data']['input'][0].get('content') == task for e in journal_events if e['kind'] == 'request')
-    agents_text = (workspace / 'AGENTS.md').read_text().strip() if (workspace / 'AGENTS.md').exists() else None
-    record['agents_preserved'] = all(agents_text in e['data']['instructions'] for e in journal_events if e['kind'] == 'request') if agents_text else None
-    if args.require_compaction:
-        record['passed'] = record['passed'] and bool(record['compactions'])
 report = ROOT / 'evidence' / args.stage / f'{stamp}-{args.scenario}-{args.provider}.json'
 report.parent.mkdir(parents=True, exist_ok=True)
 report.write_text(json.dumps(record, ensure_ascii=False, indent=2) + '\n')

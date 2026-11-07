@@ -1,62 +1,49 @@
-![CrabLoop — A small agent harness, built step by step in Rust.](docs/assets/crabloop-banner.png)
+# CrabLoop 🦀
 
-[![CI](https://github.com/eriklee1895/crabloop/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/eriklee1895/crabloop/actions/workflows/ci.yml) [![Rust](https://img.shields.io/badge/built_with-Rust-d66b45?logo=rust&logoColor=white)](Cargo.toml) [![v1 learning loop](https://img.shields.io/badge/v1-learning_loop-299d91)](https://github.com/eriklee1895/crabloop/tree/milestone/v1) [![中文教程](https://img.shields.io/badge/教程-中文-299d91)](tutorial/README.md)
+用 Rust 从零写一个能读文件、修改代码、运行测试，再根据真实反馈继续行动的 mini coding agent。
 
-用 Rust 从零实现一个小型 coding agent，通过读取代码、修改文件、运行测试和处理反馈，学习 agent harness 的核心机制。
-
-[Quick Start](#quick-start) · [开始学习](#从哪里开始学习) · [路线图](docs/roadmap.md)
-
-![CrabLoop 两轮交互：创建文件，再接着修改](docs/assets/crabloop-chat.gif)
+v1 用 **300+ lines** 演示一个完整的 agent loop。
 
 ## Quick Start
 
-在仓库根目录的 `.env` 中配置 `DEEPSEEK_API_KEY`，然后运行：
+配置三个环境变量。以 DeepSeek 为例；使用 OpenAI 时省略 `OPENAI_BASE_URL`，模型换成账号可用的 Responses 模型：
 
 ```bash
+export OPENAI_API_KEY=你的密钥
+export OPENAI_BASE_URL=https://api.deepseek.com
+export CRABLOOP_MODEL=deepseek-flash
 cargo run
 ```
 
-在 `crab>` 后输入任务，按 Enter 提交。回答结束后可以继续追问，例如：
+在 `crab>` 后输入任务，按 Enter 提交，例如：
 
 ```text
 crab> 读取 README.md，概括项目结构
-crab> 找到 agent loop，解释工具结果怎样进入下一轮
 ```
 
-`/new` 开始新对话，`/exit` 或 Ctrl-D 退出，Ctrl-C 取消当前执行。取消或报错后先检查文件状态，再用 `/new` 继续。
-
-单次执行一个任务并退出：
+每个非空行是一个任务，同一进程保留前面的对话；Ctrl-D 退出。管道输入走同一条路，每行一轮：
 
 ```bash
-cargo run -- -p "检查 README，说明这个项目能做什么"
+printf '%s\n' "检查当前目录" "哪个文件最大？" | cargo run --quiet
 ```
 
-配置读取启动目录的 `.env`，进程环境优先。只配置 `DEEPSEEK_API_KEY` 即可使用 DeepSeek；OpenAI 或兼容端点的配置见 [.env.example](.env.example)。更多命令行用法见 `cargo run -- --help`。
+启动目录就是工作目录。运行时 stderr 显示每轮工具调用数和 `→ 工具名 参数 · ok=...`，stdout 只有最终回答。
 
-## 从哪里开始学习
+工具会直接读写文件和执行 Bash；v1 没有 sandbox，bash 子进程仍继承除 `OPENAI_API_KEY` 外的环境变量。
 
-第一次学习建议从 **milestone/v1** 开始，先理解最小循环，再进入上下文管理与压缩。
+## 从哪里读核心
 
-| 分支 | 内容 | 入口 |
-|---|---|---|
-| [milestone/v1](https://github.com/eriklee1895/crabloop/tree/milestone/v1) | 模型、四工具与反馈循环 | 每个非空 stdin 行一个任务，保留进程内历史 |
-| main | 早期实验实现，待从 v1 GA 建立新基线 | `cargo run` 聊天，`-p` 单次执行 |
+从 [src/lib.rs](src/lib.rs) 的 `run_turn` 函数开始，沿着“请求模型 → 执行工具 → 回传结果 → 继续或停止”阅读手写循环。模型交互使用 OpenAI Responses API。
 
-从 [v1 中文教程](https://github.com/eriklee1895/crabloop/tree/milestone/v1/tutorial)学习最小循环与连续任务，也可以用[六个代码增量](https://github.com/eriklee1895/crabloop/tree/milestone/v1/tutorial/v1/patches)从空目录重建。v2 将在 main 从 v1 分批演进，验收满意后再建立 milestone/v2；见[演进建议](docs/git-workflow.md)。
+| 文件 | 职责 |
+|---|---|
+| [src/main.rs](src/main.rs) | 逐行读取任务、持有对话历史、打印回答和退出状态 |
+| [src/lib.rs](src/lib.rs) | `Config`、停止原因 `Stop` 与手写 agent loop `run_turn` |
+| [src/model.rs](src/model.rs) | Responses 请求和完整响应校验 |
+| [src/tools.rs](src/tools.rs) | `read_file`、`write_file`、`edit_file`、`bash` |
 
-后续版本计划加入 TOML 配置、流式输出、Skills、联网工具和会话恢复，安排见[路线图](docs/roadmap.md)。这些能力尚未实现。
+工具失败会反馈给模型，供下一轮调整行动。模型说完成后，仍需检查文件和测试结果。
 
-## 核心源码
+## 教程
 
-模型交互使用 **OpenAI Responses API**，行动循环由 Rust 手写：请求模型 → 执行工具 → 回传结果 → 继续或停止。
-
-main 从 [src/lib.rs](src/lib.rs) 的 `Session::turn` 开始阅读，再看 [src/context.rs](src/context.rs) 怎样选择历史和压缩摘要。四个工具在 [src/tools.rs](src/tools.rs)：`read_file`、`write_file`、`edit_file` 和 `bash`。
-
-每次会话在工作区 `.crabloop/` 中保存 JSONL 执行记录，方便观察循环。当前记录用于调试，尚不支持跨进程恢复。模型说完成后，仍需检查文件和测试结果。
-
-## 更多文档
-
-- [设计说明](docs/design.md)：核心契约与版本边界。
-- [调试指南](docs/debugging.md)：断点、JSONL 与 HTTP 请求观察。
-- [验收记录](evidence/v1/ga-review.md)与[上下文压缩实验](evidence/v2/acceptance.md)：测试和真实任务证据。
-- [开发约定](AGENTS.md)：贡献方式与检查要求。
+从[教程入口](tutorial/README.md)开始，也可以用[六个增量](tutorial/v1/patches/README.md)从空目录重建这份 v1 实现。
