@@ -34,7 +34,7 @@ v2 包含 context state、projection、compaction 和验收；reasoning effort �
 
 - `src/cli.rs` 的 `.env`、provider 选择、`--workspace`、`-p` 和 `--chat`。配置留到 v3。
 - `src/terminal.rs` 整个交互层。v1 已有 stdin 连续任务；TUI 在 v2 之后。
-- 旧 `src/model.rs` 的手写字段解析。它不拒绝空白 `call_id`，畸形 output item 会跳过而不是失败。v1 在 `d732663` 用 serde 类型、`call_id.trim()` 和失败即拒绝保住了这些检查。可以保留 `usage` 和可替换的 instructions/tools，但解析必须回到 v1 的标准。
+- 旧 `src/model.rs` 的手写字段解析。只含空白的 `call_id` 会通过，v1 用 `trim()` 拒绝。output 数组里的非对象项会被跳过，只要旁边还有文本就整段接受；v1 的 serde `Item` 让这种响应失败。`d732663` 保留了这套类型解析。可以留下 `usage`，以及由调用方传入的 instructions 和 tools；解析本身回到 v1。
 - 旧 `src/tools.rs` 的 bash。它去掉了 `OPENAI_API_KEY` 的 `env_remove`。v1 的行为更严格；clean env、审批和隔离仍是 v3。
 - 更长的 CrabLoop 人设文案、吉祥物、banner，以及 `scripts/render-mascot.py`、`scripts/record-terminal.py`。v2 要的是把项目 `AGENTS.md` 固定在摘要之外，不是替换 v1 的短指令。
 - `tests/live_config_test.py` 和旧 main 上替换过的 `tests/protocol.rs`。协议测试以 v1 这套为准。
