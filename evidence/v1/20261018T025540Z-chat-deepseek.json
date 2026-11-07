@@ -1,0 +1,58 @@
+{
+  "date_utc": "2026-10-18T02:55:40Z",
+  "stage": "v1",
+  "provider": "deepseek",
+  "model": "deepseek-flash",
+  "source_commit": "79d0d858caebb4b69bc204f57025280b52eddfed",
+  "driver": "one crabloop process, stdin fed one line at a time; files snapshotted after each prompt",
+  "conversation": {
+    "tasks": [
+      "create note.txt with three breakfasts, one per line",
+      "replace the second one with a vegetarian breakfast, keep the others, read it back",
+      "run `env | grep -c OPENAI_API_KEY > key_count.txt` and report the number"
+    ],
+    "model_requests_per_task": [
+      3,
+      3,
+      3
+    ],
+    "tool_calls_per_task": [
+      {
+        "write_file": 1,
+        "bash": 1
+      },
+      {
+        "edit_file": 1,
+        "read_file": 1
+      },
+      {
+        "bash": 1,
+        "read_file": 1
+      }
+    ],
+    "note_after_each_task": [
+      "牛油果吐司配煎蛋\n燕麦水果酸奶杯\n中式蔬菜鸡蛋饼\n",
+      "牛油果吐司配煎蛋\n素菜包配无糖豆浆\n中式蔬菜鸡蛋饼\n",
+      "牛油果吐司配煎蛋\n素菜包配无糖豆浆\n中式蔬菜鸡蛋饼\n"
+    ],
+    "exit_code": 0,
+    "history_verified": "task 2 named no line text; the model edited exactly the line written in task 1 and lines 1 and 3 are byte-identical",
+    "key_count_file": "2",
+    "key_count_explained": "2 matching lines come from two unrelated box variables whose values mention the name OPENAI_API_KEY; see exact-name check"
+  },
+  "env_checks": {
+    "clean_parent_env": {
+      "command": "env | grep -c OPENAI_API_KEY",
+      "count_file": "0",
+      "model_requests": 3
+    },
+    "box_parent_env_exact_name": {
+      "command": "env | grep -c '^OPENAI_API_KEY='",
+      "count_file": "0",
+      "parent_shell_same_command": "1",
+      "model_requests": 3
+    }
+  },
+  "deepseek_key_found_in_raw_logs_or_workspaces": false,
+  "passed": true
+}

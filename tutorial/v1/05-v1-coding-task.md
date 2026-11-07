@@ -4,30 +4,49 @@
 
 不过，先别急着问它“修好了吗”。我们先准备一个无论模型怎么回答，都能在程序之外检查的标准。
 
-## 先把练习工程走到当前 v1
+## 给 harness 一个入口
 
-本章从 `step-04-loop` 继续，应用综合任务与最终入口两个增量。下面命令在包含 `Cargo.toml` 的练习工程根目录执行，`CRABLOOP_SOURCE` 的设置见[增量入口](patches/README.md)：
+到上一章为止，`run_turn` 只被测试调用过。要把真实任务交给它，我们还需要一个可执行程序。在练习工程根目录应用本章增量：
 
 ```bash
-git apply --check "$CRABLOOP_SOURCE/tutorial/v1/patches/05-v1.patch"
-git apply "$CRABLOOP_SOURCE/tutorial/v1/patches/05-v1.patch"
-git apply --check "$CRABLOOP_SOURCE/tutorial/v1/patches/06-v1-entry.patch"
-git apply "$CRABLOOP_SOURCE/tutorial/v1/patches/06-v1-entry.patch"
+git apply --check "$CRABLOOP_SOURCE/tutorial/v1/patches/05-coding-task.patch"
+git apply "$CRABLOOP_SOURCE/tutorial/v1/patches/05-coding-task.patch"
 cargo test --locked
 ```
 
-已经应用过的增量不重复应用。05 补丁加入练习与独立验收，整理模型和工具接口；06 补丁接上当前 v1 的启动方式与最小连续对话。完成后，全部 `src` 文件与 `milestone/v1` 一致。
+补丁新增 `src/main.rs`、两份练习材料 `fixtures/`，以及在循环之外做检查的验收脚本 `scripts/`。`src/main.rs` 很短：
 
-前几章为了逐步解释机制，使用过一些阶段接口。现在可以把它们与最终代码对照起来：
+```rust
+#[tokio::main]
+async fn main() -> anyhow::Result<ExitCode> {
+    let config = Config::from_env()?;
+    let mut input = Vec::new();
 
-| 前几章的写法 | 当前 v1 的对应位置 |
-|---|---|
-| `ModelClient` 保存连接与配置 | `model::request`、`model::respond` 借用 `Config`，循环复用当次任务的 HTTP client |
-| `ToolResult::as_input()` 包装结果 | 工具返回 JSON，循环追加带原 `call_id` 的 `function_call_output` |
-| `run` 独自持有任务历史 | `main` 保存历史，`run_turn` 借用它处理当前任务；`run` 仍提供单任务包装 |
-| 命令行参数传任务 | 从 stdin 读取，终端可连续提问，管道输入处理一次后退出 |
+    eprint!("crab> ");
+    for line in std::io::stdin().lock().lines() {
+        let task = line?;
+        if !task.trim().is_empty() {
+            input.push(serde_json::json!({"role": "user", "content": task}));
+            match run_turn(&config, &mut input).await? {
+                Stop::Final(text) => println!("{text}"),
+                stop => {
+                    eprintln!("stopped: {stop:?}");
+                    return Ok(ExitCode::from(2));
+                }
+            }
+        }
+        eprint!("crab> ");
+    }
 
-核心顺序没有变：请求、执行、回传、继续或停止。第 06 章会单独解释历史怎样跨用户提问保留下来，先用这一份实现完成两个任务。
+    Ok(ExitCode::SUCCESS)
+}
+```
+
+它从标准输入逐行读取：每个非空行是一个任务，包成一条 `user` 消息交给 `run_turn`。最终回答打印到 stdout，进度和停止原因写到 stderr，所以 stdout 里只有回答。`MaxTurns` 或 `ContextLimit` 让程序以退出码 2 结束；HTTP 或协议错误则由 `?` 交给 `main`，以非零退出码结束。
+
+`input` 为什么创建在循环外面，第 06 章再细看。本章每次只交给它一行任务。
+
+这时 `src` 已经和 `milestone/v1` 完全相同：四个文件，`main.rs`、`lib.rs`、`model.rs`、`tools.rs`。
 
 ## 先确认这个函数真的有错
 
@@ -63,15 +82,9 @@ bash scripts/verify-playground.sh playground/my-first-repair
 
 ## 给它目标，观察它怎样行动
 
-如果沿用第 01 章已经导出的 `OPENAI_API_KEY`、`OPENAI_BASE_URL` 和 `CRABLOOP_MODEL`，先显式选择兼容接口模式：
+沿用第 01 章导出的 `OPENAI_API_KEY`、`OPENAI_BASE_URL` 和 `CRABLOOP_MODEL`，不需要别的配置。
 
-```bash
-export CRABLOOP_PROVIDER=openai
-```
-
-这会继续使用你配置的端点、模型和匹配密钥。也可以按练习工程的 `.env.example` 配置 DeepSeek 默认模式。本章的二进制会从任务副本目录启动；使用 `.env` 时，文件应在那个启动目录，进程环境则会随目录切换保留。
-
-接下来构建程序，并从待修复副本提交任务。括号内的目录切换结束后，会自动回到练习工程根目录：
+程序把启动目录当作工作目录，所以要从待修复副本里启动它。先构建，再提交任务；括号内的目录切换结束后，会自动回到练习工程根目录：
 
 ```bash
 cargo build --locked
@@ -82,9 +95,9 @@ crabloop_bin="$PWD/target/debug/crabloop"
 )
 ```
 
-这一步会访问真实模型。运行时留意工具名、命令或路径、状态，以及每轮调用数量。模型可能先读测试，也可能把两个读取放在一轮；不必要求每次轨迹都长得相同。
+这一步会访问真实模型。任务写在一行里，因为每一行就是一个任务。运行时留意 stderr 上每轮的 `turn N` 和每个工具的 `→ 工具名 参数 · ok=...`。模型可能先读测试，也可能把两个读取放在一轮；不必要求每次轨迹都长得相同。
 
-值得追踪的是因果：测试返回了什么错误？下一次编辑是否回应了这个错误？编辑以后有没有重新运行测试？成功工具的正文不会全部回显到终端，但模型仍收到受大小限制的完整结果。
+值得追踪的是因果：测试返回了什么错误？下一次编辑是否回应了这个错误？编辑以后有没有重新运行测试？终端只显示每个工具成功与否，模型收到的则是受大小限制的完整结果。
 
 ## 独立验证修复
 

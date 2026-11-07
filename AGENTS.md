@@ -2,66 +2,56 @@
 
 ## Project goal
 
-CrabLoop is a mini coding agent Harness built from scratch in Rust for hands-on learning. Keep this scope; do not reframe it as a Workbench.
+CrabLoop is a small coding-agent harness built from scratch in Rust for hands-on learning.
 
-v2-v3: learn Agent fundamentals in small, readable code; defer reliability hardening. Preserve core contracts. See docs/roadmap.md.
+Keep the project focused on a mini coding agent and its Harness; do not reframe it as a Workbench.
 
-- v1: small, readable hand-written model/tool/feedback/stop loop with four tools; line counts are teaching guidance.
-- v2: approximately 500 lines total, adding context management and summary compaction.
-- v3: ~1,000 lines: clap/Help first; then basic SSE, ~/.crabloop TOML/credentials, provider presets/Custom, model catalog/cache and runtime/context display. Minimal Skills optional within scope.
-- After v3: a separate opt-in telemetry topic using lifecycle observers and Rust OpenTelemetry/OTLP to Langfuse v4. Share event IDs with TUI/journal; export failure must not stop the agent. See docs/roadmap.md.
-- Planned v4: Skills, Tavily Search/Firecrawl Scrape, todo_write, TOML config menu and selective .env import with visible sources. v5: ~/.crabloop JSONL/Todo recovery, ask_user_question, pending answers and interruption handling.
-- v1/v2 stay non-streaming. v6: role/content styles, Markdown, slash/Todo/question UI, then layout; show step/context/tools. v7: memory. v8: optional Rig comparison; mainline has no Rig prerequisite. Keep polish out of v1.
+- v1: target about 300 lines; size is teaching guidance, not a hard gate. Teach only the hand-written model/tool/feedback/stop loop with four tools; cut everything else to later versions.
+- v2: about 1,000 lines, a teaching reference and not a hard cap. Add context state, projection, compaction, and acceptance. Omit reasoning effort when unset. Show a token budget and clearer tool status. Do not add line-count checks.
+- v3: ~/.crabloop TOML/credentials, provider presets/Custom, model catalog/cache, basic SSE, and the tool safety boundary. Minimal Skills is optional. A TUI comes after v2.
+- v4: Skills and provider-independent web_fetch/web_search. v5: recoverable JSONL sessions and interruption handling under ~/.crabloop. See docs/roadmap.md; these stages are planned, not implemented.
 - Acceptance includes both coding repairs and general local agentic tasks such as reading source documents and producing a verifiable structured report.
 - Use the OpenAI native Responses API and a hand-written agent loop.
 - Grow the same implementation through small, explainable steps. Preserve runnable milestones with v1 and v2 Git tags.
-- Study llm-space's tool contracts and UI/state boundaries; fixed references are in docs/roadmap.md.
 
 ## Current state and layout
 
-V1: milestone/v1, 324/370; GA runtime 9a8077e, three env vars, one task per stdin line, shared history. Current GA: milestone/v1:evidence/v1/ga-current.md.
+The only v1 learning code is milestone/v1. Six additive tutorial patches (one per chapter 01-06) rebuild the same src tree from an empty directory; scripts/check-lessons.py verifies each stage (fmt + tests) and that every patched file equals the working tree. Historical tags preserve older steps and evidence, not alternative learning entries.
 
-Historical v1: 314/319; v2: 504/511. V1 GA: 397/402, 43 Rust + 4 Python with live repair/report and PTY; evidence/v1/ga-review.md. Main: 853/878, 65 Rust + 6 Python. Counts=code/physical; preserve historical evidence.
+v1 has 324 code / 370 physical lines in four files: main.rs (stdin entry, owns history), lib.rs (Config, Stop, run_turn), model.rs (request/respond, serde Response/Item, raw output kept for replay; call IDs validated before tools), tools.rs (schemas, execute, four tools). examples/probe.rs sends one request for chapter 01. No Session, editor, persistence, SSE, .env or provider presets.
 
-Preferred model: DeepSeek V4.1 Flash (deepseek-flash); fallback: gpt-6-luna through TeamoRouter. Both passed v1 tasks. DeepSeek passed v2 with five compactions; Luna v2 is untested. Main requests allow 32,768 output tokens; v1 allows 131,072. Main summaries use reasoning.effort=none with a 16 KiB text cap. Main/v1 request limit: 4 MiB; CRABLOOP_CONTEXT_BYTES overrides main (min 4,096). Root AGENTS.md is pinned and must stay below 8,192 bytes. Distinguish offline, live and semantic evidence.
+Each non-empty stdin line is one task, terminal or pipe alike; main keeps one Vec<Value> until EOF and run_turn borrows it. stdout carries only final answers; stderr shows the crab> prompt, `turn N` and one `→ name args · ok=` line per tool. MaxTurns/ContextLimit exit with code 2; errors end the process. Limits: 16 turns per task, request 4 MiB, output 131,072 tokens, file 64 KiB, read 8 KiB, pipes 4 KiB each, bash 30 s.
 
-`cargo run`: multi-turn chat in cwd; `-p/--print TASK`: one task. Positional tasks and piped stdin remain supported; `--chat` forces chat. Rustyline edits input/history; /new resets, /exit or Ctrl-D quits, Ctrl-C cancels. Session retains final answers/tool groups. After errors/interruption, inspect files and use /new; no automatic effect replay. Empty chat creates no journal/request. UI copy is English; model/user text keeps its language. Commentary precedes tools; -p sends it to stderr. Final answers stay separate.
+Config is OPENAI_API_KEY, OPENAI_BASE_URL (default https://api.openai.com/v1) and CRABLOOP_MODEL (required); workspace is cwd; arguments are ignored. DeepSeek: base https://api.deepseek.com, model deepseek-flash. The bash child does not inherit OPENAI_API_KEY. scripts/run-live.py reads .env for the driver only. Never execute or print .env contents.
 
-`src/cli.rs` reads only cwd .env as data with dotenvy; process values win. Prefer DEEPSEEK_API_KEY/deepseek-flash absent explicit generic config; CRABLOOP_PROVIDER=deepseek/openai overrides. Generic mode uses OPENAI_API_KEY/OPENAI_BASE_URL/CRABLOOP_MODEL; CRABLOOP_API_URL overrides the endpoint. Keep provider keys paired. SSE/home/TOML/catalog and telemetry remain planned; Langfuse ingestion is unverified. Original v1/v2 keep their old CLI.
-
-Chapters: tutorial/v1/ (00-06, illustrated; 05b is historical) and tutorial/v2/. V1 chapters target milestone/v1; main keeps Session/context. Records: docs/devlog/. Keep one root implementation; commits/tags identify chapter code.
-
-Read the relevant design and task before implementation:
-
-- [Design](docs/design.md)
-- [Implementation and learning plan](docs/plan.md)
-
-The user's latest instructions take precedence over those documents.
+Offline baseline: 33 Rust + 6 Python tests, fmt/clippy, check-lessons. Current GA review and fresh DeepSeek/PTY evidence: evidence/v1/ga-current.md (runtime 9a8077e). Earlier evidence: evidence/v1/slim-acceptance.md. Code strings/comments are English; tutorials are Chinese. CLI Help remains planned in docs/cli-help-plan.md. Read docs/v1-scope.md for scope; docs/design.md and docs/plan.md preserve the original learning sequence.
 
 ## How to develop
 
-- Keep AGENTS.md current. Track requirements/status in docs/todo.md, design in docs/roadmap.md, and history/evidence in docs/devlog/.
-- Continue the approved plan without asking again between tasks. Maintain its progress ledger and resume from completed commits after compaction.
+- Keep AGENTS.md current with repository state, interfaces and durable decisions; put detailed history and evidence in docs/devlog/.
+- Keep v1 focused on the smallest readable loop; richer interaction/configuration belongs later. v1/v2 stay non-streaming; basic SSE moves to v3.
 
 - Work in small increments, each with an observable behavior, an appropriate check, and a short explanation of what it teaches.
 - Keep the current milestone focused. Introduce abstractions when a concrete need appears.
 - Prefer concrete functions and small types. Use standard Rust and basic HTTP/JSON/async libraries.
-- Maintain one implementation. Each completed version keeps one milestone/vN learning branch and immutable tags; same-version usability fixes may advance that branch. Use step commits/tags for chapters; continue new work on codex/*.
-- Use concise Chinese prose; keep industry terms in English (Harness, context, compaction, provider, session). Focus on the main information; put development history in devlog.
-- Keep README concise; put detailed plans, counts and evidence in docs.
+- Maintain one implementation. Use Git commits and milestone tags to show its evolution.
+- Write tutorials and explanations in Chinese, with Rust identifiers and protocol names in their original form.
+- Prefer English industry terms: Harness, context, compaction, provider, tool calling, session; explain in Chinese as needed.
+- Keep the v1 README concise: use "300+ lines" for size, retain startup and learning entrypoints, and omit verification reports, budget parameters and development history. Detailed contributor information belongs in dedicated documents.
 - Tutorials explain a reproducible learning path. Development records capture actual decisions, changes, failures, verification results, and relevant commits.
 
 ## Tutorial voice and progression
 
-Read [the writing guide](docs/writing-guide.md) before writing or revising a chapter.
+Read [the writing guide](docs/writing-guide.md) before writing or revising a chapter. Chapters teach final interfaces; patches only add code.
 
 - Use patient, connected Chinese prose. Lead the reader from an empty project through small runnable changes.
+- Keep prose concise. Roadmaps describe goals/scope; devlogs hold decisions and verification details.
 - Start with a concrete situation and explain why the next mechanism is needed.
 - Introduce Rust details and harness concepts when the reader encounters them in the code.
 - Explain each code increment, its file location, how to run it, and what the result means.
 - Let observations and failures motivate the next change. Preserve the distinction between expected output and output actually observed.
 - Use the chapter requirements as an editorial check, not a rigid sequence of repeated headings.
-- Calibrate the voice with a short representative passage before writing many chapters.
+- The user approved chapter 04 as the prose/diagram model. Apply its concrete experiment, data-flow diagrams and observable failure/recovery approach across the v1 tutorial; keep stage interfaces explicit.
 
 ## Core contracts
 
@@ -69,17 +59,17 @@ Read [the writing guide](docs/writing-guide.md) before writing or revising a cha
 - edit_file requires a non-empty old_text with exactly one match; failed match/size validation leaves the file unchanged. File writes currently use ordinary filesystem writes, without atomic rollback.
 - Return recoverable tool errors to the model with the original call_id.
 - Preserve replayable Responses output items and their call/result associations.
-- Treat model/Todo completion and independently verified task success as separate observations.
+- Treat model completion and independently verified task success as separate observations.
 - In v2, keep execution records separate from the model's current input; commit compacted history only after validating the candidate.
 
 ## Verification and Git
 
-Baseline: cargo fmt --check, cargo clippy --locked --all-targets -- -D warnings, cargo test --locked. Add focused checks for changed behavior. GitHub CI runs these plus Python tests on main push/PR; no model keys.
+Once the Cargo package exists, use cargo fmt --check, cargo clippy --locked --all-targets -- -D warnings, and cargo test --locked as the baseline checks. Add focused verification for the behavior changed.
 
 Distinguish deterministic protocol tests, real local tool execution, and live-model runs. Report only what the actual evidence establishes.
 
-Commit Cargo.lock. Verify, merge and push each iteration to main; preserve teaching commits. Keep main and milestone/v1. Create milestone/v2 only after v2 is validated on main; its old v2 tag is historical. Develop on short-lived codex/* branches; remove them after commit-retention checks. No routine history rewriting. Line counts are optional reports, not gates. The proposed main baseline preserves old main history and continues from v1 GA; see docs/git-workflow.md.
+Commit Cargo.lock. The user authorizes verified increments to be committed and pushed, with main holding the latest validated tree. The user requested one v1 branch: milestone/v1 is the small teaching core with in-process terminal chat. Keep main and milestone/v1; create milestone/v2 only after v2 is validated on main. The old v2 branch is deleted; retain its immutable v2 tag. The alignment merge keeps old main history and matches the milestone/v1 tree; add v2 afterward in small verified increments. Do not add another v1 learning branch.
 
-Use rustfmt (100 columns, small heuristics Max); expand protocol JSON for teaching. Separate items and logical phases with blank lines. Count all src/**/*.rs; retain historical counts. Never hide runtime code in scripts or docs.
+Separate top-level items and logical phases within functions with one blank line; keep related statements together. Blank lines do not count toward the code-line budget. Formatting uses rustfmt with max_width = 100 and use_small_heuristics = Max; expand protocol JSON for teaching clarity. Count all src/**/*.rs under this same public style for every milestone; never hide runtime code in scripts or documentation.
 
 Keep credentials, local environment files, generated workspaces, and raw session logs out of Git. Publish only deliberately selected and sanitized learning evidence.

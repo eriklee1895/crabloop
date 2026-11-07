@@ -1,0 +1,32 @@
+{
+  "source_commit": "9a8077e79fa1c47e94ee6cb0b0c0760e5c37f39f",
+  "source_sha256": {
+    "src/lib.rs": "627aa3ae76bf093dda76a2df7cee080cb56080cabceb469a8bda3ef20a1fa484",
+    "src/main.rs": "ab73baca389ed9b3fee8d448e3f95dbb63ac65d8816089fa85199ec4d0efb005",
+    "src/model.rs": "e740da530a170bab50ff8e8ae9c7569a55fe1474f6cd02bb982e5d767bedbc60",
+    "src/tools.rs": "c5063c631b32c81499309671667f18e7cb6afd2e0509e4843b00ab6112b41a8f"
+  },
+  "pty": {
+    "passed": true,
+    "requests": 2,
+    "blank_line_skipped": true,
+    "history_retained": true,
+    "ctrl_d_exit_code": 0
+  },
+  "live_conversation": {
+    "passed": true,
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "tasks": 2,
+    "first_snapshot": "toast\neggs\ncoffee\n",
+    "followup_snapshot": "toast\noatmeal\ncoffee\n",
+    "unchanged_first_and_third_lines": true,
+    "agent_exit_code": 0,
+    "workspace": "playground/ga-conversation-20261025T131808448010Z",
+    "model_requests_per_task": [
+      3,
+      3
+    ]
+  },
+  "passed": true
+}

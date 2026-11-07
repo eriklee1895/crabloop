@@ -1,74 +1,18 @@
-# CrabLoop 需求 Todo
+# 当前需求
 
-需求、排期与完成状态统一维护于本表；详细设计见 [roadmap](roadmap.md)。
+v1 的学习实现以 milestone/v1 为准。main 通过一次保留双方历史的合并与它对齐，随后分批做 v2。行数只作教学参考，不加入行数检查。
 
-## 当前主线调整（2026-10-25）
+- [x] 确认 v1 使用 stdin 入口；README 负责配置说明。
+- [x] 统一 src 文件的空行：分隔顶层定义与函数内逻辑阶段，同步教学补丁。
+- [x] v1 收敛到约 300 行：删除 cli.rs、`.env`、provider 切换、启动信息与参数检查；每个 stdin 行是一个任务；补丁改为六个只做加法的增量。[开发记录](devlog/37-v1-slim.md)
+- [x] 用一次真实 DeepSeek 修复任务和一次资料整理任务，为收敛后的 v1 重新取证（`scripts/run-live.py`）；另做了多行会话和 key 隔离检查，见 `evidence/v1/slim-acceptance.md`。
+- [ ] 候选（v3，随 TOML 配置一起）：工具安全边界，包括 bash 的 clean env / env allowlist、command approval 和 workspace isolation。v1 有意不做，只在 README 和第 03 章提示风险。
+- [ ] v3：`.env`/TOML 配置、provider 预置与凭证。更清楚的工具状态属于 v2；启动信息仍随 v3 配置一起做。
+- [ ] 后续独立 CLI Help 迭代：层次、排版、高亮多色、纯文本退化和参数声明一致性。[设计边界](cli-help-plan.md)
 
-- [x] v1 GA 复核：合并后源码通过离线、DeepSeek 修复/报告/连续任务及 PTY 检查；[证据](https://github.com/eriklee1895/crabloop/blob/milestone/v1/evidence/v1/ga-current.md)。
-- [x] 删除本地与远端 milestone/v2，保留历史 v2 标签。
-- [ ] 确认 [main 重整建议](git-workflow.md)后，建立与 v1 GA 对齐的基线。
-- [ ] 在 main 分批增加 context state、投影与 compaction，完成任务和教学验收后再建立 milestone/v2。
-
-## 维护方式
-
-- 新需求记录稳定编号、描述、目标迭代和设计链接。
-- 实现并验证后勾选完成，附提交或验收链接；取消项注明原因。
-- 调整排期时同步设计，编号不复用；完成记录可移到文末。
-
-## 已排迭代
-
-以下是计划目标，不表示已经开始实施；v6–v7 延续路线图中的建议排期。
-
-- [ ] **REQ-027 · v3 第一个小迭代：clap 与 CLI Help。** 先接管 main 已有参数，保持正常运行语义；统一声明、帮助、版本信息与错误提示。标准 --help/-h、--version/-V 无凭证、无模型请求；暂不新增尚未实现的子命令。配置、模型目录、SSE 和终端渲染分开推进，v1 不引入 clap。[设计](cli-help-plan.md)
-- [ ] **REQ-001 · v3：基础 SSE。** 文本增量可见，完整响应确认后再执行工具，区分显示状态与协议历史。[设计](roadmap.md#v3基础流式与个人配置)
-- [ ] **REQ-002 · v3：个人配置。** ~/.crabloop、TOML、独立凭证、provider presets/Custom 与明确配置来源。[设计](roadmap.md#v3基础流式与个人配置)
-- [ ] **REQ-003 · v3：模型目录与缓存。** 发现、补充和选择模型，区分元信息来源。[设计](roadmap.md#model-catalog发现与缓存)
-- [ ] **REQ-004 · v3：轻量 Context 信息。** 窗口容量、上次主请求 input tokens、本地字节预算、压缩次数与前后体积；未知或估算明确标记。[设计](roadmap.md#context-信息展示v3-先做轻量信息v6-完善界面)
-- [ ] **REQ-026 · v3：显式运行上下文。** 通过 `<system-reminder>` 注入工具实际工作目录、请求时间快照（UTC）、平台和 Bash；与身份/项目规则分开，计入预算、不重复追加历史。普通目录可直接启动；Project 管理界面未排期。[设计](roadmap.md#runtime-context-与工作目录)
-- [ ] **REQ-005 · v3 后独立专题：可选 telemetry。** 生命周期 observer、关联 ID、Rust OpenTelemetry/OTLP → Langfuse；单独验收。[设计](roadmap.md#v3-后的独立专题observability)
-- [ ] **REQ-006 · v4：最小 Skills。** 目录摘要与按需加载正文；v3 有预算余量时可提前最小子集，不作为 v3 门槛。[设计](roadmap.md#v4工作方法联网与任务计划)
-- [ ] **REQ-007 · v4：联网工具。** Tavily Search / Firecrawl Scrape，对模型提供 web_search/web_fetch。[设计](roadmap.md#v4工作方法联网与任务计划)
-- [ ] **REQ-008 · v4：配置菜单。** TOML 编辑与菜单同源，按需导入选中的 .env 配置，显示来源。[设计](roadmap.md#菜单与手工配置使用同一套文件)
-- [ ] **REQ-009 · v4：todo_write。** 维护任务内结构化计划，区分 Todo 完成声明与实际验证。[设计](roadmap.md#todo_write把长任务进度变成结构化状态)
-- [ ] **REQ-010 · v5：会话与 Todo 恢复。** JSONL sessions、list/show/resume，以及中断后的已知状态边界。[设计](roadmap.md#v5session-持久化与恢复)
-- [ ] **REQ-011 · v5：ask_user_question。** 保存待答问题、接收真实回答并继续原任务。[设计](roadmap.md#ask_user_question等待用户回答再继续原任务)
-- [ ] **REQ-012 · v6.1a：角色与过程区分。** 用户消息使用低饱和度背景块；Agent 正文正常亮度；Reasoning / Reasoning summary 与 Progress 使用可读的次级灰色，保留不同标签；工具块独立分组。[设计](roadmap.md#对话与执行过程的视觉区分未来-todo)
-- [ ] **REQ-013 · v6.1b：回答 Markdown。** 基础排版、中文换行、代码缩进；流式稳定内容不重复输出。[设计](roadmap.md#对话与执行过程的视觉区分未来-todo)
-- [ ] **REQ-014 · v6.1c：工具与 Context 摘要。** 调用/结果配对、状态、失败原因和输出预览；展示 Context 与压缩信息。[设计](roadmap.md#对话与执行过程的视觉区分未来-todo)
-- [ ] **REQ-015 · v6.2：输入与 slash 交互。** 候选菜单、键盘补全、Todo/问题交互，保持既有核心语义。[设计](roadmap.md#命令交互布局与实现边界)
-- [ ] **REQ-016 · v6.3：完整终端布局。** 对话区、焦点、滚动与详情展开；底部输入区用上下细横线、`crab>` 与青色焦点强调，支持多行；历史用户消息保留 `You` 标签与背景块；紧凑状态栏及 /context 详情沿用已有口径。[输入区设计](roadmap.md#输入区清楚的边界与轻量辨识度) · [布局](roadmap.md#命令交互布局与实现边界) · [Context](roadmap.md#context-信息展示v3-先做轻量信息v6-完善界面)
-- [ ] **REQ-017 · v7：可解释的 memory。** 显式写入、有预算的检索、来源、修正与遗忘。[设计](roadmap.md#v7-建议memory)
-- [ ] **REQ-018 · v8 选修：Rig 对照。** 独立实验比较后端适配，主线学习不依赖它。[设计](roadmap.md#v8-选修rig-对照)
-
-## 待排期／候选
-
-- [ ] **REQ-019 · 待排期：Bash 实时输出。** 需要执行层提供 stdout/stderr 增量事件；与现有工具开始/结束和结果预览分开实现。[边界](roadmap.md#v6-建议终端-ui)
-- [ ] **REQ-020 · 候选，待决定：生图工具。** generate_image 与产物文件管理单独评估，不以引入 Rig 为前提，不承诺进入主线。[来源](roadmap.md#v8-选修rig-对照)
-
-- [ ] **REQ-021 · 待排期，小改动：版本命令。** 支持 `crabloop version`、`--version` / `-V`，stdout 单行输出 `crabloop <Cargo package version>` 并以 0 退出；版本来自 CARGO_PKG_VERSION，无需 API key，不加载模型配置、不创建会话或发请求。包版本与 v1/v2 教学阶段分开解释；首版不增加 Git SHA/build.rs。标准版本 flags 与 REQ-027 共用同一声明；本条的 version 子命令独立排期。将 version 保留为命令，任务文本仍可用 `-p "version"` 显式传入。验收无凭证、无模型请求及三个入口输出一致。
-- [ ] **REQ-022 · 待排期：自动 Release。** 有二进制分发需要时再确定发行版本命名、平台和发布流程；历史教学 tag 不自动批量发布，不增加额外 v1-ga 入口。
-- [x] **REQ-023 · 已完成，独立外观改动：GitHub 首页。** 徽章与导航、T2 现代等宽字形 Banner、微笑像素蟹；深海军蓝／珊瑚橙／青绿配色，独立吉祥物提供透明 PNG。[素材与提示词](assets/README.md) · [实施记录](devlog/28-branding-t2.md)
-- [x] **REQ-024 · 已完成，独立工程改动：基础 CI。** main push / PR / 手动触发，单 Linux job 跑 fmt、clippy、Rust 与 Python 离线测试；不接模型密钥，不自动发布。实现：`0cab0db`；[首次 GitHub CI 通过](https://github.com/eriklee1895/crabloop/actions/runs/38520501082)。
-
-
-## 已完成的独立改动
-
-- [x] **REQ-025：CrabLoop 身份与工作方式。** 系统提示词以 `You are CrabLoop 🦀` 开头，明确本地代码与资料任务、跟随用户语言、如实验证和完成后停止；问候与自我介绍直接回答。保持短段落，不加 header/XML；仅修改 main。[实施与验证](devlog/24-crabloop-identity.md)
-
-- [x] **REQ-028：v1 收敛为 stdin 单任务入口。** 删除任务参数与完整 Help，README/.env.example 提供配置说明，保留明确错误。同步脚本、教程和七步重建；388 代码行 / 402 物理行，42 Rust + 5 Python 通过。实现 `97723d8`，学习分支 `388edc2`；main 运行入口保留。[实施与验证](devlog/26-v1-stdin-cli.md)
-
-- [x] **REQ-029：v1 源码空行整理。** 五个文件按顶层定义与函数内逻辑阶段分段，全部非空代码行不变。当时为 388 代码行 / 449 物理行；格式、clippy、42 Rust、5 Python 与七步重建一致性通过。源码 `88d675b`，学习分支 `b6bd16c`。[记录](devlog/27-v1-readable-spacing.md)
-
-- [x] **REQ-030：v1 stdin-only 入口与终端提示。** 清除未提交旧文件带回的 Help、位置参数及 -p，恢复小螃蟹欢迎信息和 `crab>`。389 代码行 / 450 物理行，42 Rust + 5 Python、PTY 与七步重建通过；学习分支提交 `9424df4`。main 同步教程补丁、当前数字和记录。[实施与验证](devlog/28-v1-stdin-banner.md)
-
-- [x] **REQ-031：调大默认预算。** main 与当前 v1 的请求 JSON 预算为 4 MiB；main 输出上限为 32,768 tokens，v1 按用户要求为 131,072（128K）。main 摘要正文上限为 16 KiB。仅调整默认值，保留历史标签、小预算实验和已有机制。[实施与验证](devlog/29-default-budgets.md)
-
-- [x] **REQ-032：v1 工具显示。** 默认名称、命令/路径、状态及 ≤240 B 文本预览；模型反馈不变；最初保留的调试开关已按 REQ-033 删除。399 代码行 / 460 物理行，44 Rust + 5 Python 与七步重建通过；实现 `5a063fc`。[实施与验证](devlog/30-v1-tool-display.md)
-
-- [x] **REQ-033：精简 v1 工具显示。** 删除工具 JSON 轨迹开关及专用测试，验收脚本使用独立 verifier 和实际产物，不从预览推断内部调用。395 代码行 / 456 物理行，43 Rust + 5 Python、串行七步重建与本地 release 验证通过；实现 `d3bfaf4`。[实施与验证](devlog/31-v1-remove-trace.md)
-
-- [x] **REQ-035：吉祥物 GIF。** 透明背景、微笑、眨眼与单钳轻挥，256px、3.2 秒循环，明显挥钳并配合轻起伏；归档生成提示词、十张源帧、时间安排和重建脚本。[动图与源文件](assets/mascot-animation/README.md) · [记录](devlog/32-mascot-animation.md)
-
-- [x] **REQ-034：v1 成功工具不回显正文。** 保留名称、命令/路径和 done；失败显示最多 160 字节的单行诊断，包含 Bash 退出码/超时状态。模型反馈不裁剪，不新增显示开关。43 Rust + 5 Python、串行七步重建和 release 检查通过；实现 `2cf6e9f`。[实施与验证](devlog/32-v1-quiet-tool-results.md)
-
-- [x] **REQ-035：v1 最小连续对话。** 终端回答后继续 crab>，进程内保留用户、完整模型 output 和工具结果，Ctrl-D 退出；管道保持单任务。只增加输入循环和共享 Vec<Value>，无编辑器、持久化或恢复。44 Rust + 6 Python（含 PTY）、七步重建及 release PTY 检查通过；实现 `714379c`。[实施与验证](devlog/33-v1-simple-chat.md)
+- [x] 2026-10-25：合并后 v1 的 GA 复核通过，补充真实修复、报告、连续任务和 PTY 证据；见 [GA 复核](../evidence/v1/ga-current.md)。
+- [x] 删除过早创建的 milestone/v2，保留历史 v2 标签。
+- [x] 2026-11-07：Erik 批准 main 与 milestone/v1 对齐。合并提交以旧 main 为第一父提交、milestone/v1 为第二父提交，树与 milestone/v1 相同；合入前不推送 main，也不移动标签。见 [开发记录](devlog/42-align-main-to-v1.md)。
+- [x] 2026-11-07：在同一分支恢复 GitHub Actions。`.github/workflows/ci.yml` 跑 fmt、clippy、`cargo test --locked`、Python unittest 和 `scripts/check-lessons.py`。
+- [ ] 合入后按小步做 v2（约 1000 行，教学参考，不设行数门禁）：context state、projection、compaction、验收；reasoning effort 未设置时省略该字段；token 预算/用量显示；更清楚的工具状态。迁回旧 main 代码时，协议校验以 v1 为准。
+- [ ] v2 在 main 上验收满意后，再建立新的 milestone/v2。
