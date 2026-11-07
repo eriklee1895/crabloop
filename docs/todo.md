@@ -13,5 +13,6 @@ v1 的学习实现以 milestone/v1 为准。main 通过一次保留双方历史�
 - [x] 2026-10-25：合并后 v1 的 GA 复核通过，补充真实修复、报告、连续任务和 PTY 证据；见 [GA 复核](../evidence/v1/ga-current.md)。
 - [x] 删除过早创建的 milestone/v2，保留历史 v2 标签。
 - [x] 2026-11-07：Erik 批准 main 与 milestone/v1 对齐。合并提交以旧 main 为第一父提交、milestone/v1 为第二父提交，树与 milestone/v1 相同；合入前不推送 main，也不移动标签。见 [开发记录](devlog/42-align-main-to-v1.md)。
+- [x] 2026-11-07：在同一分支恢复 GitHub Actions。`.github/workflows/ci.yml` 跑 fmt、clippy、`cargo test --locked`、Python unittest 和 `scripts/check-lessons.py`。
 - [ ] 合入后按小步做 v2（约 1000 行，教学参考，不设行数门禁）：context state、projection、compaction、验收；reasoning effort 未设置时省略该字段；token 预算/用量显示；更清楚的工具状态。迁回旧 main 代码时，协议校验以 v1 为准。
 - [ ] v2 在 main 上验收满意后，再建立新的 milestone/v2。

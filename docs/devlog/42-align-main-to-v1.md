@@ -39,7 +39,7 @@ v2 包含 context state、projection、compaction 和验收；reasoning effort �
 - 更长的 CrabLoop 人设文案、吉祥物、banner，以及 `scripts/render-mascot.py`、`scripts/record-terminal.py`。v2 要的是把项目 `AGENTS.md` 固定在摘要之外，不是替换 v1 的短指令。
 - `tests/live_config_test.py` 和旧 main 上替换过的 `tests/protocol.rs`。协议测试以 v1 这套为准。
 
-对齐会从结果树中拿掉旧 main 的 `.github/workflows/ci.yml`。那份工作流只在当时的 main 上运行 fmt、clippy、Rust 测试和 Python unittest。v1 没有这份文件，所以合入之后 GitHub 不再自动跑这些检查，直到单独把 CI 加回来。CI 不是 v2 功能。
+对齐当时从结果树拿掉了旧 main 的 `.github/workflows/ci.yml`。Erik 随后同意在同一分支上恢复它。工作流仍是这一个文件：Ubuntu 24.04、只读 checkout，以及固定的 checkout v7 SHA。它执行 v1 的门禁：fmt、clippy、`cargo test --locked`、Python unittest 和 `scripts/check-lessons.py`。旧文件没有单独调用已经不在树上的 live config 测试或 mascot/record 脚本；Python 发现只跑现存的 `*_test.py`。超时从 15 分钟改为 30 分钟，给教学回放的第二次编译留余量。CI 仍不是 v2 功能。
 
 ## 验证
 
@@ -51,4 +51,4 @@ v2 包含 context state、projection、compaction 和验收；reasoning effort �
 - `python3 -m unittest discover -s tests -p '*_test.py'`：6 项通过
 - `python3 scripts/check-lessons.py`：六个教学阶段回放通过，最终统计仍是 324 代码行 / 370 物理行
 
-旧 main 上的 GitHub Actions 只监听 main 的 push 和 pull request，工作流文件不在 v1 树里。本 PR 合入后，main 上不再有这份 CI，直到以后单独加回。
+GitHub Actions 工作流是 `.github/workflows/ci.yml`。它在 push 到 main、指向 main 的 pull request，以及手动触发时运行上面五项门禁。检查结果写在本 PR 上。
