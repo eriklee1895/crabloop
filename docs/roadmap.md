@@ -1,6 +1,6 @@
 # CrabLoop：从零构建 mini coding agent Harness
 
-更新：2026-10-14。v1 已支持最小连续对话，v2 学习 context 管理与 compaction；v3–v5 是后续规划。当前实现见 [v1 scope](v1-scope.md)。
+更新：2026-11-07。v1 GA 在 milestone/v1；main 用保留旧历史的合并与它对齐。v2 改为约 1000 行教学参考，不设行数门禁。当前实现见 [v1 scope](v1-scope.md)。
 
 目标是亲手构建 mini coding agent 的 Harness，逐步学习 agent loop、context 管理、配置、Skills 与 session 恢复。
 
@@ -9,8 +9,8 @@
 | 版本 | 范围预算 | 核心问题 | 内容与一个代表任务 |
 |---|---:|---|---|
 | v1 | 目标约 300 行，规模仅作参考 | 模型怎样行动并依据反馈调整？ | Responses + read_file/write_file/edit_file/bash；修复函数，再做一次多文件资料整理 |
-| v2 | 约 500 行 | 历史变长后，下一轮看到什么？ | 根 AGENTS.md、完整交互组、输入预算、摘要、JSONL 运行记录；小预算下完成任务 |
-| v3 | 约 1000 行 | 怎样成为不用反复配置的个人 CLI？ | 基础 SSE、`~/.crabloop`、TOML、凭证、provider 预置/Custom、模型目录与缓存；按独立增量学习 |
+| v2 | 约 1000 行，教学参考，不设行数门禁 | 历史变长后，下一轮看到什么？ | context state、projection、compaction 与验收；未设置时省略 reasoning effort；token 预算/用量和更清楚的工具状态；根 AGENTS.md、完整交互组、JSONL 运行记录。小预算下完成任务 |
+| v3 | 按功能估算 | 怎样成为不用反复配置的个人 CLI？ | 基础 SSE、`~/.crabloop` TOML/凭证、provider 预置/Custom、模型目录与缓存，以及 bash clean env、审批和工作区隔离；按独立增量学习 |
 | v4 | 按功能估算 | 怎样复用工作方法，并查阅外部资料？ | Skills 最小支持、web_fetch、web_search；查官方资料，保存带来源的比较报告 |
 | v5 | 按功能估算 | 进程退出后，怎样知道做到哪里并继续？ | JSONL sessions、list/show/resume、压缩状态重建、取消与未完成操作；中断后核对并继续 |
 

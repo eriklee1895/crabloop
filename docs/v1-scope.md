@@ -12,7 +12,7 @@ v1 用约 300 行 Rust（规模仅作教学参考，不设行数门禁）教会�
 
 ## 后续范围
 
-v2（约 500 行）增加 context 管理与 compaction；v3（约 1000 行）增加基础 SSE、`.env`/TOML 配置、provider 预置、凭证与 model catalog。输入编辑器、启动信息、CLI Help、session 持久化、恢复与 memory 留给后续版本。
+v2（约 1000 行，教学参考，不设行数门禁）增加 context state、projection、compaction 与验收；reasoning effort 未设置时省略该字段，并显示 token 预算/用量和更清楚的工具状态。v3 再增加基础 SSE、`.env`/TOML、provider 预置、凭证、model catalog，以及工具安全边界。TUI 在 v2 之后。输入编辑器、CLI Help、session 持久化、恢复与 memory 仍留后续版本。
 
 ## 学习与验证
 

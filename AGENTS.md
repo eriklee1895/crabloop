@@ -7,8 +7,8 @@ CrabLoop is a small coding-agent harness built from scratch in Rust for hands-on
 Keep the project focused on a mini coding agent and its Harness; do not reframe it as a Workbench.
 
 - v1: target about 300 lines; size is teaching guidance, not a hard gate. Teach only the hand-written model/tool/feedback/stop loop with four tools; cut everything else to later versions.
-- v2: approximately 500 lines total, adding context management and summary compaction.
-- v3: approximately 1,000 lines total, adding ~/.crabloop, TOML configuration, provider presets/Custom, credentials, and model catalog discovery/cache. Minimal Skills is optional if comfortably within scope.
+- v2: about 1,000 lines, a teaching reference and not a hard cap. Add context state, projection, compaction, and acceptance. Omit reasoning effort when unset. Show a token budget and clearer tool status. Do not add line-count checks.
+- v3: ~/.crabloop TOML/credentials, provider presets/Custom, model catalog/cache, basic SSE, and the tool safety boundary. Minimal Skills is optional. A TUI comes after v2.
 - v4: Skills and provider-independent web_fetch/web_search. v5: recoverable JSONL sessions and interruption handling under ~/.crabloop. See docs/roadmap.md; these stages are planned, not implemented.
 - Acceptance includes both coding repairs and general local agentic tasks such as reading source documents and producing a verifiable structured report.
 - Use the OpenAI native Responses API and a hand-written agent loop.
@@ -68,7 +68,7 @@ Once the Cargo package exists, use cargo fmt --check, cargo clippy --locked --al
 
 Distinguish deterministic protocol tests, real local tool execution, and live-model runs. Report only what the actual evidence establishes.
 
-Commit Cargo.lock. The user authorizes verified increments to be committed and pushed, with main holding the latest validated tree. The user requested one v1 branch: milestone/v1 is the small teaching core with in-process terminal chat. Keep main and milestone/v1; create milestone/v2 only after v2 is validated on main. The old v2 branch is deleted; retain its immutable v2 tag. The proposed main rebuild starts from v1 GA and preserves old main history, then adds v2 in small verified increments. Do not add another v1 learning branch.
+Commit Cargo.lock. The user authorizes verified increments to be committed and pushed, with main holding the latest validated tree. The user requested one v1 branch: milestone/v1 is the small teaching core with in-process terminal chat. Keep main and milestone/v1; create milestone/v2 only after v2 is validated on main. The old v2 branch is deleted; retain its immutable v2 tag. The alignment merge keeps old main history and matches the milestone/v1 tree; add v2 afterward in small verified increments. Do not add another v1 learning branch.
 
 Separate top-level items and logical phases within functions with one blank line; keep related statements together. Blank lines do not count toward the code-line budget. Formatting uses rustfmt with max_width = 100 and use_small_heuristics = Max; expand protocol JSON for teaching clarity. Count all src/**/*.rs under this same public style for every milestone; never hide runtime code in scripts or documentation.
 
