@@ -51,4 +51,4 @@ v2 包含 context state、projection、compaction 和验收；reasoning effort �
 - `python3 -m unittest discover -s tests -p '*_test.py'`：6 项通过
 - `python3 scripts/check-lessons.py`：六个教学阶段回放通过，最终统计仍是 324 代码行 / 370 物理行
 
-GitHub Actions 工作流是 `.github/workflows/ci.yml`。它在 push 到 main、指向 main 的 pull request，以及手动触发时运行上面五项门禁。检查结果写在本 PR 上。
+GitHub Actions 工作流是 `.github/workflows/ci.yml`。它在 push 到 main、指向 main 的 pull request，以及手动触发时运行上面五项门禁。PR #2 的运行 [42388568621](https://github.com/eriklee1895/crabloop/actions/runs/42388568621) 通过，用时 2 分 3 秒：fmt、clippy、Rust 测试、Python unittest 和教学回放都成功。
